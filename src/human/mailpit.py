@@ -2,12 +2,14 @@ import requests
 import smtplib
 import time
 
+SMTP_HOST = "localhost"
+SMTP_PORT = 1025
 MAILPIT_URL = "http://localhost:8025"
 SUBJECT_TAG = "NEW PROJECT"
 MANAGER_ADDRESS = "manager@ai-team.local"
 HUMAN_ADDRESS = "cto@human.local"
 
-def check_local_inbox():
+def check_inbox():
     """
     Poll the local Mailpit inbox for new messages.
     If a message with "NEW PROJECT" in the subject is found, return its content.
@@ -24,10 +26,10 @@ def check_local_inbox():
                 return project_desc
         time.sleep(10)
 
-def send_local_update(text, *, receiver = HUMAN_ADDRESS, sender = MANAGER_ADDRESS):
+def send_update(text, *, receiver: str = HUMAN_ADDRESS, sender: str = MANAGER_ADDRESS):
     """
     Send a mail to a human
     """
     message = f"Subject: Status Update\n\n{text}"
-    with smtplib.SMTP("localhost", 1025) as server:
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
         server.sendmail(sender, receiver, message)

@@ -1,6 +1,6 @@
-from human.mailpit import *
+import human.mailpit as mail
 
-project_description = check_local_inbox()
+project_description = mail.check_inbox()
 
 from crewai import Task, Crew, Process
 from agents import pm, developer, reviewer
