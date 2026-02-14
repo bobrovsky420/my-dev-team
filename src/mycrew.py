@@ -1,36 +1,46 @@
-import human.mailpit as mail
-
-original_msg = mail.check_inbox()
-project_description = original_msg['Text']
-
+import logging
 from crewai import Task, Crew, Process
 from agents import pm, developer, reviewer
+import config
+import human.mailpit as mail
 
-task1 = Task(
-    description=f"Create a technical specification for:\n{project_description}",
-    agent=pm,
-    expected_output="A structured markdown document."
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
-task2 = Task(
-    description="Implement the JavaScript application based on the PM's specification.",
-    agent=developer,
-    expected_output="A single .js file."
-)
+class MyCrew:
+    def __init__(self):
+        self.agents = [pm, developer, reviewer]
+        self.is_running = False
 
-task3 = Task(
-    description="Review the developer's code. Provide a Pass/Fail report.",
-    agent=reviewer,
-    expected_output="A review report and final code."
-)
+    def create_crew(self, project_description):
+        main_task = Task(
+            description=f"Analyze and implement this project: {project_description}",
+            expected_output="Final production-ready code blocks and review report."
+        )
+        return Crew(
+            agents=self.agents,
+            tasks=[main_task],
+            process=Process.hierarchical,
+            manager_llm=config.REASONING_LLM,
+            verbose=True
+        )
 
-dev_team = Crew(
-    agents=[pm, developer, reviewer],
-    tasks=[task1, task2, task3],
-    process=Process.sequential,
-    verbose=True
-)
+    def run(self):
+        self.is_running = True
+        while self.is_running:
+            logging.info("Manager checking local inbox...")
+            original_msg = mail.check_inbox()
+            logging.info(f"Processing: {original_msg['Subject']}")
+            project_description = original_msg['Text']
+            crew = self.create_crew(project_description)
+            result = crew.kickoff()
+            mail.send_update(str(result), original_msg)
+            logging.info("Cycle complete. Waiting for next email.")
+            del crew
 
-result = dev_team.kickoff()
+    def shutdown(self, msg):
+        logging.info("Shutdown command received. Closing office...")
+        self.is_running = False
 
-mail.send_update(str(result), original_msg)
+if __name__ == '__main__':
+    crew = MyCrew()
+    crew.run()

@@ -2,9 +2,9 @@ from crewai import Agent
 import config
 
 developer = Agent(
-    role='Senior JavaScript Developer',
-    goal='Write clean, efficient, and well-documented JavaScript code.',
-    backstory='You are a master of JavaScript and follow best practices strictly.',
-    llm=config.DEV_LLM,
-    verbose=True
+    role='Senior Developer',
+    goal='Write the code in the language chosen by the PM.',
+    backstory='You implement the PMs specs perfectly.',
+    max_iter=3,
+    llm=config.DEV_LLM
 )

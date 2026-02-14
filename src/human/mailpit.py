@@ -16,13 +16,11 @@ def check_inbox():
     Poll the local Mailpit inbox for new messages.
     If a message with "NEW PROJECT" in the subject is found, return its content.
     """
-    print("🕵️  Manager checking local inbox...")
     while True:
         response = requests.get(f"{MAILPIT_URL}/api/v1/messages?to={MANAGER_ADDRESS}")
         messages = response.json().get('messages', [])
         for msg in messages:
             if msg['Subject'].startswith(SUBJECT_TAG):
-                print(f"🚀 Found project: {msg['Subject']}")
                 detail = requests.get(f"{MAILPIT_URL}/api/v1/message/{msg['ID']}")
                 return detail.json()
         time.sleep(TIME_SLEEP)
