@@ -1,3 +1,7 @@
+Subject: NEW PROJECT: GitLab bookmarklet
+From: cto@human.local
+To: manager@ai-crew.local
+
 Develop a JavaScript bookmarklet that will be running on top of GitLab.
 
 The bookmarklet will do:
