@@ -1,6 +1,7 @@
 import human.mailpit as mail
 
-project_description = mail.check_inbox()
+original_msg = mail.check_inbox()
+project_description = original_msg['Text']
 
 from crewai import Task, Crew, Process
 from agents import pm, developer, reviewer
@@ -30,5 +31,6 @@ dev_team = Crew(
     verbose=True
 )
 
-if __name__ == '__main__':
-    result = dev_team.kickoff()
+result = dev_team.kickoff()
+
+mail.send_update(str(result), original_msg)
