@@ -1,6 +1,6 @@
 import logging
-from crewai import Task, Crew, Process
-from agents import pm, developer, reviewer
+from crewai import Crew, Process
+import agents
 import config
 import human.mailpit as mail
 
@@ -8,14 +8,14 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 class MyCrew:
     def __init__(self):
-        self.agents = [pm, developer, reviewer]
+        self.agents = agents.load_agents()
         self.is_running = False
 
-    def create_crew(self, project_description):
-        main_task = Task(
-            description=f"Analyze and implement this project: {project_description}",
-            expected_output="Final production-ready code blocks and review report."
-        )
+    def create_crew(self, project_description: str) -> Crew:
+        """
+        Create a crew with defined agents and a main task based on the project description
+        """
+        main_task = agents.load_main_task(project_description)
         return Crew(
             agents=self.agents,
             tasks=[main_task],
@@ -28,7 +28,8 @@ class MyCrew:
         self.is_running = True
         while self.is_running:
             logging.info("Manager checking local inbox...")
-            original_msg = mail.check_inbox()
+            original_msg = mail.check_new_project()
+            mail.delete_message(original_msg['ID'])
             logging.info(f"Processing: {original_msg['Subject']}")
             project_description = original_msg['Text']
             crew = self.create_crew(project_description)
@@ -37,7 +38,7 @@ class MyCrew:
             logging.info("Cycle complete. Waiting for next email.")
             del crew
 
-    def shutdown(self, msg):
+    def shutdown(self):
         logging.info("Shutdown command received. Closing office...")
         self.is_running = False
 

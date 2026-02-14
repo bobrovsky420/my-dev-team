@@ -17,11 +17,24 @@ ollama pull gemma3:4b
 #### Install mailpit
 
 ```sh
-curl -sL https://raw.githubusercontent.com/axllent/mailpit/develop/install.sh | bash
+curl -sL https://raw.githubusercontent.com/axllent/mailpit/develop/install.sh | sh
 ```
 
 #### Start mailpit
 
 ```sh
 nohup mailpit --database /var/lib/mailpit/mailpit.db > /var/log/mailpit/mailpit.log 2>&1 &
+```
+
+#### Send mail
+
+```sh
+mailpit sendmail << EOF
+Subject: NEW PROJECT: <<<Put the project name here>>>
+From: cto@human.local
+To: manager@ai-crew.local
+
+<<<Put the project description here>>>
+
+EOF
 ```

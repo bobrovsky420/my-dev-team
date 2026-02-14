@@ -2,9 +2,9 @@ Subject: NEW PROJECT: GitLab bookmarklet
 From: cto@human.local
 To: manager@ai-crew.local
 
-Develop a JavaScript bookmarklet that will be running on top of GitLab.
+Develop a JavaScript bookmarklet that will be running on top of GitLab window in the browser.
 
-The bookmarklet will do:
+The new bookmarklet must do:
     1) Clone predefined GitLab project to the user's namespace:
         - User should provide the new desired project name
     2) Create a new personal token with API access.
