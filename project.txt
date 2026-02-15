@@ -1,13 +1,8 @@
-Subject: NEW PROJECT: GitLab bookmarklet
+Subject: NEW PROJECT: Calculator in Python
 From: cto@human.local
 To: manager@ai-crew.local
 
-Develop a JavaScript bookmarklet that will be running on top of GitLab window in the browser.
-
-The new bookmarklet must do:
-    1) Clone predefined GitLab project to the user's namespace:
-        - User should provide the new desired project name
-    2) Create a new personal token with API access.
-    3) Setup CI/CD variables:
-        - GROUP_PRIVATE_TOKEN: the personal token created in step 2.
-        - DQ_MAIL_LIST: user's e-mail address.
+Develop a simple calculator application in Python.
+The calculator should support addition, subtraction, multiplication, and division.
+It should accept two numbers from the user, perform the chosen operation, and display the result.
+Handle division by zero gracefully and provide a simple command-line interface.

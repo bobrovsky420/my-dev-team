@@ -1,7 +1,7 @@
 import logging
 from crewai import Crew, Process
-import agents
-import config
+import agents.agents as agents
+import agents.manager as manager
 import human.mailpit as mail
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
@@ -15,12 +15,10 @@ class MyCrew:
         """
         Create a crew with defined agents and a main task based on the project description
         """
-        main_task = agents.load_main_task(project_description)
         return Crew(
-            agents=self.agents,
-            tasks=[main_task],
-            process=Process.hierarchical,
-            manager_llm=config.REASONING_LLM,
+            agents=list(self.agents.values()),
+            tasks=manager.create_tasks(project_description, agents=self.agents),
+            process=Process.sequential,
             verbose=True
         )
 
