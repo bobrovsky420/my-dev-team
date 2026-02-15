@@ -1,13 +1,11 @@
 from datetime import datetime
-import locale
 import logging
 import requests
 import smtplib
 import time
 from email.message import EmailMessage
 from email.utils import formataddr
-
-locale.setlocale(locale.LC_TIME, '')
+import markdown
 
 SMTP_HOST = 'localhost'
 SMTP_PORT = 1025
@@ -43,21 +41,22 @@ def send_update(text, original_msg, *, receiver = HUMAN_ADDRESS, sender = MANAGE
     """
     Send a mail to a human
     """
+    html_text = markdown.markdown(text, extensions=['fenced_code'])
     original_subject = original_msg['Subject']
     original_from = formataddr((original_msg['From']['Name'], original_msg['From']['Address']))
     original_to = formataddr((original_msg['To'][0]['Name'], original_msg['To'][0]['Address']))
     original_date = datetime.fromisoformat(original_msg['Date']).strftime('%c')
+    original_html = markdown.markdown(original_msg['Text'], extensions=['fenced_code'])
     body = (
-        f"{text}\n\n"
-        f"--- Original Message ---\n"
-        f"From: {original_from}\n"
-        f"Sent: {original_date}\n"
-        f"To: {original_to}\n"
-        f"Subject: {original_subject}\n\n"
-        f"{original_msg['Text']}"
+        f"{html_text}<br><hr>"
+        f"<b>From:</b> {original_from}<br>"
+        f"<b>Sent:</b> {original_date}<br>"
+        f"<b>To:</b> {original_to}<br>"
+        f"<b>Subject:</b> {original_subject}<br><br>"
+        f"{original_html}"
     )
     msg = EmailMessage()
-    msg.set_content(body)
+    msg.set_content(body, subtype='html')
     msg['Subject'] = f"Re: {original_subject}"
     msg['To'] = receiver
     msg['From'] = sender
