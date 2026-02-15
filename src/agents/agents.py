@@ -1,6 +1,6 @@
 import yaml
 from crewai import Agent, LLM
-import agents.config as config
+from . import config
 
 def load_agents() -> dict[Agent]:
     """
