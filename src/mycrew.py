@@ -1,6 +1,6 @@
 import logging
 from crewai import Crew, Process
-from agents import agents, manager
+from agents import agents, config, manager
 from human import mailpit as mail
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
@@ -12,12 +12,14 @@ class MyCrew:
 
     def create_crew(self, project_description: str) -> Crew:
         """
-        Create a crew with defined agents and a main task based on the project description
+        Create a crew with hierarchical processing.
+        The manager dynamically delegates work to team members.
         """
         return Crew(
-            agents=list(self.agents.values()),
-            tasks=manager.create_tasks(project_description, agents=self.agents),
-            process=Process.sequential,
+            agents=self.agents,
+            tasks=[manager.create_main_task(project_description)],
+            manager_llm=config.MANAGER_LLM,
+            process=Process.hierarchical,
             verbose=True
         )
 

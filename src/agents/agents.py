@@ -2,15 +2,15 @@ import yaml
 from crewai import Agent, LLM
 from . import config
 
-def load_agents() -> dict[Agent]:
+def load_agents() -> list[Agent]:
     """
     Load agent configurations from YAML files and create agent instances
     """
-    return {
-        'pm': create_agent('agents/pm.yml', config.REASONING_LLM),
-        'developer': create_agent('agents/developer.yml', config.DEV_LLM),
-        'reviewer': create_agent('agents/reviewer.yml', config.QA_LLM)
-    }
+    return [
+        create_agent('agents/pm.yml', config.PM_LLM),
+        create_agent('agents/developer.yml', config.DEV_LLM),
+        create_agent('agents/reviewer.yml', config.QA_LLM)
+    ]
 
 def create_agent(file_name: str, llm: LLM) -> Agent:
     """
@@ -22,5 +22,7 @@ def create_agent(file_name: str, llm: LLM) -> Agent:
         role=data['role'],
         goal=data['goal'],
         backstory=data['backstory'],
-        llm=llm
+        allow_delegation=data.get('allow delegation', False),
+        llm=llm,
+        verbose=True
     )
