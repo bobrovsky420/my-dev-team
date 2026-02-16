@@ -1,7 +1,7 @@
 import yaml
 from crewai import Agent, LLM
 from crewai.tools import tool
-from human import mailpit as mail
+from mail import mailpit as mail
 from . import config
 
 @tool

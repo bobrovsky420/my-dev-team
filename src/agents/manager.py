@@ -9,6 +9,7 @@ def create_main_task(project_description: str) -> Task:
     with open(file_name, 'r') as f:
         data = yaml.safe_load(f)
     return Task(
+        name=data['goal'],
         description=data['backstory'] + '\n\n' + data['goal'] + '\n\n' + data['description'].format(project_description=project_description),
         expected_output=data['expected output']
     )
