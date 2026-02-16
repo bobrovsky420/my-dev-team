@@ -23,7 +23,7 @@ curl -sL https://raw.githubusercontent.com/axllent/mailpit/develop/install.sh | 
 #### Start mailpit
 
 ```sh
-nohup mailpit --database /var/lib/mailpit/mailpit.db > /var/log/mailpit/mailpit.log 2>&1 &
+nohup mailpit --database /var/lib/mailpit/mailpit.db --pop3-auth-file /var/lib/mailpit/passwords > /var/log/mailpit/mailpit.log 2>&1 &
 ```
 
 #### Send mail

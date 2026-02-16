@@ -16,7 +16,7 @@ class MyCrew:
         The manager dynamically delegates work to team members.
         """
         return Crew(
-            agents=self.agents,
+            agents=list(self.agents.values()),
             tasks=[manager.create_main_task(project_description)],
             manager_llm=config.MANAGER_LLM,
             process=Process.hierarchical,
@@ -28,12 +28,11 @@ class MyCrew:
         while self.is_running:
             logging.info("Manager checking local inbox...")
             original_msg = mail.check_new_project()
-            mail.delete_message(original_msg['ID'])
             logging.info(f"Processing: {original_msg['Subject']}")
             project_description = original_msg['Text']
             crew = self.create_crew(project_description)
             result = crew.kickoff()
-            mail.send_update(str(result), original_msg)
+            mail.send_update(str(result))
             logging.info("Cycle complete. Waiting for next email.")
             del crew
 
