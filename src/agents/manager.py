@@ -1,7 +1,7 @@
 import yaml
 from crewai import Agent, Task
 
-def create_tasks(project_description: str, agents: dict[str, Agent]) -> list[Task]:
+def create_tasks(agents: dict[str, Agent]) -> list[Task]:
     """
     Create a list of tasks for the crew based on the project description
     """
@@ -12,7 +12,7 @@ def create_tasks(project_description: str, agents: dict[str, Agent]) -> list[Tas
         Task(
             name=task['name'],
             agent=agents[task['agent']],
-            description=task['description'].format(project_description=project_description),
+            description=task['description'],
             expected_output=task['expected output']
         )
         for task in data.values()

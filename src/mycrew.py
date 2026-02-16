@@ -10,14 +10,14 @@ class MyCrew:
         self.agents = agents.load_agents()
         self.is_running = False
 
-    def create_crew(self, project_description: str) -> Crew:
+    def create_crew(self) -> Crew:
         """
         Create a crew with hierarchical processing.
         The manager dynamically delegates work to team members.
         """
         return Crew(
             agents=list(self.agents.values()),
-            tasks=manager.create_tasks(project_description, self.agents),
+            tasks=manager.create_tasks(self.agents),
             process=Process.sequential,
             verbose=True
         )
@@ -29,8 +29,8 @@ class MyCrew:
             original_msg = mail.check_new_project()
             logging.info(f"Processing: {original_msg['Subject']}")
             project_description = original_msg['Text']
-            crew = self.create_crew(project_description)
-            result = crew.kickoff()
+            crew = self.create_crew()
+            result = crew.kickoff(inputs={'project_description': project_description})
             mail.send_update(str(result))
             logging.info("Cycle complete. Waiting for next email.")
             del crew
