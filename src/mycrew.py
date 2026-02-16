@@ -27,10 +27,12 @@ class MyCrew:
             logging.info(f"Processing: {original_msg['Subject']}")
             project_description = original_msg['Text']
             crew = self.create_crew()
-            result = str(crew.kickoff(inputs={'project_description': project_description}))
-            if result_body := re.search(r'```markdown(.+)```', result, re.IGNORECASE | re.DOTALL):
-                result = result_body.group(1)
-            mail.send_update(result)
+            result = crew.kickoff(inputs={'project_description': project_description})
+            if result.pydantic:
+                final_output = result.pydantic.content
+            else:
+                final_output = result.raw
+            mail.send_update(final_output)
             logging.info("Cycle complete. Waiting for next email.")
             del crew
 
