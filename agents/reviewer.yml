@@ -1,5 +1,8 @@
 role: Code Reviewer
 model: ollama/gemma3:4b
+config:
+    temperature: 0.3
+    top_p: 0.5
 backstory: |
     You are the gatekeeper of quality.
 goal: |

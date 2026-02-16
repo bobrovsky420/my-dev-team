@@ -1,5 +1,8 @@
 role: Crew Manager
 model: ollama/gemma3:4b
+config:
+    temperature: 0.1
+    top_k: 20
 goal: |
     Orchestrate project implementation, collect all team deliverables, and provide a comprehensive final report.
 backstory: |

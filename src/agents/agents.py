@@ -5,7 +5,7 @@ from mail import mailpit as mail
 from . import config
 
 @tool
-def ask_for_clarification(question: str, agent_role: str = 'Agent') -> str:
+def ask_for_clarification(question: str, agent_role = 'Agent') -> str:
     """
     Ask a clarifying question to the human stakeholder and wait for their response
     """
@@ -24,7 +24,7 @@ def load_agents() -> dict[str, Agent]:
         'Reviewer': create_agent('agents/reviewer.yml')
     }
 
-def create_agent(file_name: str, tools=None) -> Agent:
+def create_agent(file_name: str, tools = None) -> Agent:
     """
     Load agent configuration from a YAML file and create an agent instance
     """
@@ -34,7 +34,7 @@ def create_agent(file_name: str, tools=None) -> Agent:
         'role': data['role'],
         'goal': data['goal'],
         'backstory': data['backstory'],
-        'llm': LLM(model=data['model'], base_url=config.BASE_URL, config=config.GPU_CONFIG),
+        'llm': LLM(model=data['model'], base_url=config.BASE_URL, config={**config.DEFAULT_CONFIG, **data.get('config', {})}),
     }
     if data.get('allow delegation', False):
         agent_config['allow_delegation'] = True

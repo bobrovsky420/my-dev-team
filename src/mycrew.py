@@ -1,4 +1,5 @@
 import logging
+import re
 from crewai import Crew, Process
 from agents import agents, manager
 from mail import mailpit as mail
@@ -11,10 +12,6 @@ class MyCrew:
         self.is_running = False
 
     def create_crew(self) -> Crew:
-        """
-        Create a crew with hierarchical processing.
-        The manager dynamically delegates work to team members.
-        """
         return Crew(
             agents=list(self.agents.values()),
             tasks=manager.create_tasks(self.agents),
@@ -30,8 +27,10 @@ class MyCrew:
             logging.info(f"Processing: {original_msg['Subject']}")
             project_description = original_msg['Text']
             crew = self.create_crew()
-            result = crew.kickoff(inputs={'project_description': project_description})
-            mail.send_update(str(result))
+            result = str(crew.kickoff(inputs={'project_description': project_description}))
+            if result_body := re.search(r'```markdown(.+)```', result, re.IGNORECASE | re.DOTALL):
+                result = result_body.group(1)
+            mail.send_update(result)
             logging.info("Cycle complete. Waiting for next email.")
             del crew
 

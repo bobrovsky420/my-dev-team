@@ -33,6 +33,10 @@ Task 4:
     name: Create final report
     agent: Crew Manager
     description: |
-        Compile all deliverables from the team members into a comprehensive final report.
+        Collect all deliverables from the team members:
+        - The technical specification from the Product Manager
+        - The developed solution and unit tests from the Developer
+        - The review report from the Reviewer
+        Compile these into a single, professional markdown document.
     expected output: |
         A final report summarizing all deliverables and confirming project completion.
