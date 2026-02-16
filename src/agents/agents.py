@@ -18,13 +18,13 @@ def load_agents() -> dict[str, Agent]:
     Load agent configurations from YAML files and create agent instances
     """
     return {
-        'Crew Manager': create_agent('agents/manager.yml', config.MANAGER_LLM),
-        'Product Manager': create_agent('agents/pm.yml', config.PM_LLM, tools=[ask_for_clarification]),
-        'Developer': create_agent('agents/developer.yml', config.DEV_LLM),
-        'Reviewer': create_agent('agents/reviewer.yml', config.QA_LLM)
+        'Crew Manager': create_agent('agents/manager.yml'),
+        'Product Manager': create_agent('agents/pm.yml', tools=[ask_for_clarification]),
+        'Developer': create_agent('agents/developer.yml'),
+        'Reviewer': create_agent('agents/reviewer.yml')
     }
 
-def create_agent(file_name: str, llm: LLM, tools=None) -> Agent:
+def create_agent(file_name: str, tools=None) -> Agent:
     """
     Load agent configuration from a YAML file and create an agent instance
     """
@@ -34,8 +34,7 @@ def create_agent(file_name: str, llm: LLM, tools=None) -> Agent:
         'role': data['role'],
         'goal': data['goal'],
         'backstory': data['backstory'],
-        'llm': llm,
-        'verbose': True
+        'llm': LLM(model=data['model'], base_url=config.BASE_URL, config=config.GPU_CONFIG),
     }
     if data.get('allow delegation', False):
         agent_config['allow_delegation'] = True

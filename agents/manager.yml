@@ -1,4 +1,5 @@
 role: Crew Manager
+model: ollama/gemma3:4b
 goal: |
     Orchestrate project implementation, collect all team deliverables, and provide a comprehensive final report.
 backstory: |
