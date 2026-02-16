@@ -1,7 +1,7 @@
 import logging
 from crewai import Crew, Process
 from agents import agents, config, manager
-from human import mailpit as mail
+from mail import mailpit as mail
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
