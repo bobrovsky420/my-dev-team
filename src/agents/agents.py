@@ -18,9 +18,10 @@ def load_agents() -> dict[str, Agent]:
     Load agent configurations from YAML files and create agent instances
     """
     return {
-        'pm': create_agent('agents/pm.yml', config.PM_LLM, tools=[ask_for_clarification]),
-        'developer': create_agent('agents/developer.yml', config.DEV_LLM),
-        'reviewer': create_agent('agents/reviewer.yml', config.QA_LLM)
+        'Crew Manager': create_agent('agents/manager.yml', config.MANAGER_LLM),
+        'Product Manager': create_agent('agents/pm.yml', config.PM_LLM, tools=[ask_for_clarification]),
+        'Developer': create_agent('agents/developer.yml', config.DEV_LLM),
+        'Reviewer': create_agent('agents/reviewer.yml', config.QA_LLM)
     }
 
 def create_agent(file_name: str, llm: LLM, tools=None) -> Agent:

@@ -1,0 +1,38 @@
+Task 1:
+    name: Write detailed requirements and specifications
+    agent: Product Manager
+    description: |
+        Based on the project description below, write detailed requirements and specifications for the project.
+
+        ==================================================
+        PROJECT DESCRIPTION
+        ==================================================
+
+        {project_description}
+    expected output: |
+        A structured markdown document with features, logic steps, and edge cases to handle.
+
+Task 2:
+    name: Develop solution
+    agent: Developer
+    description: |
+        Implement a solution based on the technical specification from the product manager.
+    expected output: |
+        A code block containing the developed solution, including unit tests.
+        The code should be well-documented and follow best practices for maintainability and readability.
+
+Task 3:
+    name: Provide code review
+    agent: Reviewer
+    description: |
+        Review the developed solution, identify and report any issues or improvements.
+    expected output: |
+        A final review report confirming the code is production-ready.
+
+Task 4:
+    name: Create final report
+    agent: Crew Manager
+    description: |
+        Compile all deliverables from the team members into a comprehensive final report.
+    expected output: |
+        A final report summarizing all deliverables and confirming project completion.
