@@ -2,28 +2,26 @@ Task 1:
     name: Write detailed requirements and specifications
     agent: Product Manager
     description: |
-        Based on the project description below, write detailed technical specification for the project.
+        Based on the project description, write detailed technical specification for the project.
         The specification should include:
         - A document title and a clear description of the project
         - The key features and functionalities required
         - A recommended tech stack and architecture for the solution
         - Any technical constraints or considerations (e.g., performance, security, scalability)
         - Edge cases and potential challenges that may arise during development
+
+        PROJECT DESCRIPTION:
+        ```text
+        {project_description}
+        ```
+    expected output: |
+        A valid JSON object matching the TechnicalSpecification schema.
         CRITICAL FORMATTING RULES:
         1. The 'requirements', 'constraints', and 'edge_cases' fields MUST be single strings in markdown format.
         2. You MUST output actual text content for every field in the output schema.
         3. DO NOT output the schema definition `{"type": "string"}` as a value. You must output the ACTUAL string.
         4. DO NOT use nested JSON objects, dictionaries, or lists within these fields.
         5. Use Markdown formatting (bullet points, bold text) INSIDE the string values to organize information.
-        6. Double-check that you are not outputting a dictionary for requirements.
-
-        ==================================================
-        PROJECT DESCRIPTION
-        ==================================================
-
-        {project_description}
-    expected output: |
-        A valid JSON object matching the TechnicalSpecification schema.
     output schema: TechnicalSpecification
 
 Task 2:
@@ -31,11 +29,8 @@ Task 2:
     agent: Developer
     description: |
         Implement a solution based on the technical specification from the product manager.
-        CRITICAL INSTRUCTIONS:
-        1. **Separate Logic and Tests**: You MUST provide the implementation and the unit tests as separate files.
-        2. **Naming Convention**: Name your test files starting with 'test_', for example: 'test_calculator.py'.
-        3. **Comprehensive Coverage**: Develop unit tests that cover all edge cases defined in the specification (e.g., division by zero, empty inputs).
-        4. **Runnable Code**: Ensure the test file imports the logic from the implementation file correctly.
+        Provide the implementation and the unit tests as separate files.
+        Develop unit tests that cover all edge cases defined in the specification (e.g., division by zero, empty inputs).
     expected output: |
         A JSON object matching the DeveloperOutcome schema.
     output schema: DeveloperOutcome
@@ -46,10 +41,10 @@ Task 3:
     description: |
         Perform an exhaustive code review of the solution provided by the developer.
         Your review MUST cover:
-        1. **Specification Compliance**: Does the code implement EVERY requirement and handle every constraint defined in the Product Manager's Technical Specification?
-        2. **Stack Best Practices**: Is the code written according to the highest standards of the selected stack?
-        3. **Robustness**: Are edge cases (like division by zero or invalid inputs) handled as per the spec?
-        4. **Test Quality**: Are the unit tests sufficient to cover the logic?
+        1. Does the code implement EVERY requirement and handle every constraint defined in the product manager's technical specification?
+        2. Is the code written according to the highest standards of the selected stack?
+        3. Are edge cases (like division by zero or invalid inputs) handled as per the spec?
+        4. Are the unit tests sufficient to cover the logic?
         CRITICAL RULES FOR DELEGATION:
         1. YOU are the reviewer. DO NOT delegate the task of "reviewing" the code to anyone else. You must read and analyze the code yourself.
         2. If and ONLY IF you find issues during your internal review, use the 'delegate_work_to_coworker' tool to assign a FIXING task to the developer.
@@ -74,12 +69,12 @@ Task 4:
         - Developed solution and unit tests from the Developer
         - Review feedback from the Reviewer
         - Summary of the project outcome and any lessons learned
-        IMPORTANT:
-        - Do NOT include raw control characters.
-        - Escape all double quotes (\") found inside the text.
-        - If the feedback is very long, summarize it into clear paragraphs.
+        Summarize the feedback from all team members into single clear summary.
     expected output: |
         A valid JSON object matching the FinalReport schema.
-        Do not include any conversational text outside the JSON.
-        Every string field in the output must be formatted as a markdown document.
+        CRITICAL FORMATTING RULES:
+        1. DO NOT include any conversational text outside the JSON.
+        2. Every string field in the output must be formatted as a markdown document.
+        3. DO NOT include raw control characters.
+        4. Escape all double quotes (\") found inside the text.
     output schema: FinalReport

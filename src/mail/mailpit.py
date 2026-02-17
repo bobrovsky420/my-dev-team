@@ -62,7 +62,7 @@ def check_new_project() -> Project:
                 project = Project(
                     original_mail=msg_detail,
                     title=msg_detail['Subject'][len(SUBJECT_TAG):].strip(),
-                    description=msg_detail['Text']
+                    description=msg_detail['Text'].strip()
                 )
                 return project
         time.sleep(TIME_SLEEP)
