@@ -2,7 +2,13 @@ Task 1:
     name: Write detailed requirements and specifications
     agent: Product Manager
     description: |
-        Based on the project description below, write detailed requirements and specifications for the project.
+        Based on the project description below, write detailed technical specification for the project.
+        The specification should include:
+        - A document title and a clear description of the project
+        - The key features and functionalities required
+        - A recommended tech stack and architecture for the solution
+        - Any technical constraints or considerations (e.g., performance, security, scalability)
+        - Edge cases and potential challenges that may arise during development
 
         ==================================================
         PROJECT DESCRIPTION
@@ -10,7 +16,14 @@ Task 1:
 
         {project_description}
     expected output: |
-        A structured markdown document with features, logic steps, and edge cases to handle.
+        A valid JSON object matching the TechnicalSpecification schema.
+        CRITICAL FORMATTING RULES:
+        1. The 'requirements', 'constraints', and 'edge_cases' fields MUST be single strings.
+        2. Do NOT use nested JSON objects, dictionaries, or lists within these fields.
+        3. Use Markdown formatting (bullet points, bold text) INSIDE the string values to organize information.
+        4. Example: "requirements": "- Feature A\n- Feature B\n- Feature C"
+        5. Double-check that you are not outputting a dictionary for requirements.
+    output pydantic: TechnicalSpecification
 
 Task 2:
     name: Develop solution
@@ -33,8 +46,13 @@ Task 4:
     name: Create final report
     agent: Crew Manager
     description: |
-        Collect all team deliverables and compile them into a structured report.
+        Compile all deliverables from the team members into a structured JSON report:
+        - Technical specification from the Product Manager
+        - Developed solution and unit tests from the Developer
+        - Review report from the Reviewer
+        - Summary of the project outcome and any lessons learned
     expected output: |
         A valid JSON object matching the FinalReport schema.
         Do not include any conversational text outside the JSON.
+        Every string field in the output must be formatted as a markdown document.
     output pydantic: FinalReport
