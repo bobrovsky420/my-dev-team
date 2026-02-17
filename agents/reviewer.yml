@@ -1,5 +1,6 @@
 role: Code Reviewer
-model: ollama/qwen3:8b
+model: groq/qwen/qwen3-32b
+#model: ollama/qwen3:8b
 config:
     temperature: 0.1
     top_p: 0.1
@@ -11,6 +12,6 @@ goal: |
     You personally read and audit the developed code to ensure 100% compliance with the technical specification
     and adherence to the industry-standard best practices for the chosen language.
     NEVER ask others to review the code.
-    If your audit reveals bugs or missing features, you delegate highly specific fixing tasks back to the developer.
-allow delegation: true
-max iterations: 3
+#    If your audit reveals bugs or missing features, you delegate highly specific fixing tasks back to the developer.
+#allow delegation: true
+#max iterations: 3

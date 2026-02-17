@@ -1,5 +1,6 @@
 role: Senior Developer
-model: ollama/qwen3:8b
+model: groq/qwen/qwen3-32b
+#model: ollama/qwen3:8b
 config:
     temperature: 0.6
     top_k: 40

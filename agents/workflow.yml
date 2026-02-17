@@ -45,14 +45,14 @@ Task 3:
         2. Is the code written according to the highest standards of the selected stack?
         3. Are edge cases (like division by zero or invalid inputs) handled as per the spec?
         4. Are the unit tests sufficient to cover the logic?
-        CRITICAL RULES FOR DELEGATION:
-        1. YOU are the reviewer. DO NOT delegate the task of "reviewing" the code to anyone else. You must read and analyze the code yourself.
-        2. If and ONLY IF you find issues during your internal review, use the 'delegate_work_to_coworker' tool to assign a FIXING task to the developer.
-        3. BATCH YOUR FEEDBACK. Do not make multiple tool calls. If there are multiple issues, send ONE single delegation task containing a bulleted list of all necessary fixes.
-        4. The 'task' argument you delegate MUST contain actionable instructions on how to fix the code, NOT a request to review the code.
-        5. DO NOT wrap your tool arguments in a "properties" object. Provide them at the root level.
-        MAX PASSES FALLBACK:
-        If you are forced to provide a final answer before the code is fully fixed (because you ran out of time or iterations), your Final verdict MUST be: 'REJECTED - MAXIMUM PASSES REACHED'.
+#        CRITICAL RULES FOR DELEGATION:
+#        1. YOU are the reviewer. DO NOT delegate the task of "reviewing" the code to anyone else. You must read and analyze the code yourself.
+#        2. If and ONLY IF you find issues during your internal review, use the 'delegate_work_to_coworker' tool to assign a FIXING task to the developer.
+#        3. BATCH YOUR FEEDBACK. Do not make multiple tool calls. If there are multiple issues, send ONE single delegation task containing a bulleted list of all necessary fixes.
+#        4. The 'task' argument you delegate MUST contain actionable instructions on how to fix the code, NOT a request to review the code.
+#        5. DO NOT wrap your tool arguments in a "properties" object. Provide them at the root level.
+#        MAX PASSES FALLBACK:
+#        If you are forced to provide a final answer before the code is fully fixed (because you ran out of time or iterations), your Final verdict MUST be: 'REJECTED - MAXIMUM PASSES REACHED'.
     expected output: |
         A detailed review report in PURE MARKDOWN format.
         CRITICAL FORMATTING RULE: DO NOT output JSON for this final answer.

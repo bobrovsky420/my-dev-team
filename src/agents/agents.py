@@ -1,3 +1,4 @@
+import os
 import yaml
 from crewai import Agent, LLM
 from crewai.tools import tool
@@ -28,7 +29,23 @@ def new_llm(model_name: str, config_override: dict = None) -> LLM:
     """
     Create a new LLM instance with the given model name and default configuration
     """
-    return LLM(model=model_name, base_url=config.BASE_URL, config={**config.DEFAULT_CONFIG, **(config_override or {})})
+    if model_name.startswith('ollama/'):
+        return LLM(
+            model=model_name,
+            base_url=config.OLLAMA_URL,
+            config={**config.OLLAMA_CONFIG, **(config_override or {})}
+        )
+    elif model_name.startswith('groq/'):
+        return LLM(
+            model=model_name,
+            api_key=os.environ.get('GROQ_API_KEY'),
+            temperature=config_override.get('temperature', config.GROQ_CONFIG.get('temperature', 0.7)),
+            extra_body={
+                'reasoning_format': 'hidden',
+                'reasoning_effort': 'none'
+            }
+        )
+    raise ValueError(f"Unsupported model: {model_name}")
 
 def create_agent(file_name: str, tools = None) -> Agent:
     """
@@ -41,6 +58,7 @@ def create_agent(file_name: str, tools = None) -> Agent:
         'goal': data['goal'],
         'backstory': data['backstory'],
         'llm': new_llm(data['model'], data.get('config')),
+        'max_rpm': 2
     }
     if data.get('allow delegation', False):
         agent_config['allow_delegation'] = True

@@ -1,5 +1,6 @@
 role: Crew Manager
-model: ollama/gemma3:4b
+model: groq/qwen/qwen3-32b
+#model: ollama/gemma3:4b
 config:
     temperature: 0.1
     top_k: 20
