@@ -21,7 +21,7 @@ def load_agents() -> dict[str, Agent]:
         'Crew Manager': create_agent('agents/manager.yml'),
         'Product Manager': create_agent('agents/pm.yml', tools=[ask_for_clarification]),
         'Developer': create_agent('agents/developer.yml'),
-        'Reviewer': create_agent('agents/reviewer.yml')
+        'Code Reviewer': create_agent('agents/reviewer.yml')
     }
 
 def create_agent(file_name: str, tools = None) -> Agent:

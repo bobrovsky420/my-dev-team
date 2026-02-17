@@ -36,11 +36,20 @@ Task 2:
 
 Task 3:
     name: Provide code review
-    agent: Reviewer
+    agent: Code Reviewer
     description: |
-        Review the developed solution, identify and report any issues or improvements.
+        Perform an exhaustive code review of the solution provided by the developer.
+        Your review MUST cover:
+        1. **Specification Compliance**: Does the code implement EVERY requirement and handle every constraint defined in the Product Manager's Technical Specification?
+        2. **Stack Best Practices**: Is the code written according to the highest standards of the selected stack?
+        3. **Robustness**: Are edge cases (like division by zero or invalid inputs) handled as per the spec?
+        4. **Test Quality**: Are the unit tests sufficient to cover the logic?
+        Provide a clear 'PASSED' or 'NEEDS CHANGES' status for each requirement.
     expected output: |
-        A final review report confirming the code is production-ready.
+        A detailed review report in markdown format.
+        Include a 'Compliance Matrix' comparing the code to the technical specification.
+        List any bugs or stylistic violations separately.
+        Final verdict: 'APPROVED' or 'REJECTED'.
 
 Task 4:
     name: Create final report
