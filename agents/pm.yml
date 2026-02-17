@@ -1,5 +1,5 @@
 role: Product Manager
-model: ollama/deepseek-r1:7b
+model: ollama/deepseek-r1:8b
 config:
     temperature: 0.3
 backstory: |

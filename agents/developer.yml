@@ -1,5 +1,5 @@
 role: Senior Developer
-model: ollama/qwen2.5-coder:7b
+model: ollama/qwen3:8b
 config:
     temperature: 0.6
     top_k: 40

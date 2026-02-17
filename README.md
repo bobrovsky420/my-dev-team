@@ -10,7 +10,9 @@ curl -fsSL https://ollama.com/install.sh | sh
 
 ```sh
 ollama pull deepseek-r1:7b
+ollama pull deepseek-r1:8b
 ollama pull qwen2.5-coder:7b
+ollama pull qwen3:8b
 ollama pull gemma3:4b
 ```
 
