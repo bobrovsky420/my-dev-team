@@ -1,11 +1,8 @@
 from dataclasses import dataclass
-from typing import Optional, Dict
+from typing import Dict
 
 @dataclass
 class Project:
     original_mail: Dict
-    tech_specification: Optional[str] = None
-    source_code: Optional[str] = None
-    file_extension: Optional[str] = None
-    review_report: Optional[str] = None
-    final_result: Optional[str] = None
+    title: str
+    description: str

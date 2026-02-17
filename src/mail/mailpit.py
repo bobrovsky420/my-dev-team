@@ -7,6 +7,7 @@ import time
 from email.message import EmailMessage
 from email.utils import formataddr
 import markdown
+from project.project import Project
 
 SMTP_HOST = 'localhost'
 SMTP_PORT = 1025
@@ -42,7 +43,7 @@ def set_question_context(msg_id: str, subject: str):
     _thread_context['question_msg_id'] = msg_id
     _thread_context['question_subject'] = subject
 
-def check_new_project():
+def check_new_project() -> Project:
     """
     Poll the local Mailpit inbox for new messages.
     If a message with "NEW PROJECT" in the subject is found, return its content.
@@ -58,7 +59,12 @@ def check_new_project():
                 logging.debug("Received message: %s", str(msg_detail))
                 set_original_msg(msg_detail)
                 delete_message(msg_detail['ID'])
-                return msg_detail
+                project = Project(
+                    original_mail=msg_detail,
+                    title=msg_detail['Subject'][len(SUBJECT_TAG):].strip(),
+                    description=msg_detail['Text']
+                )
+                return project
         time.sleep(TIME_SLEEP)
 
 def delete_message(message_id):

@@ -23,11 +23,10 @@ class MyCrew:
         self.is_running = True
         while self.is_running:
             logging.info("Manager checking local inbox...")
-            original_msg = mail.check_new_project()
-            logging.info(f"Processing: {original_msg['Subject']}")
-            project_description = original_msg['Text']
+            project = mail.check_new_project()
+            logging.info(f"Processing: {project.title}")
             crew = self.create_crew()
-            result = crew.kickoff(inputs={'project_description': project_description})
+            result = crew.kickoff(inputs={'project_description': project.description})
             if result.pydantic:
                 final_output = result.pydantic.content
             else:
