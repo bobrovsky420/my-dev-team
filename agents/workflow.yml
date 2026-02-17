@@ -23,16 +23,21 @@ Task 1:
         3. Use Markdown formatting (bullet points, bold text) INSIDE the string values to organize information.
         4. Example: "requirements": "- Feature A\n- Feature B\n- Feature C"
         5. Double-check that you are not outputting a dictionary for requirements.
-    output pydantic: TechnicalSpecification
+    output schema: TechnicalSpecification
 
 Task 2:
     name: Develop solution
     agent: Developer
     description: |
         Implement a solution based on the technical specification from the product manager.
+        CRITICAL INSTRUCTIONS:
+        1. **Separate Logic and Tests**: You MUST provide the implementation and the unit tests as separate files.
+        2. **Naming Convention**: Name your test files starting with 'test_', for example: 'test_calculator.py'.
+        3. **Comprehensive Coverage**: Develop unit tests that cover all edge cases defined in the specification (e.g., division by zero, empty inputs).
+        4. **Runnable Code**: Ensure the test file imports the logic from the implementation file correctly.
     expected output: |
-        A code block containing the developed solution, including unit tests.
-        The code should be well-documented and follow best practices for maintainability and readability.
+        A JSON object matching the DeveloperOutcome schema.
+    output schema: DeveloperOutcome
 
 Task 3:
     name: Provide code review
@@ -58,10 +63,14 @@ Task 4:
         Compile all deliverables from the team members into a structured JSON report:
         - Technical specification from the Product Manager
         - Developed solution and unit tests from the Developer
-        - Review report from the Reviewer
+        - Review feedback from the Reviewer
         - Summary of the project outcome and any lessons learned
+        IMPORTANT:
+        - Do NOT include raw control characters.
+        - Escape all double quotes (\") found inside the text.
+        - If the feedback is very long, summarize it into clear paragraphs.
     expected output: |
         A valid JSON object matching the FinalReport schema.
         Do not include any conversational text outside the JSON.
         Every string field in the output must be formatted as a markdown document.
-    output pydantic: FinalReport
+    output schema: FinalReport

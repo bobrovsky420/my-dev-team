@@ -20,6 +20,6 @@ def new_task(data: dict, agents: dict[str, Agent]) -> Task:
         'description': data['description'],
         'expected_output': data['expected output'],
     }
-    if 'output pydantic' in data:
-        task_config['output_pydantic'] = getattr(project_schema, data['output pydantic'])
+    if 'output schema' in data:
+        task_config['output_pydantic'] = getattr(project_schema, data['output schema'])
     return Task(**task_config)
