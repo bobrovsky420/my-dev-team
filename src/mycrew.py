@@ -1,8 +1,10 @@
+from dotenv import load_dotenv
 import logging
-import re
 from crewai import Crew, Process
 from agents import agents, manager
 from mail import mailpit as mail
+
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 

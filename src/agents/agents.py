@@ -24,6 +24,12 @@ def load_agents() -> dict[str, Agent]:
         'Code Reviewer': create_agent('agents/reviewer.yml')
     }
 
+def new_llm(model_name: str, config_override: dict = None) -> LLM:
+    """
+    Create a new LLM instance with the given model name and default configuration
+    """
+    return LLM(model=model_name, base_url=config.BASE_URL, config={**config.DEFAULT_CONFIG, **(config_override or {})})
+
 def create_agent(file_name: str, tools = None) -> Agent:
     """
     Load agent configuration from a YAML file and create an agent instance
@@ -34,7 +40,7 @@ def create_agent(file_name: str, tools = None) -> Agent:
         'role': data['role'],
         'goal': data['goal'],
         'backstory': data['backstory'],
-        'llm': LLM(model=data['model'], base_url=config.BASE_URL, config={**config.DEFAULT_CONFIG, **data.get('config', {})}),
+        'llm': new_llm(data['model'], data.get('config')),
     }
     if data.get('allow delegation', False):
         agent_config['allow_delegation'] = True
