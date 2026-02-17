@@ -38,6 +38,8 @@ def create_agent(file_name: str, tools = None) -> Agent:
     }
     if data.get('allow delegation', False):
         agent_config['allow_delegation'] = True
+    if 'max iterations' in data:
+        agent_config['max_iter'] = data['max iterations']
     if tools:
         agent_config['tools'] = tools
     return Agent(**agent_config)
