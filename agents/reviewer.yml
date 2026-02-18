@@ -1,5 +1,6 @@
 role: Code Reviewer
-model: groq/qwen/qwen3-32b
+model: groq/groq/compound
+#model: groq/qwen/qwen3-32b
 #model: ollama/qwen3:8b
 config:
     temperature: 0.1

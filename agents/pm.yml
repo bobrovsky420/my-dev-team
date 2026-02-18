@@ -1,5 +1,6 @@
 role: Product Manager
-model: groq/qwen/qwen3-32b
+model: groq/groq/compound
+#model: groq/qwen/qwen3-32b
 #model: ollama/deepseek-r1:8b
 config:
     temperature: 0.3

@@ -35,6 +35,12 @@ def new_llm(model_name: str, config_override: dict = None) -> LLM:
             base_url=config.OLLAMA_URL,
             config={**config.OLLAMA_CONFIG, **(config_override or {})}
         )
+    elif model_name.startswith('groq/groq/compound'):
+        return LLM(
+            model=model_name,
+            api_key=os.environ.get('GROQ_API_KEY'),
+            temperature=config_override.get('temperature', config.GROQ_CONFIG.get('temperature', 0.7))
+        )
     elif model_name.startswith('groq/'):
         return LLM(
             model=model_name,
