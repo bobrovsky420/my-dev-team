@@ -11,7 +11,8 @@ def create_tasks(agents: dict[str, Agent]) -> list[Task]:
     file_name = 'agents/workflow.yml'
     with open(file_name, 'r') as f:
         data = yaml.safe_load(f)
-    return [new_task(task, agents) for task in data.values()]
+    return [new_task(data['Task 1'], agents)]
+#    return [new_task(task, agents) for task in data.values()]
 
 def new_task(data: dict, agents: dict[str, Agent]) -> Task:
     task_config = {

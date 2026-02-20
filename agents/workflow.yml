@@ -2,12 +2,12 @@ Task 1:
     name: Write detailed requirements and specifications
     agent: Product Manager
     description: |
-        Based on the project description, write detailed technical specification for the project.
+        Based on the project description, write detailed technical specification for the developer.
         The specification should include:
         - A document title and a clear description of the project
         - The key features and functionalities required
         - A recommended tech stack and architecture for the solution
-        - Any technical constraints or considerations (e.g., performance, security, scalability)
+        - Any technical constraints or considerations (e.g. performance, security, scalability)
         - Edge cases and potential challenges that may arise during development
 
         PROJECT DESCRIPTION:
@@ -17,11 +17,9 @@ Task 1:
     expected output: |
         A valid JSON object matching the TechnicalSpecification schema.
         CRITICAL FORMATTING RULES:
-        1. The 'requirements', 'constraints', and 'edge_cases' fields MUST be single strings in markdown format.
-        2. You MUST output actual text content for every field in the output schema.
-        3. DO NOT output the schema definition `{"type": "string"}` as a value. You must output the ACTUAL string.
-        4. DO NOT use nested JSON objects, dictionaries, or lists within these fields.
-        5. Use Markdown formatting (bullet points, bold text) INSIDE the string values to organize information.
+        1. Every text field (e.g. 'requirements' or 'constraints') MUST be a single string in markdown format.
+        2. DO NOT use nested JSON objects, dictionaries, or lists within these fields.
+        3. Use Markdown formatting (bullet points, bold text) INSIDE the string values to organize information.
     output schema: TechnicalSpecification
 
 Task 2:

@@ -1,8 +1,21 @@
-Subject: NEW PROJECT: Calculator in Python
+Subject: NEW PROJECT: GitLab scrum quality auditor (GSQA Bot)
 From: cto@human.local
 To: manager@ai-crew.local
 
-Develop a simple calculator application in Python.
-The calculator should support addition, subtraction, multiplication, and division.
-It should accept two numbers from the user, perform the chosen operation, and display the result.
-Handle division by zero gracefully and provide a simple command-line interface.
+Develop a Python-based auditing tool to enforce data integrity and Scrum best practices for GitLab artifacts within a specific group.
+The application will act as an automated "Scrum Master Assistant" to ensure project tracking is accurate and complete.
+The application must handle epics and issues that span multiple projects within the same group.
+
+Core Functional Requirements
+============================
+
+Data Acquisition: Use the GitLab API (or specialised library) to fetch all open epics and issues from a specified GitLab group.
+
+Validation Engine: Process the fetched data against the following integrity rules:
+
+RULE1: Every issue must be linked to a parent epic.
+RULE2: Every epic must have both a start date and a due date defined.
+RULE3: An issue's due date must not exceed the due date of its parent epic.
+RULE4: If an issue is assigned to an iteration, it must have at least one assignee.
+
+Reporting: Generate a summary report (console and markdown) listing all artifacts that violate these rules, categorized by severity.

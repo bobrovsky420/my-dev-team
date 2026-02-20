@@ -10,7 +10,7 @@ load_dotenv()
 LOG_FILE = 'mycrew.log'
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(levelname)s: %(message)s',
     handlers=[
         logging.FileHandler(LOG_FILE),
@@ -37,7 +37,7 @@ class MyCrew:
             agents=list(self.agents.values()),
             tasks=manager.create_tasks(self.agents),
             process=Process.sequential,
-            task_callback=self._task_callback,
+#            task_callback=self._task_callback,
             verbose=True
         )
 
@@ -50,12 +50,20 @@ class MyCrew:
             crew = self.create_crew()
             result = crew.kickoff(inputs={'project_description': project.description})
             if result.pydantic:
-                final_output = result.pydantic.content
+                final_output = (
+                    f"# {result.pydantic.title}\n\n"
+                    f"## Description\n{result.pydantic.description}\n\n"
+                    f"## Requirements\n{result.pydantic.requirements}\n\n"
+                    f"## Constraints\n{result.pydantic.constraints}\n\n"
+                    f"## Edge Cases\n{result.pydantic.edge_cases}\n\n"
+                    f"## Additional Notes\n{result.pydantic.additional_notes}"
+                )
             else:
                 final_output = result.raw
             mail.send_update(final_output)
             logging.info("Cycle complete. Waiting for next email.")
             del crew
+            exit(0)
 
     def shutdown(self):
         logging.info("Shutdown command received. Closing office...")
