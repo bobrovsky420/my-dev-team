@@ -1,5 +1,6 @@
-crewai
-litellm
-groq
+langgraph
+langchain
 langchain-ollama
 markdown
+pydantic
+python-dotenv

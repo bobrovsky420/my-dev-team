@@ -1,11 +1,5 @@
-OLLAMA_URL = 'http://localhost:11434'
+from langchain_ollama import ChatOllama
 
-OLLAMA_CONFIG = {
-    'num_ctx': 8192,
-    'temperature': 0.7,
-    'num_gpu': 1
-}
-
-GROQ_CONFIG = {
-    'temperature': 0.7
-}
+def get_llm(model_name: str = "qwen3:8b", temperature: float = 0.2):
+    """Returns a configured local Ollama instance."""
+    return ChatOllama(model=model_name, temperature=temperature)

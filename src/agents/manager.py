@@ -1,26 +1,24 @@
-import importlib
-import yaml
-from crewai import Agent, Task
+from .base import BaseAgent
 
-project_schema = importlib.import_module('project.schema')
-
-def create_tasks(agents: dict[str, Agent]) -> list[Task]:
-    """
-    Create a list of tasks for the crew based on the project description
-    """
-    file_name = 'agents/workflow.yml'
-    with open(file_name, 'r') as f:
-        data = yaml.safe_load(f)
-    return [new_task(data['Task 1'], agents)]
-#    return [new_task(task, agents) for task in data.values()]
-
-def new_task(data: dict, agents: dict[str, Agent]) -> Task:
-    task_config = {
-        'name': data['name'],
-        'agent': agents[data['agent']],
-        'description': data['description'],
-        'expected_output': data['expected output'],
-    }
-    if 'output schema' in data:
-        task_config['output_pydantic'] = getattr(project_schema, data['output schema'])
-    return Task(**task_config)
+class CrewManager(BaseAgent):
+    def process(self, state: dict) -> dict:
+        print("--- Crew Manager routing workflow ---")
+        if not state.get('specs'):
+            next_node = 'pm'
+        elif not state.get('code'):
+            next_node = 'developer'
+        elif state.get('revision_count', 0) > 3:
+            print("    -> MAX REVISIONS REACHED. Forcing finish.")
+            next_node = 'FINISH'
+        elif not state.get('review_feedback'):
+            next_node = 'reviewer'
+        elif 'APPROVED' not in state.get('review_feedback', ''):
+            next_node = 'developer' # Needs fixes
+        elif not state.get('test_results'):
+            next_node = 'qa'
+        elif 'PASSED' not in state.get('test_results', ''):
+            next_node = 'developer' # Bugs found
+        else:
+            next_node = 'FINISH'
+        print(f"    -> Crew Manager assigns task to: {next_node}")
+        return {'next_agent': next_node}

@@ -1,8 +1,11 @@
-from dataclasses import dataclass
-from typing import Dict
+from typing import TypedDict
 
-@dataclass
-class Project:
-    original_mail: Dict
-    title: str
-    description: str
+class ProjectState(TypedDict):
+    requirements: str
+    specs: str
+    code: str
+    review_feedback: str
+    test_results: str
+    revision_count: int
+    next_agent: str
+    project_status: str
