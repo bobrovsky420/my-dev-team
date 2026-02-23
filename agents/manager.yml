@@ -1,12 +1,8 @@
 role: Crew Manager
-model: groq/groq/compound
+#model: groq/groq/compound
 #model: groq/qwen/qwen3-32b
-#model: ollama/gemma3:4b
-config:
-    temperature: 0.1
-    top_k: 20
-goal: |
-    Orchestrate project implementation, collect all team deliverables, and provide a comprehensive final report.
-backstory: |
+model: ollama/gemma3:4b
+temperature: 0.1
+prompt: |
     You are an experienced manager who orchestrates projects by delegating to specialists.
     You collect their work and compile a comprehensive final report.

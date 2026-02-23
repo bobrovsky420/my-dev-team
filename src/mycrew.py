@@ -21,16 +21,17 @@ logging.basicConfig(
 
 class VirtualCrew:
     def __init__(self):
-        self._init_agents()
+        self.agents = self._init_agents()
         self.app = self._build_graph()
 
     def _init_agents(self):
-        """Instantiates all agent nodes with the assigned LLM."""
-        self.pm = ProductManager()
-        self.dev = SeniorDeveloper()
-        self.reviewer = CodeReviewer()
-        self.qa = QAEngineer()
-        self.manager = CrewManager()
+        return {
+            'pm': ProductManager.from_config('agents/pm.yml'),
+            'dev': SeniorDeveloper.from_config('agents/developer.yml'),
+            'reviewer': CodeReviewer.from_config('agents/reviewer.yml'),
+            'qa': QAEngineer.from_config('agents/qa.yml'),
+            'manager': CrewManager.from_config('agents/manager.yml')
+        }
 
     def _router(self, state: ProjectState) -> str:
         """Determines the next step in the workflow based on the Manager's output."""
@@ -41,17 +42,15 @@ class VirtualCrew:
 
     @cached_property
     def _memory(self):
-        """Initializes a shared memory store for the crew."""
         return MemorySaver()
 
     def _build_graph(self):
-        """Constructs the nodes and edges of the LangGraph state machine."""
         workflow = StateGraph(ProjectState)
-        workflow.add_node('manager', self.manager.process)
-        workflow.add_node('pm', self.pm.process)
-        workflow.add_node('developer', self.dev.process)
-        workflow.add_node('reviewer', self.reviewer.process)
-        workflow.add_node('qa', self.qa.process)
+        workflow.add_node('manager', self.agents['manager'].process)
+        workflow.add_node('pm', self.agents['pm'].process)
+        workflow.add_node('developer', self.agents['dev'].process)
+        workflow.add_node('reviewer', self.agents['reviewer'].process)
+        workflow.add_node('qa', self.agents['qa'].process)
         workflow.set_entry_point('manager')
         workflow.add_edge('pm', 'manager')
         workflow.add_edge('developer', 'manager')
@@ -71,7 +70,6 @@ class VirtualCrew:
         return workflow.compile(checkpointer=self._memory)
 
     def execute_project(self, requirements: str, thread_id: str):
-        """Runs the crew against a set of requirements."""
         initial_state = {
             'requirements': requirements,
             'specs': '',
