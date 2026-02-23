@@ -1,8 +1,8 @@
-from dotenv import load_dotenv
+from functools import cached_property
 import logging
+from dotenv import load_dotenv
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
-from agents import get_llm
 from agents import ProductManager, SeniorDeveloper, CodeReviewer, QAEngineer, CrewManager
 from project import ProjectState
 
@@ -19,100 +19,92 @@ logging.basicConfig(
     ]
 )
 
-def build_crew_graph():
-    # 1. Initialize LLM and Agents
-    llm = get_llm(model_name="qwen3:8b") # Change to your preferred local model
+class VirtualCrew:
+    def __init__(self):
+        self._init_agents()
+        self.app = self._build_graph()
 
-    pm = ProductManager(llm)
-    dev = SeniorDeveloper(llm)
-    reviewer = CodeReviewer(llm)
-    qa = QAEngineer(llm)
-    manager = CrewManager(llm)
+    def _init_agents(self):
+        """Instantiates all agent nodes with the assigned LLM."""
+        self.pm = ProductManager()
+        self.dev = SeniorDeveloper()
+        self.reviewer = CodeReviewer()
+        self.qa = QAEngineer()
+        self.manager = CrewManager()
 
-    # 2. Initialize State Graph
-    workflow = StateGraph(ProjectState)
-
-    # 3. Add Nodes (Wrapper functions to match LangGraph signature)
-    workflow.add_node("manager", manager.process)
-    workflow.add_node("pm", pm.process)
-    workflow.add_node("developer", dev.process)
-    workflow.add_node("reviewer", reviewer.process)
-    workflow.add_node("qa", qa.process)
-
-    # 4. Define Routing Function
-    def router(state: ProjectState) -> str:
-        next_agent = state.get("next_agent")
-        if next_agent == "FINISH":
+    def _router(self, state: ProjectState) -> str:
+        """Determines the next step in the workflow based on the Manager's output."""
+        next_agent = state.get('next_agent')
+        if next_agent == 'FINISH':
             return END
         return next_agent
 
-    # 5. Add Edges
-    # The manager is the entry point and the router for every cycle
-    workflow.set_entry_point("manager")
+    @cached_property
+    def _memory(self):
+        """Initializes a shared memory store for the crew."""
+        return MemorySaver()
 
-    # After any agent does their work, it goes back to the Crew Manager to decide the next step
-    workflow.add_edge("pm", "manager")
-    workflow.add_edge("developer", "manager")
-    workflow.add_edge("reviewer", "manager")
-    workflow.add_edge("qa", "manager")
+    def _build_graph(self):
+        """Constructs the nodes and edges of the LangGraph state machine."""
+        workflow = StateGraph(ProjectState)
+        workflow.add_node('manager', self.manager.process)
+        workflow.add_node('pm', self.pm.process)
+        workflow.add_node('developer', self.dev.process)
+        workflow.add_node('reviewer', self.reviewer.process)
+        workflow.add_node('qa', self.qa.process)
+        workflow.set_entry_point('manager')
+        workflow.add_edge('pm', 'manager')
+        workflow.add_edge('developer', 'manager')
+        workflow.add_edge('reviewer', 'manager')
+        workflow.add_edge('qa', 'manager')
+        workflow.add_conditional_edges(
+            'manager',
+            self._router,
+            {
+                'pm': 'pm',
+                'developer': 'developer',
+                'reviewer': 'reviewer',
+                'qa': 'qa',
+                END: END
+            }
+        )
+        return workflow.compile(checkpointer=self._memory)
 
-    # The Manager node uses conditional edges based on the router function
-    workflow.add_conditional_edges(
-        "manager",
-        router,
-        {
-            "pm": "pm",
-            "developer": "developer",
-            "reviewer": "reviewer",
-            "qa": "qa",
-            END: END
+    def execute_project(self, requirements: str, thread_id: str):
+        """Runs the crew against a set of requirements."""
+        initial_state = {
+            'requirements': requirements,
+            'specs': '',
+            'code': '',
+            'review_feedback': '',
+            'test_results': '',
+            'revision_count': 0,
+            'next_agent': '',
+            'project_status': 'started'
         }
-    )
 
-    # Add memory checkpointer
-    memory = MemorySaver()
+        config = {'configurable': {'thread_id': thread_id}}
 
-    # Compile with memory
-    return workflow.compile(checkpointer=memory)
+        print(f"Starting Project Requirements: {requirements}\n")
+
+        for output in self.app.stream(initial_state, config):
+            pass
+
+        final_state = self.app.get_state(config).values
+        final_code = final_state.get('code', "No code generated")
+
+        return final_code
 
 if __name__ == '__main__':
-    # Stakeholder requirements
-    initial_requirements = (
+    project_requirements = (
         "Build a Python CLI application that accepts a URL, scrapes the text content "
         "from the webpage, and saves it to a local text file. It should handle exceptions gracefully."
     )
-
-    # Initialize State
-    initial_state = {
-        "requirements": initial_requirements,
-        "specs": "",
-        "code": "",
-        "review_feedback": "",
-        "test_results": "",
-        "revision_count": 0,
-        "next_agent": "",
-        "project_status": "started"
-    }
-
-    # Run the virtual crew
-    app = build_crew_graph()
-
-    # Define a configuration with a thread_id
-    config = {"configurable": {"thread_id": "project_alpha"}}
-
-    print(f"Starting Project Requirements: {initial_requirements}\n")
-
-    # Execute graph with the config
-    for output in app.stream(initial_state, config):
-        pass
-
-    # NOW this will work perfectly!
-    final_state = app.get_state(config).values
+    crew = VirtualCrew()
+    final_code = crew.execute_project(requirements=project_requirements, thread_id='web_scraper_v1')
 
     print("\n\n" + "="*50)
     print("PROJECT COMPLETED")
     print("="*50)
-
-    final_code = final_state.get("code", "No code generated")
-    print("FINAL CODE:")
+    print("FINAL CODE:\n")
     print(final_code)

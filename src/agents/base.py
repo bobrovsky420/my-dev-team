@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
-from langchain_core.language_models.chat_models import BaseChatModel
+from .config import get_llm
 
 class BaseAgent(ABC):
-    def __init__(self, llm: BaseChatModel):
-        self.llm = llm
+    model_name = 'qwen3:8b'
+
+    def __init__(self):
+        self.llm = get_llm(model_name=self.model_name)
 
     @abstractmethod
     def process(self, state: dict) -> dict:
