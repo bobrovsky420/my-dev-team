@@ -2,6 +2,8 @@ from typing import TypedDict
 
 class ProjectState(TypedDict):
     requirements: str
+    clarification_question: str
+    human_answer: str
     specs: str
     code: str
     review_feedback: str

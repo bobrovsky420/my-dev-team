@@ -4,7 +4,11 @@ from .base import BaseAgent
 class CrewManager(BaseAgent):
     def process(self, state: dict) -> dict:
         print("--- Crew Manager routing workflow ---")
-        if not state.get('specs'):
+        if state.get('clarification_question'):
+            return 'human'
+        elif state.get('human_answer') and not state.get('specs'):
+            return 'pm'
+        elif not state.get('specs'):
             next_node = 'pm'
         elif not state.get('code'):
             next_node = 'developer'

@@ -1,7 +1,7 @@
 from functools import cached_property
 import logging
 from dotenv import load_dotenv
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph
 from langgraph.checkpoint.memory import MemorySaver
 from agents import ProductManager, SeniorDeveloper, CodeReviewer, QAEngineer, CrewManager
 from project import ProjectState
@@ -44,13 +44,21 @@ class VirtualCrew:
         workflow.add_node('developer', self.agents['dev'].process)
         workflow.add_node('reviewer', self.agents['reviewer'].process)
         workflow.add_node('qa', self.agents['qa'].process)
+        workflow.add_node('human', self._human_node)
         workflow.set_entry_point('manager')
         workflow.add_conditional_edges('manager', lambda state: state['next_agent'])
         workflow.add_edge('pm', 'manager')
         workflow.add_edge('developer', 'manager')
         workflow.add_edge('reviewer', 'manager')
         workflow.add_edge('qa', 'manager')
-        return workflow.compile(checkpointer=self._memory)
+        workflow.add_edge('human', 'manager')
+        return workflow.compile(checkpointer=self._memory, interrupt_before=['human'])
+
+    def _human_node(self, state: ProjectState) -> dict:
+        """Dummy node that acts as a breakpoint for human input."""
+        # The actual input() prompt happens in the execution loop.
+        # This node just clears the question so we don't get stuck in a loop.
+        return {"clarification_question": ""}
 
     def execute_project(self, requirements: str, thread_id: str):
         initial_state = {
@@ -68,8 +76,26 @@ class VirtualCrew:
 
         print(f"Starting Project Requirements: {requirements}\n")
 
-        for output in self.app.stream(initial_state, config):
-            pass
+        while True:
+            for output in self.app.stream(initial_state if 'initial_state' in locals() else None, config):
+                pass
+
+            # Remove initial_state so we don't overwrite memory on resumption
+            if 'initial_state' in locals():
+                del initial_state
+
+            state_snapshot = self.app.get_state(config)
+
+            if not state_snapshot.next:
+                break
+
+            # If the next node is 'human', we hit our breakpoint!
+            if state_snapshot.next[0] == 'human':
+                question = state_snapshot.values.get('clarification_question')
+                print(f"\n[Product Manager Needs Clarification]: {question}")
+                user_answer = input("Your response: ")
+                self.app.update_state(config, {'human_answer': user_answer})
+                print("\nResuming workflow...\n")
 
         final_state = self.app.get_state(config).values
         final_code = final_state.get('code', "No code generated")
