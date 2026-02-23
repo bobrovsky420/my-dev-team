@@ -33,13 +33,6 @@ class VirtualCrew:
             'manager': CrewManager.from_config('agents/manager.yml')
         }
 
-    def _router(self, state: ProjectState) -> str:
-        """Determines the next step in the workflow based on the Manager's output."""
-        next_agent = state.get('next_agent')
-        if next_agent == 'FINISH':
-            return END
-        return next_agent
-
     @cached_property
     def _memory(self):
         return MemorySaver()
@@ -52,21 +45,11 @@ class VirtualCrew:
         workflow.add_node('reviewer', self.agents['reviewer'].process)
         workflow.add_node('qa', self.agents['qa'].process)
         workflow.set_entry_point('manager')
+        workflow.add_conditional_edges('manager', lambda state: state['next_agent'])
         workflow.add_edge('pm', 'manager')
         workflow.add_edge('developer', 'manager')
         workflow.add_edge('reviewer', 'manager')
         workflow.add_edge('qa', 'manager')
-        workflow.add_conditional_edges(
-            'manager',
-            self._router,
-            {
-                'pm': 'pm',
-                'developer': 'developer',
-                'reviewer': 'reviewer',
-                'qa': 'qa',
-                END: END
-            }
-        )
         return workflow.compile(checkpointer=self._memory)
 
     def execute_project(self, requirements: str, thread_id: str):

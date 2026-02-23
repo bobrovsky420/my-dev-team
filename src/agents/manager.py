@@ -1,3 +1,4 @@
+from langgraph.graph import END
 from .base import BaseAgent
 
 class CrewManager(BaseAgent):
@@ -9,7 +10,7 @@ class CrewManager(BaseAgent):
             next_node = 'developer'
         elif state.get('revision_count', 0) > 3:
             print("    -> MAX REVISIONS REACHED. Forcing finish.")
-            next_node = 'FINISH'
+            next_node = END
         elif not state.get('review_feedback'):
             next_node = 'reviewer'
         elif 'APPROVED' not in state.get('review_feedback', ''):
@@ -19,6 +20,6 @@ class CrewManager(BaseAgent):
         elif 'PASSED' not in state.get('test_results', ''):
             next_node = 'developer' # Bugs found
         else:
-            next_node = 'FINISH'
+            next_node = END
         print(f"    -> Crew Manager assigns task to: {next_node}")
         return {'next_agent': next_node}
