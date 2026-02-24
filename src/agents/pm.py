@@ -3,22 +3,15 @@ from .base import BaseAgent
 
 class ProductManager(BaseAgent):
     def process(self, state: dict) -> dict:
-        print("--- Product Manager working on Specs ---")
-        chain = self.prompt | self.llm
-        specs = chain.invoke({'requirements': state.get('requirements')}).content
-        return {'specs': specs}
-
-    def process(self, state: dict) -> dict:
         print("--- Product Manager evaluating requirements ---")
 
         requirements = state.get('requirements', '')
         human_answer = state.get('human_answer', '')
 
-        chain = self.prompt | self.llm
-        response = chain.invoke({
+        response = self.invoke_llm({
             'requirements': requirements,
             'human_answer': human_answer
-        }).content
+        })
 
         if question_match := re.search(r'<question>(.*?)</question>', response, re.DOTALL | re.IGNORECASE):
             question = question_match.group(1).strip()

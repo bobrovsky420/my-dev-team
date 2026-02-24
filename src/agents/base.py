@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
+import re
 import yaml
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
@@ -23,6 +24,16 @@ class BaseAgent(ABC):
     @cached_property
     def prompt(self):
         return PromptTemplate.from_template(self.prompt_template)
+
+    def clean_response(self, text: str) -> str:
+        """Removes DeepSeek <think> tags and returns the clean output."""
+        cleaned_text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL | re.IGNORECASE)
+        return cleaned_text.strip()
+
+    def invoke_llm(self, **kwargs) -> str:
+        chain = self.prompt | self.llm
+        response = chain.invoke(kwargs).content
+        return self.clean_response(response)
 
     @classmethod
     def from_config(cls, config_path: str):

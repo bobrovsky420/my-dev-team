@@ -58,7 +58,7 @@ class VirtualCrew:
         """Dummy node that acts as a breakpoint for human input."""
         # The actual input() prompt happens in the execution loop.
         # This node just clears the question so we don't get stuck in a loop.
-        return {"clarification_question": ""}
+        return {'clarification_question': ''}
 
     def execute_project(self, requirements: str, thread_id: str):
         initial_state = {
@@ -89,7 +89,6 @@ class VirtualCrew:
             if not state_snapshot.next:
                 break
 
-            # If the next node is 'human', we hit our breakpoint!
             if state_snapshot.next[0] == 'human':
                 question = state_snapshot.values.get('clarification_question')
                 print(f"\n[Product Manager Needs Clarification]: {question}")

@@ -13,8 +13,9 @@ class SeniorDeveloper(BaseAgent):
         if feedback.strip():
             context += f"\nFeedback to address:\n{feedback}\n"
 
-        chain = self.prompt | self.llm
-        code = chain.invoke({'context': context}).content
+        code = self.invoke_llm({
+            'context': context
+        })
 
         rev_count = state.get('revision_count', 0) + 1 if existing_code else 0
 

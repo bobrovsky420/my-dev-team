@@ -1,8 +1,8 @@
 role: QA Engineer
 #model: groq/groq/compound
 #model: groq/qwen/qwen3-32b
-#model: ollama/deepseek-r1:8b
-model: ollama/qwen3:8b
+#model: ollama/qwen3:8b
+model: ollama/deepseek-r1:8b
 temperature: 0.3
 prompt: |
     You are a QA Engineer. Evaluate the following code against the specs.

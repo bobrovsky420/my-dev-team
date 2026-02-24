@@ -1,7 +1,8 @@
 role: Senior Developer
 #model: groq/groq/compound
 #model: groq/qwen/qwen3-32b
-model: ollama/qwen3:8b
+#model: ollama/qwen3:8b
+model: ollama/qwen2.5-coder:7b
 temperature: 0.1
 prompt: |
     You are an expert Senior Software Engineer. Your task is to write production-ready,

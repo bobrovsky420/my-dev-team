@@ -3,7 +3,7 @@ role: Product Manager
 #model: groq/qwen/qwen3-32b
 #model: ollama/deepseek-r1:8b
 model: ollama/qwen3:8b
-temperature: 0.3
+temperature: 0.4
 prompt: |
     You are an expert Product Manager. Review the stakeholder requirements.
     If the requirements are too vague to determine the tech stack or core features, you must ask exactly ONE clarifying question.
