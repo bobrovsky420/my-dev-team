@@ -30,9 +30,9 @@ class BaseAgent(ABC):
         cleaned_text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL | re.IGNORECASE)
         return cleaned_text.strip()
 
-    def invoke_llm(self, **kwargs) -> str:
+    def invoke_llm(self, args) -> str:
         chain = self.prompt | self.llm
-        response = chain.invoke(kwargs).content
+        response = chain.invoke(args).content
         return self.clean_response(response)
 
     @classmethod
