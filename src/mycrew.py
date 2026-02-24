@@ -23,6 +23,8 @@ logging.basicConfig(
         console_handler
     ]
 )
+logging.getLogger('httpx').setLevel(logging.WARNING)
+logging.getLogger('httpcore').setLevel(logging.WARNING)
 
 class VirtualCrew:
     def __init__(self):

@@ -1,3 +1,4 @@
+import logging
 import re
 from .base import BaseAgent
 
@@ -12,6 +13,8 @@ class ProductManager(BaseAgent):
             'requirements': requirements,
             'human_answer': human_answer
         })
+
+        logging.debug("*"*50 + "\n%s\n" + "*"*50, response)
 
         if question_match := re.search(r'<question>(.*?)</question>', response, re.DOTALL | re.IGNORECASE):
             question = question_match.group(1).strip()

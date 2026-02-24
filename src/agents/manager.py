@@ -1,3 +1,4 @@
+import logging
 from langgraph.graph import END
 from .base import BaseAgent
 
@@ -38,6 +39,7 @@ class CrewManager(BaseAgent):
             'code': state.get('code'),
             'revision_count': state.get('revision_count', 0)
         })
+        logging.debug("*"*50 + "\n%s\n" + "*"*50, final_report)
         return {
             'final_report': final_report,
             'next_agent': END

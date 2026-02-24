@@ -1,3 +1,4 @@
+import logging
 from .base import BaseAgent
 
 class SeniorDeveloper(BaseAgent):
@@ -16,6 +17,8 @@ class SeniorDeveloper(BaseAgent):
         code = self.invoke_llm({
             'context': context
         })
+
+        logging.debug("*"*50 + "\n%s\n" + "*"*50, code)
 
         rev_count = state.get('revision_count', 0) + 1 if existing_code else 0
 
