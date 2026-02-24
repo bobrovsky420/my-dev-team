@@ -5,9 +5,9 @@ class CrewManager(BaseAgent):
     def process(self, state: dict) -> dict:
         print("--- Crew Manager routing workflow ---")
         if state.get('clarification_question'):
-            return 'human'
+            next_node = 'human'
         elif state.get('human_answer') and not state.get('specs'):
-            return 'pm'
+            next_node = 'pm'
         elif not state.get('specs'):
             next_node = 'pm'
         elif not state.get('code'):
