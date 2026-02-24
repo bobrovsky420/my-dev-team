@@ -8,5 +8,4 @@ class QAEngineer(BaseAgent):
             'specs': state.get('specs'),
             'code': state.get('code')
         })
-        logging.debug("*"*50 + "\n%s\n" + "*"*50, results)
         return {'test_results': results}

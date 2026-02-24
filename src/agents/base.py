@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
+import logging
 import re
 import yaml
 from langchain_ollama import ChatOllama
@@ -32,8 +33,9 @@ class BaseAgent(ABC):
 
     def invoke_llm(self, args) -> str:
         chain = self.prompt | self.llm
-        response = chain.invoke(args).content
-        return self.clean_response(response)
+        response = self.clean_response(chain.invoke(args).content)
+        logging.debug("*"*50 + "\n%s\n" + "*"*50, response)
+        return response
 
     @classmethod
     def from_config(cls, config_path: str):

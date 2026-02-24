@@ -8,5 +8,4 @@ class CodeReviewer(BaseAgent):
             'specs': state.get('specs'),
             'code': state.get('code')
         })
-        logging.debug("*"*50 + "\n%s\n" + "*"*50, feedback)
         return {'review_feedback': feedback}
