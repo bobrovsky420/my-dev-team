@@ -11,3 +11,4 @@ class ProjectState(TypedDict):
     revision_count: int
     next_agent: str
     project_status: str
+    final_report: str
