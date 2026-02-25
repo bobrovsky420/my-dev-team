@@ -4,7 +4,7 @@ from .base import BaseAgent
 
 class CrewManager(BaseAgent):
     def router(self, state: dict) -> dict:
-        print("--- Crew Manager routing workflow ---")
+        self.logger.info("Routing workflow...")
         is_approved = 'APPROVED' in state.get('review_feedback', '')
         is_passed = 'PASSED' in state.get('test_results', '')
         if state.get('clarification_question'):
@@ -16,7 +16,7 @@ class CrewManager(BaseAgent):
         elif not state.get('code'):
             next_node = 'developer'
         elif state.get('revision_count', 0) > 3:
-            print("    -> MAX REVISIONS REACHED. Routing to final report.")
+            self.logger.warning("MAX REVISIONS REACHED. Routing to final report.")
             next_node = 'report'
         elif not state.get('review_feedback'):
             next_node = 'reviewer'
@@ -28,11 +28,11 @@ class CrewManager(BaseAgent):
             next_node = 'developer' # Bugs found
         else:
             next_node = 'report'
-        print(f"    -> Crew Manager assigns task to: {next_node}")
+        self.logger.info(f"Assigns task to: {next_node}")
         return {'next_agent': next_node}
 
     def process(self, state: dict) -> dict:
-        print("--- Crew Manager generating final report ---")
+        self.logger.info("Generating final report...")
         final_report = self.invoke_llm({
             'requirements': state.get('requirements'),
             'specs': state.get('specs'),

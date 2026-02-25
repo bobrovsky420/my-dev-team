@@ -1,9 +1,8 @@
-import logging
 from .base import BaseAgent
 
 class SeniorDeveloper(BaseAgent):
     def process(self, state: dict) -> dict:
-        print("--- Senior Developer writing/updating code ---")
+        self.logger.info("Writing/updating code based on specs...")
         specs = state.get('specs', '')
         existing_code = state.get('code', '')
         feedback = state.get('review_feedback', '') + "\n" + state.get('test_results', '')

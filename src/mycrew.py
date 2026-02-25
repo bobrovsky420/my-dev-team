@@ -17,7 +17,7 @@ console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(levelname)s: %(message)s',
+    format='%(levelname)s [%(name)s]: %(message)s',
     handlers=[
         file_handler,
         console_handler
@@ -27,7 +27,10 @@ logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('httpcore').setLevel(logging.WARNING)
 
 class VirtualCrew:
+    role: str = 'Virtual Crew'
+
     def __init__(self):
+        self.logger = logging.getLogger(self.role)
         self.agents = self._init_agents()
         self.app = self._build_graph()
 
@@ -83,7 +86,7 @@ class VirtualCrew:
 
         config = {'configurable': {'thread_id': thread_id}}
 
-        print(f"Starting Project Requirements: {requirements}\n")
+        self.logger.info("Starting Project Requirements: %s\n", requirements)
 
         while True:
             for output in self.app.stream(initial_state if 'initial_state' in locals() else None, config):
@@ -103,7 +106,7 @@ class VirtualCrew:
                 print(f"\n[Product Manager Needs Clarification]: {question}")
                 user_answer = input("Your response: ")
                 self.app.update_state(config, {'human_answer': user_answer})
-                print("\nResuming workflow...\n")
+                self.logger.info("Resuming workflow...")
 
         final_state = self.app.get_state(config).values
         final_report = final_state.get('final_report', "No report generated.")
