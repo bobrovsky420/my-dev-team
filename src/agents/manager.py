@@ -1,12 +1,14 @@
-import logging
 from langgraph.graph import END
 from .base import BaseAgent
 
 class CrewManager(BaseAgent):
     def router(self, state: dict) -> dict:
         self.logger.info("Routing workflow...")
-        is_approved = 'APPROVED' in state.get('review_feedback', '')
-        is_passed = 'PASSED' in state.get('test_results', '')
+        feedback = state.get('review_feedback', '').strip().upper().strip('.')
+        results = state.get('test_results', '').strip().upper().strip('.')
+        is_approved = (feedback == 'APPROVED')
+        is_passed = (results == 'PASSED')
+        self.logger.debug("review_feedback='%s', test_results='%s', is_approved=%s, is_passed=%s", feedback, results, is_approved, is_passed)
         if state.get('clarification_question'):
             next_node = 'human'
         elif state.get('human_answer') and not state.get('specs'):
@@ -15,20 +17,23 @@ class CrewManager(BaseAgent):
             next_node = 'pm'
         elif not state.get('code'):
             next_node = 'developer'
-        elif state.get('revision_count', 0) > 3:
-            self.logger.warning("MAX REVISIONS REACHED. Routing to final report.")
+        elif state.get('revision_count', 0) >= 3:
+            self.logger.warning("MAX REVISIONS REACHED. Forcing finish.")
             next_node = 'report'
         elif not state.get('review_feedback'):
             next_node = 'reviewer'
         elif not is_approved:
-            next_node = 'developer' # Needs fixes
+            self.logger.info("Code rejected by Reviewer. Routing back to Developer.")
+            next_node = 'developer'
         elif not state.get('test_results'):
             next_node = 'qa'
         elif not is_passed:
-            next_node = 'developer' # Bugs found
+            self.logger.info("Code failed QA. Routing back to Developer.")
+            next_node = 'developer'
         else:
+            self.logger.info("Code passed all checks! Routing to Final Report.")
             next_node = 'report'
-        self.logger.info(f"Assigns task to: {next_node}")
+        self.logger.info("Assigns task to: %s", next_node)
         return {'next_agent': next_node}
 
     def process(self, state: dict) -> dict:

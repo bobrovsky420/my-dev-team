@@ -14,7 +14,7 @@ LOG_FILE = 'mycrew.log'
 file_handler = logging.FileHandler(LOG_FILE)
 file_handler.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.DEBUG)
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(levelname)s [%(name)s]: %(message)s',
@@ -86,7 +86,7 @@ class VirtualCrew:
 
         config = {'configurable': {'thread_id': thread_id}}
 
-        self.logger.info("Starting Project Requirements: %s\n", requirements)
+        self.logger.info("Starting Project Requirements:\n%s", requirements)
 
         while True:
             for output in self.app.stream(initial_state if 'initial_state' in locals() else None, config):
