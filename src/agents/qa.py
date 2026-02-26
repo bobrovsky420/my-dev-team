@@ -8,11 +8,13 @@ class QAEngineer(BaseAgent):
             'specs': state.get('specs'),
             'code': state.get('code')
         })
-
         if match := re.search(r'<test_results>(.*?)</test_results>', response, re.DOTALL | re.IGNORECASE):
             results = match.group(1).strip()
         else:
             self.logger.warning("Missing <test_results> tags. Using raw output.")
             results = response.strip()
-
-        return {'test_results': results}
+        status = 'PASSED' if results == 'PASSED' else 'BUGS FOUND'
+        return {
+            'test_results': results,
+            'communication_log': [f"**[{self.role}]:** {status}\n{results}"]
+        }

@@ -46,5 +46,6 @@ class SeniorDeveloper(BaseAgent):
             'code': final_code,
             'revision_count': rev_count,
             'review_feedback': '', # Clear old feedback for the next iteration
-            'test_results': ''     # Clear old results for the next iteration
+            'test_results': '',    # Clear old results for the next iteration
+            'communication_log': [f"**[{self.role} - Rev {rev_count}]**: Submitted new code for review."]
         }

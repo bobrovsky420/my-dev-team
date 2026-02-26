@@ -1,4 +1,5 @@
-from typing import TypedDict
+from typing import Annotated, TypedDict
+import operator
 
 class ProjectState(TypedDict):
     requirements: str
@@ -12,3 +13,4 @@ class ProjectState(TypedDict):
     next_agent: str
     project_status: str
     final_report: str
+    communication_log: Annotated[list[str], operator.add]

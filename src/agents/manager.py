@@ -8,7 +8,6 @@ class CrewManager(BaseAgent):
         results = state.get('test_results', '').strip().upper().strip('.')
         is_approved = (feedback == 'APPROVED')
         is_passed = (results == 'PASSED')
-        self.logger.debug("review_feedback='%s', test_results='%s', is_approved=%s, is_passed=%s", feedback, results, is_approved, is_passed)
         if state.get('clarification_question'):
             next_node = 'human'
         elif state.get('human_answer') and not state.get('specs'):
@@ -38,11 +37,13 @@ class CrewManager(BaseAgent):
 
     def process(self, state: dict) -> dict:
         self.logger.info("Generating final report...")
+        history_str = '\n\n'.join(state.get('communication_log', []))
         final_report = self.invoke_llm({
             'requirements': state.get('requirements'),
             'specs': state.get('specs'),
             'code': state.get('code'),
-            'revision_count': state.get('revision_count', 0)
+            'revision_count': state.get('revision_count', 0),
+            'history': history_str
         })
         return {
             'final_report': final_report,
