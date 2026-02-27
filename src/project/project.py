@@ -6,6 +6,8 @@ class ProjectState(TypedDict):
     clarification_question: str
     human_answer: str
     specs: str
+    code_drafts: Annotated[list[str], operator.add]
+    winner_index: int
     code: str
     review_feedback: str
     test_results: str

@@ -5,7 +5,7 @@ class SeniorDeveloper(BaseAgent):
     def process(self, state: dict) -> dict:
         self.logger.info("Writing/updating code based on specs...")
         specs = state.get('specs', '')
-        existing_code = state.get('code', '')
+        existing_code = state.get('code', '') # Only exists AFTER the judge picks a winner
         review_feedback = state.get('review_feedback', '').strip()
         test_results = state.get('test_results', '').strip()
 
@@ -40,12 +40,17 @@ class SeniorDeveloper(BaseAgent):
 
         final_code = f"### MAIN APP CODE ###\n{main_code}\n\n### TEST CODE ###\n{test_code}"
 
-        rev_count = state.get('revision_count', 0) + 1 if existing_code else 0
+        if not existing_code:
+            return {
+                'code_drafts': [final_code],
+                'communication_log': [f"**[{self.name or self.role}]**: Submitted draft."]
+            }
 
+        rev_count = state.get('revision_count', 0) + 1
         return {
             'code': final_code,
             'revision_count': rev_count,
             'review_feedback': '', # Clear old feedback for the next iteration
             'test_results': '',    # Clear old results for the next iteration
-            'communication_log': [f"**[{self.role} - Rev {rev_count}]**: Submitted new code for review."]
+            'communication_log': [f"**[{self.name or self.role}]**: Submitted Revision {rev_count}."]
         }

@@ -22,9 +22,10 @@ class BaseAgent(ABC):
     prompt_template: str
     llm: BaseChatModel
 
-    def __init__(self, role: str):
+    def __init__(self, role: str, name: str = None):
         self.role = role
-        self.logger = logging.getLogger(self.role)
+        self.name = name
+        self.logger = logging.getLogger(self.name or self.role)
 
     @abstractmethod
     def process(self, state: dict) -> dict:
@@ -54,7 +55,7 @@ class BaseAgent(ABC):
     def from_config(cls, config_path: str):
         with open(config_path, 'r') as f:
             config = yaml.safe_load(f)
-        agent = cls(config['role'])
+        agent = cls(config['role'], name=config.get('name', None))
         agent.model_name = config.get('model', agent.model_name)
         agent.temperature = config.get('temperature', agent.temperature)
         agent.prompt_template = config['prompt']
