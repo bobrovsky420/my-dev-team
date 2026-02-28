@@ -10,7 +10,7 @@ load_dotenv()
 
 LOG_FILE = 'mycrew.log'
 
-file_handler = logging.FileHandler(LOG_FILE)
+file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
 file_handler.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.DEBUG)
@@ -123,14 +123,25 @@ class VirtualCrew:
 
         return final_report
 
-if __name__ == '__main__':
-    project_requirements = (
-        "Build a Python CLI application that accepts a URL, scrapes the text content "
-        "from the webpage, and saves it to a local text file. It should handle exceptions gracefully."
-    )
-    crew = VirtualCrew()
-    final_report = crew.execute_project(requirements=project_requirements, thread_id='my_project')
+def load_project_spec(path: str = 'project.txt') -> tuple[str, str]:
+    """
+    Read the project file and return (name, description)
+    """
+    name = 'unknown_project'
+    with open(path, encoding='utf-8') as fp:
+        for line in fp:
+            if not line.strip():
+                break
+            if line.startswith('Subject:') and 'NEW PROJECT:' in line:
+                if extracted_name := line.split('NEW PROJECT:', 1)[-1].strip():
+                    name = extracted_name
+        description = fp.read().strip()
+        return name, description
 
+if __name__ == '__main__':
+    project_name, project_requirements = load_project_spec('project.txt')
+    crew = VirtualCrew()
+    final_report = crew.execute_project(requirements=project_requirements, thread_id=project_name)
     print("\n\n" + "="*50)
     print("PROJECT COMPLETED - FINAL REPORT")
     print("="*50)
