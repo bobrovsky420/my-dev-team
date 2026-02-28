@@ -8,10 +8,10 @@ class ProductManager(BaseAgent):
         requirements = state.get('requirements', '')
         human_answer = state.get('human_answer', '')
 
-        response = self.invoke_llm({
-            'requirements': requirements,
-            'human_answer': human_answer
-        })
+        response = self.invoke_llm(
+            requirements=requirements,
+            human_answer=human_answer
+        )
 
         if question_match := re.search(r'<question>(.*?)</question>', response, re.DOTALL | re.IGNORECASE):
             question = question_match.group(1).strip()

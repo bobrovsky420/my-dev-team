@@ -22,9 +22,9 @@ class SeniorDeveloper(BaseAgent):
                 context += f'\n<test_results>\n{test_results}\n</test_results>\n'
             context += '</feedback>\n'
 
-        response = self.invoke_llm({
-            'context': context
-        })
+        response = self.invoke_llm(
+            context=context
+        )
 
         if main_match := re.search(r'<main_code>(.*?)</main_code>', response, re.DOTALL | re.IGNORECASE):
             main_code = main_match.group(1).strip()

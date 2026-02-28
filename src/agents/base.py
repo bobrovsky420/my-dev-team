@@ -40,14 +40,14 @@ class BaseAgent(ABC):
     def prompt(self):
         return PromptTemplate.from_template(self.prompt_template)
 
-    def clean_response(self, text: str) -> str:
+    def _clean_response(self, text: str) -> str:
         """Removes DeepSeek <think> tags and returns the clean output."""
         cleaned_text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL | re.IGNORECASE)
         return cleaned_text.strip()
 
-    def invoke_llm(self, args) -> str:
+    def invoke_llm(self, **kwargs) -> str:
         chain = self.prompt | self.llm
-        response = self.clean_response(chain.invoke(args).content)
+        response = self._clean_response(chain.invoke(kwargs).content)
         self.logger.debug("*"*50 + "\n%s\n" + "*"*50, response)
         return response
 

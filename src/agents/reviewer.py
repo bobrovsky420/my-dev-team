@@ -5,10 +5,10 @@ from .base import BaseAgent
 class CodeReviewer(BaseAgent):
     def process(self, state: dict) -> dict:
         self.logger.info("Analyzing code...")
-        response = self.invoke_llm({
-            'specs': state.get('specs'),
-            'code': state.get('code')
-        })
+        response = self.invoke_llm(
+            specs=state.get('specs'),
+            code=state.get('code')
+        )
         if match := re.search(r'<feedback>(.*?)</feedback>', response, re.DOTALL | re.IGNORECASE):
             feedback = match.group(1).strip()
         else:

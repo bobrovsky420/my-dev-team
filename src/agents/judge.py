@@ -8,10 +8,10 @@ class CodeJudge(BaseAgent):
         drafts_context = ''
         for index, draft in enumerate(drafts):
             drafts_context += f'\n<draft_{index}>\n{draft}\n</draft_{index}>\n'
-        response = self.invoke_llm({
-            'specs': state.get('specs'),
-            'drafts': drafts_context
-        })
+        response = self.invoke_llm(
+            specs=state.get('specs'),
+            drafts=drafts_context
+        )
         match = re.search(r'<winner>(\d+)</winner>', response, re.IGNORECASE)
         try:
             winner_idx = int(match.group(1).strip())
