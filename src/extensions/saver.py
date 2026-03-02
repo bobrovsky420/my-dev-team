@@ -11,6 +11,14 @@ class WorkspaceSaver(CrewExtension):
         requirements_file = base_dir / 'requirements.txt'
         requirements_file.write_text(initial_state.get('requirements', ''), encoding='utf-8')
 
+    def _save_specs(self, base_dir: Path, specs: str):
+        specs_file = base_dir / 'specs.md'
+        specs_file.write_text(specs, encoding='utf-8')
+
+    def _save_tasks(self, base_dir: Path, tasks: list[str]):
+        tasks_file = base_dir / 'tasks.md'
+        tasks_file.write_text('\n'.join(tasks), encoding='utf-8')
+
     def on_step(self, thread_id: str, current_state: dict):
         base_dir = self.root_dir / thread_id
         drafts_dir = base_dir / 'drafts'
@@ -19,8 +27,9 @@ class WorkspaceSaver(CrewExtension):
         os.makedirs(revisions_dir, exist_ok=True)
         rev = current_state.get('revision_count', 0)
         if 'specs' in current_state and current_state['specs']:
-            specs_file = base_dir / 'specs.md'
-            specs_file.write_text(current_state['specs'], encoding='utf-8')
+            self._save_specs(base_dir, current_state['specs'])
+        if 'pending_tasks' in current_state and current_state['pending_tasks']:
+            self._save_tasks(base_dir, current_state['pending_tasks'])
         if 'code_drafts' in current_state:
             drafts = current_state.get('code_drafts', [])
             draft_idx = len(drafts) - 1

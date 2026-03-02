@@ -3,6 +3,9 @@ import operator
 
 class ProjectState(TypedDict):
     requirements: str
+    pending_tasks: list[str]
+    current_task: str
+    completed_tasks: list[str]
     clarification_question: str
     human_answer: str
     specs: str

@@ -2,9 +2,9 @@ from functools import cached_property
 import logging
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
-from agents import ProductManager, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, CrewManager
+from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, CrewManager
 from project import ProjectState
-from .extension import CrewExtension
+from extensions import CrewExtension
 
 class VirtualCrew:
     role: str = 'Virtual Crew'
@@ -19,6 +19,7 @@ class VirtualCrew:
     def _init_agents(self):
         return {
             'pm': ProductManager.from_config('agents/pm.yml'),
+            'architect': SystemArchitect.from_config('agents/architect.yml'),
             'dev 1': SeniorDeveloper.from_config('agents/developer_1.yml'),
             'dev 2': SeniorDeveloper.from_config('agents/developer_2.yml'),
             'judge': CodeJudge.from_config('agents/judge.yml'),
@@ -29,7 +30,7 @@ class VirtualCrew:
 
     @cached_property
     def _developers(self):
-        return ['dev 1', 'dev 2']
+        return ['dev 1'] #, 'dev 2']
 
     @cached_property
     def _memory(self):
@@ -38,17 +39,22 @@ class VirtualCrew:
     def _build_graph(self):
         workflow = StateGraph(ProjectState)
         workflow.add_node('manager', self.agents['manager'].router)
+        workflow.add_node('officer', self.queue_manager_node)
         workflow.add_node('pm', self.agents['pm'].process)
+        workflow.add_node('architect', self.agents['architect'].process)
         for dev in self._developers:
             workflow.add_node(dev, self.agents[dev].process)
         workflow.add_node('judge', self.agents['judge'].process)
         workflow.add_node('reviewer', self.agents['reviewer'].process)
         workflow.add_node('qa', self.agents['qa'].process)
-        workflow.add_node('human', self._human_node)
+        workflow.add_node('final_qa', self.agents['qa'].process)
+        workflow.add_node('human', self.dummy_human_node)
         workflow.add_node('report', self.agents['manager'].process)
         workflow.set_entry_point('manager')
         workflow.add_conditional_edges('manager', lambda state: state['next_agent'])
+        workflow.add_edge('officer', 'manager')
         workflow.add_edge('pm', 'manager')
+        workflow.add_edge('architect', 'manager')
         for dev in self._developers:
             workflow.add_edge(dev, 'manager')
         workflow.add_edge('judge', 'manager')
@@ -61,10 +67,34 @@ class VirtualCrew:
             interrupt_before=['human']
         )
 
-    def _human_node(self, state: ProjectState) -> dict:
-        """Dummy node that acts as a breakpoint for human input."""
-        # The actual input() prompt happens in the execution loop.
-        # This node just clears the question so we don't get stuck in a loop.
+    def queue_manager_node(self, state: dict) -> dict:
+        """Pops the next task and resets the A/B development environment."""
+        pending = state.get('pending_tasks', [])
+        completed = state.get('completed_tasks', [])
+        current = state.get('current_task', '')
+        if current:
+            completed.append(current)
+        next_task = pending.pop(0) if pending else ''
+        if next_task:
+            self.logger.info(f"Setting up environment for task: {next_task}")
+        else:
+            self.logger.info("Task queue is empty.")
+        return {
+            'pending_tasks': pending,
+            'completed_tasks': completed,
+            'current_task': next_task,
+            # Wipe the drafting/QA slate clean for the new task
+            'code_drafts': [],
+            'task_phase': 'drafting',
+            'winner_index': 0,
+            'review_feedback': '',
+            'test_results': '',
+            'revision_count': 0
+        }
+
+    def dummy_human_node(self, state: dict) -> dict:
+        """Passthrough node for Human-in-the-Loop interruptions."""
+        self.logger.info("Human input received. Routing back to workflow...")
         return {'clarification_question': ''}
 
     def execute_project(self, requirements: str, thread_id: str):
@@ -77,13 +107,16 @@ class VirtualCrew:
             'clarification_question': '',
             'human_answer': '',
             'specs': '',
+            'pending_tasks': [],
+            'current_task': '',
+            'completed_tasks': [],
             'code_drafts': [],
             'code': '',
+            'task_phase': 'drafting',
             'winner_index': 0,
             'review_feedback': '',
             'test_results': '',
             'revision_count': 0,
-            'next_agent': '',
             'project_status': 'started',
             'final_report': '',
             'communication_log': []

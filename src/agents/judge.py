@@ -3,14 +3,20 @@ from .base import BaseAgent
 
 class CodeJudge(BaseAgent):
     def process(self, state: dict) -> dict:
-        self.logger.info("Evaluating all drafts...")
+        specs = state.get('specs', '')
+        current_task = state.get('current_task', 'Complete project')
         drafts = state.get('code_drafts', [])
-        drafts_context = ''
-        for index, draft in enumerate(drafts):
-            drafts_context += f'\n<draft_{index}>\n{draft}\n</draft_{index}>\n'
+        self.logger.info(f"Evaluating {len(drafts)} drafts for task: {current_task}...")
+        if not drafts:
+            self.logger.error("Judge called but no drafts exist!")
+            return {'task_phase': 'reviewing'}
+        drafts_formatted = ""
+        for idx, draft in enumerate(drafts):
+            drafts_formatted += f"<draft_{idx}>\n{draft}\n</draft_{idx}>\n\n"
         response = self.invoke_llm(
-            specs=state.get('specs'),
-            drafts=drafts_context
+            specs=specs,
+            current_task=current_task,
+            drafts=drafts_formatted
         )
         match = re.search(r'<winner>(\d+)</winner>', response, re.IGNORECASE)
         try:
@@ -23,5 +29,10 @@ class CodeJudge(BaseAgent):
         return {
             'code': winning_code,
             'winner_index': winner_idx,
-            'communication_log': [f"**[{self.name or self.role}]**: Evaluated {len(drafts)} drafts. Selected Draft {winner_idx} as the superior architecture.\n\nReasoning: {response}"]
+            'task_phase': 'reviewing',
+            'communication_log': [
+                f"Evaluated {len(drafts)} drafts for task '{current_task}'. "
+                f"Selected Draft {winner_idx} as the superior architecture."
+                f"\n\nReasoning: {response}"
+            ]
         }

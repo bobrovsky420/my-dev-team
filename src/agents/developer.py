@@ -5,6 +5,7 @@ class SeniorDeveloper(BaseAgent):
     def process(self, state: dict) -> dict:
         self.logger.info("Writing/updating code based on specs...")
         specs = state.get('specs', '')
+        current_task = state.get('current_task', 'Complete project')
         existing_code = state.get('code', '') # Only exists AFTER the judge picks a winner
         review_feedback = state.get('review_feedback', '').strip()
         test_results = state.get('test_results', '').strip()
@@ -22,7 +23,10 @@ class SeniorDeveloper(BaseAgent):
                 context += f'\n<test_results>\n{test_results}\n</test_results>\n'
             context += '</feedback>\n'
 
-        response = self.invoke_llm(context=context)
+        response = self.invoke_llm(
+            current_task=current_task,
+            context=context
+        )
 
         if main_match := re.search(r'<main_code>(.*?)</main_code>', response, re.DOTALL | re.IGNORECASE):
             main_code = main_match.group(1).strip()

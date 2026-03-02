@@ -29,6 +29,10 @@ prompt: |
     {specs}
     </specs>
 
+    <current_task>
+    {current_task}
+    </current_task>
+
     <drafts>
     {drafts}
     </drafts>

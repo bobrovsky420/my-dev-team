@@ -2,7 +2,8 @@ from datetime import datetime
 import logging
 import re
 from dotenv import load_dotenv
-from crew import VirtualCrew, HumanInTheLoop, WorkspaceSaver
+from crew import VirtualCrew
+from extensions import HumanInTheLoop, WorkspaceSaver
 
 load_dotenv()
 
