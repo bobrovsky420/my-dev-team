@@ -1,12 +1,26 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 import logging
+import os
 import re
 import yaml
 from langchain_core.prompts import PromptTemplate
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_groq import ChatGroq
 from langchain_ollama import ChatOllama
+
+class AgentYamlLoader(yaml.SafeLoader):
+    pass
+
+    @staticmethod
+    def yaml_include(loader: yaml.Loader, node: yaml.Node):
+        file_name, include_node = node.value.split('/', 1)
+        file_path = os.path.join(os.path.dirname(loader.name), file_name)
+        with open(file_path, 'r', encoding='utf-8') as input_file:
+            include_file = yaml.load(input_file, Loader=yaml.SafeLoader)
+        return include_file[include_node]
+
+AgentYamlLoader.add_constructor('!include', AgentYamlLoader.yaml_include)
 
 def get_llm(model_name: str, temperature: float) -> BaseChatModel:
     """Returns a configured LLM instance."""
@@ -54,7 +68,7 @@ class BaseAgent(ABC):
     @classmethod
     def from_config(cls, config_path: str):
         with open(config_path, 'r') as f:
-            config = yaml.safe_load(f)
+            config = yaml.load(f, Loader=AgentYamlLoader)
         agent = cls(config['role'], name=config.get('name', None))
         agent.model_name = config.get('model', agent.model_name)
         agent.temperature = config.get('temperature', agent.temperature)

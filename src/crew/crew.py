@@ -30,7 +30,7 @@ class VirtualCrew:
 
     @cached_property
     def _developers(self):
-        return ['dev 1'] #, 'dev 2']
+        return ['dev 1', 'dev 2']
 
     @cached_property
     def _memory(self):
