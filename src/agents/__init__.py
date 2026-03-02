@@ -4,7 +4,7 @@ from .developer import SeniorDeveloper
 from .judge import CodeJudge
 from .reviewer import CodeReviewer
 from .qa import QAEngineer
-from .manager import CrewManager
+from .reporter import Reporter
 
 __all__ = [
     'ProductManager',
@@ -13,5 +13,5 @@ __all__ = [
     'CodeJudge',
     'CodeReviewer',
     'QAEngineer',
-    'CrewManager'
+    'Reporter'
 ]

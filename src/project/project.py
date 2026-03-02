@@ -11,6 +11,7 @@ class ProjectState(TypedDict):
     specs: str
     code_drafts: Annotated[list[str], operator.add]
     winner_index: int
+    task_phase: str
     code: str
     review_feedback: str
     test_results: str

@@ -1,10 +1,11 @@
 from functools import cached_property
 import logging
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
-from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, CrewManager
+from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, Reporter
 from project import ProjectState
 from extensions import CrewExtension
+from .manager import CrewManager
 
 class VirtualCrew:
     role: str = 'Virtual Crew'
@@ -14,7 +15,7 @@ class VirtualCrew:
         self.extensions = extensions or []
         self.agents = self._init_agents()
         self.developers = self._init_developers()
-        self.agents['manager'].developers = list(self.developers.keys())
+        self.manager = CrewManager(developers=list(self.developers.keys()))
         self.app = self._build_graph()
 
     def _init_agents(self):
@@ -24,7 +25,7 @@ class VirtualCrew:
             'judge': CodeJudge.from_config('agents/judge.yml'),
             'reviewer': CodeReviewer.from_config('agents/reviewer.yml'),
             'qa': QAEngineer.from_config('agents/qa.yml'),
-            'manager': CrewManager.from_config('agents/manager.yml')
+            'reporter': Reporter.from_config('agents/reporter.yml')
         }
 
     def _init_developers(self):
@@ -39,32 +40,24 @@ class VirtualCrew:
         return MemorySaver()
 
     def _build_graph(self):
+        def add_node(node_name, *, agent_func = None, conditional_router = True):
+            workflow.add_node(node_name, agent_func or self.agents[node_name].process)
+            if conditional_router:
+                workflow.add_conditional_edges(node_name, self.manager.router)
         workflow = StateGraph(ProjectState)
-        workflow.add_node('manager', self.agents['manager'].router)
-        workflow.add_node('officer', self.agents['manager'].queue_manager)
-        workflow.add_node('pm', self.agents['pm'].process)
-        workflow.add_node('architect', self.agents['architect'].process)
+        add_node('officer', agent_func=self.manager.queue_manager)
+        add_node('pm')
+        add_node('architect')
         for dev in self.developers:
-            workflow.add_node(dev, self.developers[dev].process)
-        workflow.add_node('judge', self.agents['judge'].process)
-        workflow.add_node('reviewer', self.agents['reviewer'].process)
-        workflow.add_node('qa', self.agents['qa'].process)
-        workflow.add_node('final_qa', self.agents['qa'].process)
-        workflow.add_node('human', self._dummy_human_node)
-        workflow.add_node('report', self.agents['manager'].process)
-        workflow.set_entry_point('manager')
-        workflow.add_conditional_edges('manager', lambda state: state['next_agent'])
-        workflow.add_edge('officer', 'manager')
-        workflow.add_edge('pm', 'manager')
-        workflow.add_edge('architect', 'manager')
-        for dev in self.developers:
-            workflow.add_edge(dev, 'manager')
-        workflow.add_edge('judge', 'manager')
-        workflow.add_edge('reviewer', 'manager')
-        workflow.add_edge('qa', 'manager')
-        workflow.add_edge('final_qa', 'manager')
-        workflow.add_edge('human', 'manager')
-        workflow.add_edge('report', END)
+            add_node(dev, agent_func=self.developers[dev].process)
+        add_node('judge')
+        add_node('reviewer')
+        add_node('qa')
+        add_node('final_qa', agent_func=self.agents['qa'].process)
+        add_node('human', agent_func=self._dummy_human_node)
+        add_node('reporter', conditional_router=False)
+        workflow.add_conditional_edges(START, self.manager.router)
+        workflow.add_edge('reporter', END)
         return workflow.compile(
             checkpointer=self._memory,
             interrupt_before=['human']

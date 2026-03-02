@@ -16,39 +16,54 @@ class WorkspaceSaver(CrewExtension):
         specs_file.write_text(specs, encoding='utf-8')
 
     def _save_tasks(self, base_dir: Path, tasks: list[str]):
-        content = "# System Execution Plan\n\n" + "\n".join(f"{i+1}. {task}" for i, task in enumerate(tasks))
         tasks_file = base_dir / 'tasks.md'
+        content = "# System Execution Plan\n\n" + "\n".join(f"{i+1}. {task}" for i, task in enumerate(tasks))
         tasks_file.write_text(content, encoding='utf-8')
+
+    def _save_code(self, base_dir: Path, code: str):
+        code_file = base_dir / 'code.md'
+        code_file.write_text(code, encoding='utf-8')
+
+    def _save_final_report(self, base_dir: Path, report: str):
+        report_file = base_dir / 'final_report.md'
+        report_file.write_text(report, encoding='utf-8')
 
     def on_step(self, thread_id: str, current_state: dict):
         base_dir = self.root_dir / thread_id
-        drafts_dir = base_dir / 'drafts'
-        revisions_dir = base_dir / 'revisions'
-        os.makedirs(drafts_dir, exist_ok=True)
-        os.makedirs(revisions_dir, exist_ok=True)
+
         pending = current_state.get('pending_tasks', [])
         current = current_state.get('current_task', '')
         completed = current_state.get('completed_tasks', [])
         rev = current_state.get('revision_count', 0)
-        if 'specs' in current_state and current_state['specs']:
+
+        if current_state.get('specs'):
             self._save_specs(base_dir, current_state['specs'])
+
         if pending and not current and not completed:
             self._save_tasks(base_dir, pending)
-        if 'code_drafts' in current_state:
-            drafts = current_state.get('code_drafts', [])
-            draft_idx = len(drafts) - 1
-            if draft_idx >= 0:
-                draft_file = drafts_dir / f'draft_{draft_idx}.md'
-                draft_file.write_text(drafts[draft_idx], encoding='utf-8')
-        if 'code' in current_state and current_state['code']:
-            code_file = base_dir / 'code.md'
-            code_file.write_text(current_state['code'], encoding='utf-8')
-        if 'review_feedback' in current_state and current_state['review_feedback']:
-            feedback_file = revisions_dir / f'feedback_v{rev}.md'
-            feedback_file.write_text(current_state['review_feedback'], encoding='utf-8')
-        if 'test_results' in current_state and current_state['test_results']:
-            tests_file = revisions_dir / f'tests_v{rev}.md'
-            tests_file.write_text(current_state['test_results'], encoding='utf-8')
-        if 'final_report' in current_state and current_state['final_report']:
-            report_file = base_dir / 'final_report.md'
-            report_file.write_text(current_state['final_report'], encoding='utf-8')
+
+        if current_state.get('code'):
+            self._save_code(base_dir, current_state['code'])
+
+        if current_state.get('final_report'):
+            self._save_final_report(base_dir, current_state['final_report'])
+
+        if current:
+            task_num = len(completed) + 1
+            task_dir = base_dir / f'task_{task_num:02d}'
+            drafts_dir = task_dir / 'drafts'
+            revisions_dir = task_dir / 'revisions'
+            os.makedirs(drafts_dir, exist_ok=True)
+            os.makedirs(revisions_dir, exist_ok=True)
+            task_file = task_dir / 'task_description.md'
+            task_file.write_text(current, encoding='utf-8')
+            if current_state.get('code_drafts'):
+                for idx, draft in enumerate(current_state['code_drafts']):
+                    draft_file = drafts_dir / f'draft_{idx}.md'
+                    draft_file.write_text(draft, encoding='utf-8')
+            if current_state.get('review_feedback'):
+                feedback_file = revisions_dir / f'feedback_v{rev}.md'
+                feedback_file.write_text(current_state['review_feedback'], encoding='utf-8')
+            if current_state.get('test_results'):
+                tests_file = revisions_dir / f'tests_v{rev}.md'
+                tests_file.write_text(current_state['test_results'], encoding='utf-8')
