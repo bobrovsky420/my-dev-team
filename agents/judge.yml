@@ -1,5 +1,5 @@
 role: Code Judge
-model: ollama/deepseek-r1:8b
+model: ollama/qwen3:8b
 temperature: 0.0
 prompt: |
     You are the Lead Code Judge, an expert Principal Software Engineer.

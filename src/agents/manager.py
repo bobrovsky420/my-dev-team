@@ -1,8 +1,13 @@
+from functools import cached_property
 from langgraph.graph import END
 from .base import BaseAgent
 
 class CrewManager(BaseAgent):
-    developers: list[str]
+    developers: dict
+
+    @cached_property
+    def _dev_names(self):
+        return list(self.developers.keys())
 
     def router(self, state: dict) -> dict:
         self.logger.info("Routing workflow...")
@@ -14,7 +19,7 @@ class CrewManager(BaseAgent):
         current_task = state.get('current_task', '')
         completed_tasks = state.get('completed_tasks', [])
         winner_idx = state.get('winner_index', 0)
-        winning_dev_node = self.developers[winner_idx] if winner_idx < len(self.developers) else self.developers[0]
+        winning_dev_node = self._dev_names[winner_idx] if winner_idx < len(self._dev_names) else self._dev_names[0]
         # ---------------------------------------------------------
         # 1. EARLY INTERRUPTIONS (Humans & PM)
         # ---------------------------------------------------------
@@ -117,6 +122,31 @@ class CrewManager(BaseAgent):
         self.logger.info(f"Assigns task to: {next_node}")
         return {'next_agent': next_node}
     """
+
+    def queue_manager(self, state: dict) -> dict:
+        """Pops the next task and resets the A/B development environment."""
+        pending = state.get('pending_tasks', [])
+        completed = state.get('completed_tasks', [])
+        current = state.get('current_task', '')
+        if current:
+            completed.append(current)
+        next_task = pending.pop(0) if pending else ''
+        if next_task:
+            self.logger.info(f"Setting up environment for task: {next_task}")
+        else:
+            self.logger.info("Task queue is empty.")
+        return {
+            'pending_tasks': pending,
+            'completed_tasks': completed,
+            'current_task': next_task,
+            # Wipe the drafting/QA slate clean for the new task
+            'code_drafts': [],
+            'task_phase': 'drafting',
+            'winner_index': 0,
+            'review_feedback': '',
+            'test_results': '',
+            'revision_count': 0
+        }
 
     def process(self, state: dict) -> dict:
         self.logger.info("Generating final report...")

@@ -1,8 +1,0 @@
-role: Senior Developer
-name: Senior Developer 2
-#model: groq/groq/compound
-#model: groq/qwen/qwen3-32b
-model: ollama/qwen3:8b
-#model: ollama/deepseek-r1:8b
-temperature: 0.4
-prompt: !include developer_1.yml/prompt

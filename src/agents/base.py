@@ -69,8 +69,18 @@ class BaseAgent(ABC):
     def from_config(cls, config_path: str):
         with open(config_path, 'r') as f:
             config = yaml.load(f, Loader=AgentYamlLoader)
-        agent = cls(config['role'], name=config.get('name', None))
-        agent.model_name = config.get('model', agent.model_name)
-        agent.temperature = config.get('temperature', agent.temperature)
-        agent.prompt_template = config['prompt']
-        return agent
+        if 'models' in config:
+            agents = []
+            for model in config['models']:
+                agent = cls(config['role'], name=model.get('name', None))
+                agent.model_name = model.get('name', agent.model_name)
+                agent.temperature = model.get('temperature', agent.temperature)
+                agent.prompt_template = config['prompt']
+                agents.append(agent)
+            return agents
+        else:
+            agent = cls(config['role'], name=config.get('name', None))
+            agent.model_name = config.get('model', agent.model_name)
+            agent.temperature = config.get('temperature', agent.temperature)
+            agent.prompt_template = config['prompt']
+            return agent
