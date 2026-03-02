@@ -14,7 +14,7 @@ class VirtualCrew:
         self.extensions = extensions or []
         self.agents = self._init_agents()
         self.developers = self._init_developers()
-        self.agents['manager'].developers = self.developers
+        self.agents['manager'].developers = list(self.developers.keys())
         self.app = self._build_graph()
 
     def _init_agents(self):

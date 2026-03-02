@@ -8,7 +8,7 @@ class WorkspaceSaver(CrewExtension):
     def on_start(self, thread_id: str, initial_state: dict):
         base_dir = self.root_dir / thread_id
         os.makedirs(base_dir, exist_ok=True)
-        requirements_file = base_dir / 'requirements.txt'
+        requirements_file = base_dir / 'requirements.md'
         requirements_file.write_text(initial_state.get('requirements', ''), encoding='utf-8')
 
     def _save_specs(self, base_dir: Path, specs: str):

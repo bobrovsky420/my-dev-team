@@ -1,13 +1,8 @@
-from functools import cached_property
 from langgraph.graph import END
 from .base import BaseAgent
 
 class CrewManager(BaseAgent):
-    developers: dict
-
-    @cached_property
-    def _dev_names(self):
-        return list(self.developers.keys())
+    developers: list[str]
 
     def router(self, state: dict) -> dict:
         self.logger.info("Routing workflow...")
@@ -19,7 +14,7 @@ class CrewManager(BaseAgent):
         current_task = state.get('current_task', '')
         completed_tasks = state.get('completed_tasks', [])
         winner_idx = state.get('winner_index', 0)
-        winning_dev_node = self._dev_names[winner_idx] if winner_idx < len(self._dev_names) else self._dev_names[0]
+        winning_dev_node = self.developers[winner_idx] if winner_idx < len(self.developers) else self.developers[0]
         # ---------------------------------------------------------
         # 1. EARLY INTERRUPTIONS (Humans & PM)
         # ---------------------------------------------------------
