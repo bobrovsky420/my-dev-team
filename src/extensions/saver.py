@@ -16,8 +16,9 @@ class WorkspaceSaver(CrewExtension):
         specs_file.write_text(specs, encoding='utf-8')
 
     def _save_tasks(self, base_dir: Path, tasks: list[str]):
+        content = "# System Execution Plan\n\n" + "\n".join(f"{i+1}. {task}" for i, task in enumerate(tasks))
         tasks_file = base_dir / 'tasks.md'
-        tasks_file.write_text('\n'.join(tasks), encoding='utf-8')
+        tasks_file.write_text(content, encoding='utf-8')
 
     def on_step(self, thread_id: str, current_state: dict):
         base_dir = self.root_dir / thread_id
@@ -25,11 +26,14 @@ class WorkspaceSaver(CrewExtension):
         revisions_dir = base_dir / 'revisions'
         os.makedirs(drafts_dir, exist_ok=True)
         os.makedirs(revisions_dir, exist_ok=True)
+        pending = current_state.get('pending_tasks', [])
+        current = current_state.get('current_task', '')
+        completed = current_state.get('completed_tasks', [])
         rev = current_state.get('revision_count', 0)
         if 'specs' in current_state and current_state['specs']:
             self._save_specs(base_dir, current_state['specs'])
-        if 'pending_tasks' in current_state and current_state['pending_tasks']:
-            self._save_tasks(base_dir, current_state['pending_tasks'])
+        if pending and not current and not completed:
+            self._save_tasks(base_dir, pending)
         if 'code_drafts' in current_state:
             drafts = current_state.get('code_drafts', [])
             draft_idx = len(drafts) - 1
