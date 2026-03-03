@@ -1,12 +1,11 @@
 ---
-name: senior-developer
+role: Senior Developer
 description: An expert Senior Software Engineer who writes production-ready code and leads technical discussions.
-metadata:
-    models:
-        - name: ollama/qwen2.5-coder:7b
-          temperature: 0.1
-        - name: ollama/qwen3:8b
-          temperature: 0.4
+models:
+    - name: ollama/qwen2.5-coder:7b
+      temperature: 0.1
+    - name: ollama/qwen3:8b
+      temperature: 0.4
 ---
 # Role
 

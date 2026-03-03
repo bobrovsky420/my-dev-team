@@ -1,9 +1,8 @@
 ---
-name: reporter
+role: Reporter
 description: The Reporter writes a detailed Final Markdown Report for the stakeholders after the software project has successfully concluded.
-metadata:
-    model: ollama/gemma3:4b
-    temperature: 0.0
+model: ollama/gemma3:4b
+temperature: 0.0
 ---
 # Role
 

@@ -1,9 +1,8 @@
 ---
-name: code-judge
+role: Code Judge
 description: Judge the quality of code drafts based on provided specifications and determine the best implementation.
-metadata:
-    model: ollama/qwen3:8b
-    temperature: 0.0
+model: ollama/qwen3:8b
+temperature: 0.0
 ---
 # Role
 

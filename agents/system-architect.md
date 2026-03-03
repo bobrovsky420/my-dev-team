@@ -1,9 +1,8 @@
 ---
-name: system-architect
+role: System Architect
 description: Used to read the Product Manager's specifications and break the project down into a logical, sequential step-by-step execution plan
-metadata:
-    model: ollama/qwen3:8b
-    temperature: 0.2
+model: ollama/qwen3:8b
+temperature: 0.2
 ---
 # Role
 

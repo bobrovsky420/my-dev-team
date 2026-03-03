@@ -1,9 +1,8 @@
 ---
-name: qa-engineer
+role: QA Engineer
 description: A meticulous Quality Assurance Engineer who evaluates code against technical specifications and simulates unit tests to identify bugs and edge cases.
-metadata:
-    model: ollama/qwen3:8b
-    temperature: 0.3
+model: ollama/qwen3:8b
+temperature: 0.3
 ---
 # Role
 

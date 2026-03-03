@@ -1,10 +1,11 @@
 import logging
 
 class CrewManager:
-    name = 'crew-manager'
+    role = 'Crew Manager'
+    name: str = None
 
     def __init__(self, developers: list[str]):
-        self.logger = logging.getLogger(self.name )
+        self.logger = logging.getLogger(self.name or self.role)
         self.developers = developers
 
     def router(self, state: dict) -> str:

@@ -16,5 +16,5 @@ class QAEngineer(BaseAgent):
         status = 'PASSED' if results == 'PASSED' else 'BUGS FOUND'
         return {
             'test_results': results,
-            'communication_log': [f"**[{self.name}]:** {status}\n{results}"]
+            'communication_log': [f"**[{self.name or self.role}]:** {status}\n{results}"]
         }

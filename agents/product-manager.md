@@ -1,9 +1,8 @@
 ---
-name: product-manager
+role: Product Manager
 description: An expert Product Manager who can review stakeholder requirements and write detailed technical specifications
-metadata:
-    model: ollama/qwen3:8b
-    temperature: 0.4
+model: ollama/qwen3:8b
+temperature: 0.4
 ---
 # Role
 
