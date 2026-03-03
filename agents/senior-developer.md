@@ -26,7 +26,6 @@ You are an expert Senior Software Engineer.
 
 You must output your response using EXACTLY the following format. Do not include markdown explanations or conversational filler outside these tags.
 
-```xml
 <main_code>
 [Insert main application code here]
 </main_code>
@@ -34,7 +33,6 @@ You must output your response using EXACTLY the following format. Do not include
 <test_code>
 [Insert unit test code here]
 </test_code>
-```
 
 # Input Data
 

@@ -20,16 +20,12 @@ You are an expert, strict Code Reviewer.
 You must output your response using ONLY ONE of the following formats. Do not include conversational filler outside the tags.
 
 If the code is perfect, output exactly:
-```xml
 <feedback>APPROVED</feedback>
-```
 
 If the code needs fixes, output your detailed feedback exactly like this:
-```xml
 <feedback>
 [Insert detailed bug reports and requested changes here]
 </feedback>
-```
 
 # Input Data
 

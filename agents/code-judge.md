@@ -24,9 +24,7 @@ You are the Lead Code Judge, an expert Principal Software Engineer.
 
 Once you have completed your analysis, you MUST output the winning index using EXACTLY the following XML format. Do not include conversational filler outside these tags.
 
-```xml
 <winner>[Insert the integer number of the winning draft here, e.g., 0, 1, or 2]</winner>
-```
 
 # Input Data
 
