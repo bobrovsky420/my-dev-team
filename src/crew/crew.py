@@ -2,7 +2,6 @@ from functools import cached_property
 import logging
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
-from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, Reporter
 from project import ProjectState
 from extensions import CrewExtension
 from .manager import CrewManager
@@ -10,30 +9,13 @@ from .manager import CrewManager
 class VirtualCrew:
     role: str = 'Virtual Crew'
 
-    def __init__(self, extensions: list[CrewExtension] = None):
+    def __init__(self, agents: dict, developers: dict, extensions: list[CrewExtension] = None):
         self.logger = logging.getLogger(self.role)
         self.extensions = extensions or []
-        self.agents = self._init_agents()
-        self.developers = self._init_developers()
+        self.agents = agents
+        self.developers = developers
         self.manager = CrewManager(developers=list(self.developers.keys()))
         self.app = self._build_graph()
-
-    def _init_agents(self):
-        return {
-            'pm': ProductManager.from_config('agents/pm.yml'),
-            'architect': SystemArchitect.from_config('agents/architect.yml'),
-            'judge': CodeJudge.from_config('agents/judge.yml'),
-            'reviewer': CodeReviewer.from_config('agents/reviewer.yml'),
-            'qa': QAEngineer.from_config('agents/qa.yml'),
-            'reporter': Reporter.from_config('agents/reporter.yml')
-        }
-
-    def _init_developers(self):
-        name = 'dev'
-        devs = SeniorDeveloper.from_config('agents/developer.yml')
-        if isinstance(devs, list):
-            return {f'{name}_{i+1}': dev for i, dev in enumerate(devs)}
-        return {name: devs}
 
     @cached_property
     def _memory(self):

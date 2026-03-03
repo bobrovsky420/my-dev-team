@@ -2,6 +2,7 @@ from datetime import datetime
 import logging
 import re
 from dotenv import load_dotenv
+from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, Reporter
 from crew import VirtualCrew
 from extensions import HumanInTheLoop, WorkspaceSaver
 
@@ -24,6 +25,32 @@ logging.basicConfig(
 logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('httpcore').setLevel(logging.WARNING)
 
+def my_agents():
+    return {
+        'pm': ProductManager.from_config('agents/pm.yml'),
+        'architect': SystemArchitect.from_config('agents/architect.yml'),
+        'judge': CodeJudge.from_config('agents/judge.yml'),
+        'reviewer': CodeReviewer.from_config('agents/reviewer.yml'),
+        'qa': QAEngineer.from_config('agents/qa.yml'),
+        'reporter': Reporter.from_config('agents/reporter.yml')
+    }
+
+def my_developers():
+    name = 'dev'
+    devs = SeniorDeveloper.from_config('agents/developer.yml')
+    if isinstance(devs, list):
+        return {f'{name}_{i+1}': dev for i, dev in enumerate(devs)}
+    return {name: devs}
+
+def my_extensions():
+    return [
+        WorkspaceSaver(),
+        HumanInTheLoop()
+    ]
+
+def my_crew():
+    return VirtualCrew(agents=my_agents(), developers=my_developers(), extensions=my_extensions())
+
 def load_project_spec(path: str = 'project.txt') -> tuple[str, str]:
     """Read the project file and return (name, description)."""
     name = 'unknown_project'
@@ -45,13 +72,9 @@ def generate_thread_id(project_name: str) -> str:
     return f"{safe_name}_{timestamp}"
 
 if __name__ == '__main__':
-    my_extensions = [
-        WorkspaceSaver(),
-        HumanInTheLoop()
-    ]
     project_name, project_requirements = load_project_spec('project.txt')
     thread_id = generate_thread_id(project_name)
-    crew = VirtualCrew(extensions=my_extensions)
+    crew = my_crew()
     final_report = crew.execute_project(requirements=project_requirements, thread_id=thread_id)
     print("\n\n" + "="*50)
     print("PROJECT COMPLETED - FINAL REPORT")
