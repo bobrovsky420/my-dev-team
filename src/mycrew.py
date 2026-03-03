@@ -27,17 +27,17 @@ logging.getLogger('httpcore').setLevel(logging.WARNING)
 
 def my_agents():
     return {
-        'pm': ProductManager.from_config('agents/pm.yml'),
-        'architect': SystemArchitect.from_config('agents/architect.yml'),
-        'judge': CodeJudge.from_config('agents/judge.yml'),
-        'reviewer': CodeReviewer.from_config('agents/reviewer.yml'),
-        'qa': QAEngineer.from_config('agents/qa.yml'),
-        'reporter': Reporter.from_config('agents/reporter.yml')
+        'pm': ProductManager.from_config('product-manager'),
+        'architect': SystemArchitect.from_config('system-architect'),
+        'judge': CodeJudge.from_config('code-judge'),
+        'reviewer': CodeReviewer.from_config('code-reviewer'),
+        'qa': QAEngineer.from_config('qa-engineer'),
+        'reporter': Reporter.from_config('reporter')
     }
 
 def my_developers():
     name = 'dev'
-    devs = SeniorDeveloper.from_config('agents/developer.yml')
+    devs = SeniorDeveloper.from_config('senior-developer')
     if isinstance(devs, list):
         return {f'{name}_{i+1}': dev for i, dev in enumerate(devs)}
     return {name: devs}

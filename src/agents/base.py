@@ -3,11 +3,13 @@ from functools import cached_property
 import logging
 import os
 import re
+from pathlib import Path
 import yaml
 from langchain_core.prompts import PromptTemplate
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_groq import ChatGroq
 from langchain_ollama import ChatOllama
+from .skills import load_skill_as_agent
 
 class AgentYamlLoader(yaml.SafeLoader):
     pass
@@ -36,10 +38,9 @@ class BaseAgent(ABC):
     prompt_template: str
     llm: BaseChatModel
 
-    def __init__(self, role: str, name: str = None):
-        self.role = role
+    def __init__(self, name: str):
         self.name = name
-        self.logger = logging.getLogger(self.name or self.role)
+        self.logger = logging.getLogger(self.name)
 
     @abstractmethod
     def process(self, state: dict) -> dict:
@@ -67,19 +68,18 @@ class BaseAgent(ABC):
 
     @classmethod
     def from_config(cls, config_path: str):
-        with open(config_path, 'r') as f:
-            config = yaml.load(f, Loader=AgentYamlLoader)
+        config = load_skill_as_agent(Path(config_path))
         if 'models' in config:
             agents = []
             for model in config['models']:
-                agent = cls(config['role'], name=config.get('name', None))
+                agent = cls(config['name'])
                 agent.model_name = model.get('name', agent.model_name)
                 agent.temperature = model.get('temperature', agent.temperature)
                 agent.prompt_template = config['prompt']
                 agents.append(agent)
             return agents
         else:
-            agent = cls(config['role'], name=config.get('name', None))
+            agent = cls(config['name'])
             agent.model_name = config.get('model', agent.model_name)
             agent.temperature = config.get('temperature', agent.temperature)
             agent.prompt_template = config['prompt']

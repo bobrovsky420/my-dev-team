@@ -7,10 +7,10 @@ from extensions import CrewExtension
 from .manager import CrewManager
 
 class VirtualCrew:
-    role: str = 'Virtual Crew'
+    name: str = 'virtual-crew'
 
     def __init__(self, agents: dict, developers: dict, extensions: list[CrewExtension] = None):
-        self.logger = logging.getLogger(self.role)
+        self.logger = logging.getLogger(self.name)
         self.extensions = extensions or []
         self.agents = agents
         self.developers = developers
