@@ -1,5 +1,5 @@
 role: System Architect
-model: ollama/qwen3:8b
+model: ollama/qwen3.5:9b
 temperature: 0.2
 prompt: |
     You are the Lead System Architect. Your job is to read the Product Manager's specifications and break the project down into a logical, sequential step-by-step execution plan.

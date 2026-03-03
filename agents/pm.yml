@@ -2,7 +2,7 @@ role: Product Manager
 #model: groq/groq/compound
 #model: groq/qwen/qwen3-32b
 #model: ollama/deepseek-r1:8b
-model: ollama/qwen3:8b
+model: ollama/qwen3.5:9b
 temperature: 0.4
 prompt: |
     You are an expert Product Manager.
