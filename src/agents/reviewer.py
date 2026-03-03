@@ -17,5 +17,5 @@ class CodeReviewer(BaseAgent):
         status = 'APPROVED' if feedback == 'APPROVED' else 'REQUESTED CHANGES'
         return {
             'review_feedback': feedback,
-            'communication_log': [f"**[{self.role}]:** {status}\n{feedback}"]
+            'communication_log': [f"**[{self.name}]:** {status}\n{feedback}"]
         }

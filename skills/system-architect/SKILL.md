@@ -23,7 +23,7 @@ You MUST output your execution plan by wrapping each individual task in a <task>
 Example:
 
 ```xml
-<task>Define the SQLite database schema and create the initialization script.</task>
+<task>Define the database schema and create the initialization script.</task>
 <task>Build the FastAPI backend routes for user authentication.</task>
 <task>Write unit tests for the authentication routes.</task>
 ```

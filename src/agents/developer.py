@@ -45,7 +45,7 @@ class SeniorDeveloper(BaseAgent):
         if not existing_code:
             return {
                 'code_drafts': [final_code],
-                'communication_log': [f"**[{self.name or self.role}]**: Submitted draft."]
+                'communication_log': [f"**[{self.name}]**: Submitted draft."]
             }
 
         rev_count = state.get('revision_count', 0) + 1
@@ -54,5 +54,5 @@ class SeniorDeveloper(BaseAgent):
             'revision_count': rev_count,
             'review_feedback': '', # Clear old feedback for the next iteration
             'test_results': '',    # Clear old results for the next iteration
-            'communication_log': [f"**[{self.name or self.role}]**: Submitted Revision {rev_count}."]
+            'communication_log': [f"**[{self.name}]**: Submitted Revision {rev_count}."]
         }

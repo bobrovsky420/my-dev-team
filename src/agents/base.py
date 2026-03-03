@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 import logging
-import os
 import re
 from pathlib import Path
 import yaml
@@ -9,20 +8,9 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_groq import ChatGroq
 from langchain_ollama import ChatOllama
-from .skills import load_skill_as_agent
 
-class AgentYamlLoader(yaml.SafeLoader):
-    pass
-
-    @staticmethod
-    def yaml_include(loader: yaml.Loader, node: yaml.Node):
-        file_name, include_node = node.value.split('/', 1)
-        file_path = os.path.join(os.path.dirname(loader.name), file_name)
-        with open(file_path, 'r', encoding='utf-8') as input_file:
-            include_file = yaml.load(input_file, Loader=yaml.SafeLoader)
-        return include_file[include_node]
-
-AgentYamlLoader.add_constructor('!include', AgentYamlLoader.yaml_include)
+base_dir = Path('skills')
+file_name = 'SKILL.md'
 
 def get_llm(model_name: str, temperature: float) -> BaseChatModel:
     """Returns a configured LLM instance."""
@@ -67,20 +55,27 @@ class BaseAgent(ABC):
         return response
 
     @classmethod
-    def from_config(cls, config_path: str):
-        config = load_skill_as_agent(Path(config_path))
-        if 'models' in config:
+    def from_config(cls, skill_folder: str):
+        skill_file = base_dir / skill_folder / file_name
+        content = skill_file.read_text(encoding='utf-8')
+        parts = content.split('---', 2)
+        if len(parts) < 3:
+            raise ValueError(f"Invalid {file_name} format in {skill_folder}. Missing YAML frontmatter.")
+        config = yaml.safe_load(parts[1])
+        metadata = config.get('metadata', {})
+        prompt = parts[2].strip()
+        if 'models' in metadata:
             agents = []
-            for model in config['models']:
+            for model in metadata['models']:
                 agent = cls(config['name'])
                 agent.model_name = model.get('name', agent.model_name)
                 agent.temperature = model.get('temperature', agent.temperature)
-                agent.prompt_template = config['prompt']
+                agent.prompt_template = prompt
                 agents.append(agent)
             return agents
         else:
             agent = cls(config['name'])
-            agent.model_name = config.get('model', agent.model_name)
-            agent.temperature = config.get('temperature', agent.temperature)
-            agent.prompt_template = config['prompt']
+            agent.model_name = metadata.get('model', agent.model_name)
+            agent.temperature = metadata.get('temperature', agent.temperature)
+            agent.prompt_template = prompt
             return agent
