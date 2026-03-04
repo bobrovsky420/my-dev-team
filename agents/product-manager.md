@@ -3,6 +3,10 @@ role: Product Manager
 description: An expert Product Manager who can review stakeholder requirements and write detailed technical specifications
 model: ollama/qwen3:8b
 temperature: 0.4
+required_inputs: ['requirements', 'human_answer']
+extract_patterns:
+    specs: '<specs>(.*?)</specs>'
+    question: '<question>(.*?)</question>'
 ---
 # Role
 

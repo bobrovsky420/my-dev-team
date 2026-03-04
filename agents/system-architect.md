@@ -3,6 +3,10 @@ role: System Architect
 description: Used to read the Product Manager's specifications and break the project down into a logical, sequential step-by-step execution plan
 model: ollama/qwen3:8b
 temperature: 0.2
+required_inputs: ['specs']
+extract_patterns:
+    pending_tasks: '<task>(.*?)</task>'
+list_outputs: ['pending_tasks']
 ---
 # Role
 

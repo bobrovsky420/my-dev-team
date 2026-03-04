@@ -3,6 +3,9 @@ role: Code Judge
 description: Judge the quality of code drafts based on provided specifications and determine the best implementation.
 model: ollama/qwen3:8b
 temperature: 0.0
+required_inputs: ['specs', 'current_task']
+extract_patterns:
+    winner_index: '<winner>(\d+)</winner>'
 ---
 # Role
 

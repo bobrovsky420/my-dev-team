@@ -1,36 +1,17 @@
-import re
-from utils import sanitize_for_prompt
 from .base import BaseAgent
 
 class ProductManager(BaseAgent):
-    def process(self, state: dict) -> dict:
-        self.logger.info("Evaluating requirements...")
-
-        requirements = state.get('requirements', '')
-        human_answer = state.get('human_answer', '')
-
-        response = self.invoke_llm(
-            requirements=sanitize_for_prompt(requirements, ['requirements']),
-            human_answer=sanitize_for_prompt(human_answer, ['human_answer'])
-        )
-
-        if question_match := re.search(r"<question>(.*?)</question>", response, re.DOTALL | re.IGNORECASE):
-            question = question_match.group(1).strip()
-            self.logger.info("Need clarification from the user.")
+    def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
+        if 'question' in parsed_data:
+            self.logger.info("Need clarification from the user")
             return {
-                'clarification_question': question,
+                'clarification_question': parsed_data['question'],
                 'specs': '' # Explicitly empty so the router knows we aren't ready for code
             }
-        elif specs_match := re.search(r"<specs>(.*?)</specs>", response, re.DOTALL | re.IGNORECASE):
-            specs = specs_match.group(1).strip()
-            self.logger.info("Generated technical specifications.")
+        if 'specs' in parsed_data:
+            self.logger.info("Generated technical specifications")
             return {
-                'specs': specs,
+                'specs': parsed_data['specs'],
                 'clarification_question': '' # Clear out any old questions
             }
-        else:
-            self.logger.warning("Missing XML tags. Treating raw output as specs.")
-            return {
-                'specs': response.strip(),
-                'clarification_question': ''
-            }
+        return {'specs': parsed_data.get('raw_output', '')}

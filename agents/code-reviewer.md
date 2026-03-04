@@ -3,6 +3,9 @@ role: Code Reviewer
 description: An expert, strict Code Reviewer that checks code against technical specifications and provides detailed feedback for improvements.
 model: ollama/qwen2.5-coder:7b
 temperature: 0.1
+required_inputs: ['current_task', 'specs', 'code']
+extract_patterns:
+    review_feedback: '<feedback>(.*?)</feedback>'
 ---
 # Role
 

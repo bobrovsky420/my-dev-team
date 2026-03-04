@@ -3,6 +3,9 @@ role: QA Engineer
 description: A meticulous Quality Assurance Engineer who evaluates code against technical specifications and simulates unit tests to identify bugs and edge cases.
 model: ollama/qwen3:8b
 temperature: 0.3
+required_inputs: ['specs', 'current_task', 'code']
+extract_patterns:
+    test_results: '<test_results>(.*?)</test_results>'
 ---
 # Role
 

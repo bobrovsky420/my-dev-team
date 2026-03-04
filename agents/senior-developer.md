@@ -6,6 +6,10 @@ models:
       temperature: 0.1
     - name: ollama/qwen3:8b
       temperature: 0.4
+required_inputs: ['specs', 'current_task']
+extract_patterns:
+    main_code: '<main_code>(.*?)</main_code>'
+    test_code: '<test_code>(.*?)</test_code>'
 ---
 # Role
 

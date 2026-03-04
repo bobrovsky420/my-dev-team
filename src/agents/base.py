@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from functools import cached_property
 import logging
 import re
@@ -7,6 +7,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_groq import ChatGroq
 from langchain_ollama import ChatOllama
+from utils import sanitize_for_prompt
 
 def get_llm(model_name: str, temperature: float) -> BaseChatModel:
     """Returns a configured LLM instance."""
@@ -19,21 +20,61 @@ def get_llm(model_name: str, temperature: float) -> BaseChatModel:
 class BaseAgent(ABC):
     model_name: str = 'ollama/qwen3:8b'
     temperature: float = 0.2
-    prompt_template: str
-    llm: BaseChatModel
 
-    def __init__(self, role: str, name: str = None):
-        self.role = role
-        self.name = name
+    def __init__(self, config: dict, prompt_template: str, model: dict = None):
+        self.config = config
+        self.role = config.get('role', 'Agent')
+        self.name = config.get('name', None)
+        self.model_name = model.get('name') if model else config.get('model', self.model_name)
+        self.temperature = model.get('temperature') if model else config.get('temperature', self.temperature)
+        self.prompt_template = prompt_template
         self.logger = logging.getLogger(self.name or self.role)
 
-    @abstractmethod
-    def process(self, state: dict) -> dict:
-        """Processes the state and returns the updated state dictionary."""
-        pass
+    @cached_property
+    def _required_inputs(self) -> list[str]:
+        return self.config.get('required_inputs', [])
 
     @cached_property
-    def llm(self):
+    def _extract_patterns(self) -> dict[str, str]:
+        return self.config.get('extract_patterns', {})
+
+    @cached_property
+    def _list_outputs(self) -> list[str]:
+        return self.config.get('list_outputs', [])
+
+    def _build_inputs(self, state: dict) -> dict:
+        inputs = {}
+        for key in self._required_inputs:
+            val = state.get(key, '')
+            inputs[key] = sanitize_for_prompt(str(val), [key]) if val else ''
+        return inputs
+
+    def _parse_outputs(self, response: str) -> dict:
+        patterns = self._extract_patterns
+        if not patterns:
+            return {'raw_output': response}
+        updates = {}
+        for key, pattern in patterns.items():
+            if matches := re.findall(pattern, response, re.DOTALL | re.IGNORECASE):
+                clean_matches = [m.strip() for m in matches if m.strip()]
+                updates[key] = clean_matches if key in self._list_outputs else clean_matches[0]
+        return updates
+
+    def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
+        return parsed_data
+
+    def process(self, state: dict) -> dict:
+        self.logger.info("Executing...")
+        inputs = self._build_inputs(state)
+        response = self._invoke_llm(**inputs)
+        parsed_data = self._parse_outputs(response)
+        final_state = self._update_state(parsed_data, state)
+        if 'communication_log' not in final_state:
+            final_state['communication_log'] = [f"**[{self.name or self.role}]**: Completed step with response:\n```\n{response}\n```"]
+        return final_state
+
+    @cached_property
+    def llm(self) -> BaseChatModel:
         return get_llm(model_name=self.model_name, temperature=self.temperature)
 
     @cached_property
@@ -45,7 +86,7 @@ class BaseAgent(ABC):
         cleaned_text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL | re.IGNORECASE)
         return cleaned_text.strip()
 
-    def invoke_llm(self, **kwargs) -> str:
+    def _invoke_llm(self, **kwargs) -> str:
         chain = self.prompt | self.llm
         response = self._clean_response(chain.invoke(kwargs).content)
         self.logger.debug("*"*50 + "\n%s\n" + "*"*50, response)
@@ -63,15 +104,8 @@ class BaseAgent(ABC):
         if 'models' in config:
             agents = []
             for model in config['models']:
-                agent = cls(config['role'], name=config.get('name', None))
-                agent.model_name = model.get('name', agent.model_name)
-                agent.temperature = model.get('temperature', agent.temperature)
-                agent.prompt_template = prompt
+                agent = cls(config, prompt, model)
                 agents.append(agent)
             return agents
         else:
-            agent = cls(config['role'], name=config.get('name', None))
-            agent.model_name = config.get('model', agent.model_name)
-            agent.temperature = config.get('temperature', agent.temperature)
-            agent.prompt_template = prompt
-            return agent
+            return cls(config, prompt)
