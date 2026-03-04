@@ -26,15 +26,19 @@ Once you have completed your analysis, you MUST output the winning index using E
 
 <winner>[Insert the integer number of the winning draft here, e.g., 0, 1, or 2]</winner>
 
+# Current Task
+
+This is your specific assignment for this step. You must complete this task using the input data provided below.
+
+<current_task>
+{current_task}
+</current_task>
+
 # Input Data
 
 <specs>
 {specs}
 </specs>
-
-<current_task>
-{current_task}
-</current_task>
 
 <drafts>
 {drafts}

@@ -27,6 +27,14 @@ If the code needs fixes, output your detailed feedback exactly like this:
 [Insert detailed bug reports and requested changes here]
 </feedback>
 
+# Current Task
+
+This is your specific assignment for this step. You must complete this task using the input data provided below.
+
+<current_task>
+{current_task}
+</current_task>
+
 # Input Data
 
 <specs>

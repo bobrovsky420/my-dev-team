@@ -27,6 +27,14 @@ If the code fails or has bugs, output your detailed report exactly like this:
 [Insert bug reports and failed test scenarios here]
 </test_results>
 
+# Current Task
+
+This is your specific assignment for this step. You must complete this task using the input data provided below.
+
+<current_task>
+{current_task}
+</current_task>
+
 # Input Data
 
 <specs>

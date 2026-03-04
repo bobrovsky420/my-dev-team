@@ -4,7 +4,9 @@ from .base import BaseAgent
 class QAEngineer(BaseAgent):
     def process(self, state: dict) -> dict:
         self.logger.info("Testing code...")
+        current_task = state.get('current_task', 'Complete project')
         response = self.invoke_llm(
+            current_task=current_task,
             specs=state.get('specs'),
             code=state.get('code')
         )
