@@ -4,7 +4,7 @@ import re
 from dotenv import load_dotenv
 from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, Reporter
 from crew import VirtualCrew
-from extensions import HumanInTheLoop, WorkspaceSaver
+from extensions import HumanInTheLoop, WorkspaceSaver, RateLimiter
 
 load_dotenv()
 
@@ -45,7 +45,8 @@ def my_developers():
 def my_extensions():
     return [
         WorkspaceSaver(),
-        HumanInTheLoop()
+        HumanInTheLoop(),
+        RateLimiter()
     ]
 
 def my_crew():
