@@ -2,9 +2,10 @@ from datetime import datetime
 import logging
 import re
 from dotenv import load_dotenv
-from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, Reporter
+from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, QAFinal, Reporter
 from crew import VirtualCrew
 from extensions import HumanInTheLoop, WorkspaceSaver, RateLimiter
+from managers.abmanager import ABManager
 
 load_dotenv()
 
@@ -32,6 +33,7 @@ def my_agents():
         'judge': CodeJudge.from_config('agents/code-judge.md'),
         'reviewer': CodeReviewer.from_config('agents/code-reviewer.md'),
         'qa': QAEngineer.from_config('agents/qa-engineer.md'),
+        'final-qa': QAFinal.from_config('agents/final-qa-engineer.md'),
         'reporter': Reporter.from_config('agents/reporter.md')
     }
 
@@ -49,8 +51,11 @@ def my_extensions():
         RateLimiter()
     ]
 
+def my_manager():
+    return ABManager(developers=list(my_developers().keys()))
+
 def my_crew():
-    return VirtualCrew(agents=my_agents(), developers=my_developers(), extensions=my_extensions())
+    return VirtualCrew(agents=my_agents(), developers=my_developers(), manager=my_manager(), extensions=my_extensions())
 
 def load_project_spec(path: str = 'project.txt') -> tuple[str, str]:
     """Read the project file and return (name, description)."""

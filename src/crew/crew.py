@@ -4,18 +4,18 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 from project import ProjectState
 from extensions import CrewExtension
-from .manager import CrewManager
+from managers import BaseManager
 
 class VirtualCrew:
     role = 'Virtual Crew'
     name: str = None
 
-    def __init__(self, agents: dict, developers: dict, extensions: list[CrewExtension] = None):
+    def __init__(self, agents: dict, developers: dict, manager: BaseManager, extensions: list[CrewExtension] = None):
         self.logger = logging.getLogger(self.name or self.role)
         self.extensions = extensions or []
-        self.agents = agents
+        self.agents = agents | developers
         self.developers = developers
-        self.manager = CrewManager(developers=list(self.developers.keys()))
+        self.manager = manager
         self.app = self._build_graph()
 
     @cached_property
@@ -23,24 +23,20 @@ class VirtualCrew:
         return MemorySaver()
 
     def _build_graph(self):
-        def add_node(node_name, *, agent_func = None, conditional_router = True):
+        def add_node(node_name, *, agent_func = None, conditional_router = True, end_key = None):
             workflow.add_node(node_name, agent_func or self.agents[node_name].process)
             if conditional_router:
                 workflow.add_conditional_edges(node_name, self.manager.router)
+            if end_key:
+                workflow.add_edge(node_name, end_key)
         workflow = StateGraph(ProjectState)
-        add_node('officer', agent_func=self.manager.queue_manager)
-        add_node('pm')
-        add_node('architect')
-        for dev in self.developers:
-            add_node(dev, agent_func=self.developers[dev].process)
-        add_node('judge')
-        add_node('reviewer')
-        add_node('qa')
-        add_node('final_qa', agent_func=self.agents['qa'].process)
-        add_node('human', agent_func=self._dummy_human_node)
-        add_node('reporter', conditional_router=False)
         workflow.add_conditional_edges(START, self.manager.router)
-        workflow.add_edge('reporter', END)
+        add_node('officer', agent_func=self.manager.queue_manager)
+        add_node('human', agent_func=self._dummy_human_node)
+        for agent in self.agents:
+            if agent not in ['reporter']:
+                add_node(agent)
+        add_node('reporter', conditional_router=False, end_key=END)
         return workflow.compile(
             checkpointer=self._memory,
             interrupt_before=['human']
@@ -53,9 +49,7 @@ class VirtualCrew:
 
     def execute_project(self, requirements: str, thread_id: str):
         config = {'configurable': {'thread_id': thread_id}}
-
         self.logger.info("Starting Project Requirements:\n%s", requirements)
-
         initial_state = {
             'requirements': requirements,
             'clarification_question': '',
