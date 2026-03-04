@@ -1,4 +1,5 @@
 import re
+from utils import sanitize_for_prompt
 from .base import BaseAgent
 
 class SeniorDeveloper(BaseAgent):
@@ -10,31 +11,31 @@ class SeniorDeveloper(BaseAgent):
         review_feedback = state.get('review_feedback', '').strip()
         test_results = state.get('test_results', '').strip()
 
-        context = f'<specs>\n{specs}\n</specs>\n'
+        context = f"<specs>\n{sanitize_for_prompt(specs, ['specs', 'context'])}\n</specs>\n"
 
         if existing_code:
-            context += f'\n<existing_code>\n{existing_code}\n</existing_code>\n'
+            context += f"<existing_code>\n{sanitize_for_prompt(existing_code, ['existing_code', 'context'])}\n</existing_code>\n"
 
         if review_feedback or test_results:
-            context += f'\n<feedback>\n'
+            context += "\n<feedback>\n"
             if review_feedback:
-                context += f'\n<review_feedback>\n{review_feedback}\n</review_feedback>\n'
+                context += f"\n<review_feedback>\n{sanitize_for_prompt(review_feedback, ['review_feedback', 'feedback', 'context'])}\n</review_feedback>\n"
             if test_results:
-                context += f'\n<test_results>\n{test_results}\n</test_results>\n'
-            context += '</feedback>\n'
+                context += f"\n<test_results>\n{sanitize_for_prompt(test_results, ['test_results', 'feedback', 'context'])}\n</test_results>\n"
+            context += "</feedback>\n"
 
         response = self.invoke_llm(
             current_task=current_task,
             context=context
         )
 
-        if main_match := re.search(r'<main_code>(.*?)</main_code>', response, re.DOTALL | re.IGNORECASE):
+        if main_match := re.search(r"<main_code>(.*?)</main_code>", response, re.DOTALL | re.IGNORECASE):
             main_code = main_match.group(1).strip()
         else:
             self.logger.warning("Missing <main_code> tags. Using raw output.")
             main_code = response.strip()
 
-        if test_match := re.search(r'<test_code>(.*?)</test_code>', response, re.DOTALL | re.IGNORECASE):
+        if test_match := re.search(r"<test_code>(.*?)</test_code>", response, re.DOTALL | re.IGNORECASE):
             test_code = test_match.group(1).strip()
         else:
             self.logger.warning("Missing <test_code> tags.")

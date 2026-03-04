@@ -1,4 +1,5 @@
 import re
+from utils import sanitize_for_prompt
 from .base import BaseAgent
 
 class ProductManager(BaseAgent):
@@ -9,18 +10,18 @@ class ProductManager(BaseAgent):
         human_answer = state.get('human_answer', '')
 
         response = self.invoke_llm(
-            requirements=requirements,
-            human_answer=human_answer
+            requirements=sanitize_for_prompt(requirements, ['requirements']),
+            human_answer=sanitize_for_prompt(human_answer, ['human_answer'])
         )
 
-        if question_match := re.search(r'<question>(.*?)</question>', response, re.DOTALL | re.IGNORECASE):
+        if question_match := re.search(r"<question>(.*?)</question>", response, re.DOTALL | re.IGNORECASE):
             question = question_match.group(1).strip()
             self.logger.info("Need clarification from the user.")
             return {
                 'clarification_question': question,
                 'specs': '' # Explicitly empty so the router knows we aren't ready for code
             }
-        elif specs_match := re.search(r'<specs>(.*?)</specs>', response, re.DOTALL | re.IGNORECASE):
+        elif specs_match := re.search(r"<specs>(.*?)</specs>", response, re.DOTALL | re.IGNORECASE):
             specs = specs_match.group(1).strip()
             self.logger.info("Generated technical specifications.")
             return {
@@ -28,8 +29,6 @@ class ProductManager(BaseAgent):
                 'clarification_question': '' # Clear out any old questions
             }
         else:
-            # Fallback: If the local model hallucinates and forgets the XML tags,
-            # we gracefully assume the entire response is the specification.
             self.logger.warning("Missing XML tags. Treating raw output as specs.")
             return {
                 'specs': response.strip(),

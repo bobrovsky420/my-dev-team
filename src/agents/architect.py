@@ -1,11 +1,14 @@
 import re
+from utils import sanitize_for_prompt
 from .base import BaseAgent
 
 class SystemArchitect(BaseAgent):
     def process(self, state: dict) -> dict:
         self.logger.info("Designing the execution plan...")
         specs = state.get('specs', '')
-        response = self.invoke_llm(specs=specs)
+        response = self.invoke_llm(
+            specs=sanitize_for_prompt(specs, ['specs'])
+        )
         raw_tasks = re.findall(r"<task>(.*?)</task>", response, re.IGNORECASE | re.DOTALL)
         tasks = [t.strip() for t in raw_tasks if t.strip()]
         if not tasks:

@@ -60,7 +60,7 @@ class CrewManager:
         # ---------------------------------------------------------
         if state.get('revision_count', 0) >= 3:
             self.logger.warning(f"Task '{current_task}' reached MAX REVISIONS. Moving to next task.")
-            return 'manager_pulls_next_task'
+            return 'officer'
         if not state.get('review_feedback'):
             return 'reviewer'
         if not is_approved:
@@ -74,8 +74,8 @@ class CrewManager:
         # ---------------------------------------------------------
         # 6. TASK COMPLETION
         # ---------------------------------------------------------
-        self.logger.info(f"Task '{current_task}' passed all checks! Pulling next task.")
-        return 'manager_pulls_next_task'
+        self.logger.info(f"Task '%s' passed all checks! Pulling next task.", current_task)
+        return 'officer'
 
     def queue_manager(self, state: dict) -> dict:
         """Pops the next task and resets the A/B development environment."""
@@ -86,7 +86,7 @@ class CrewManager:
             completed.append(current)
         next_task = pending.pop(0) if pending else ''
         if next_task:
-            self.logger.info(f"Setting up environment for task: {next_task}")
+            self.logger.info(f"Setting up environment for task '%s'", next_task)
         else:
             self.logger.info("Task queue is empty.")
         return {

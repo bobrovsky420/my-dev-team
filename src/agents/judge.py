@@ -1,4 +1,5 @@
 import re
+from utils import sanitize_for_prompt
 from .base import BaseAgent
 
 class CodeJudge(BaseAgent):
@@ -12,13 +13,14 @@ class CodeJudge(BaseAgent):
             return {'task_phase': 'reviewing'}
         drafts_formatted = ""
         for idx, draft in enumerate(drafts):
-            drafts_formatted += f"<draft_{idx}>\n{draft}\n</draft_{idx}>\n\n"
+            draft_idx = f"draft_{idx}"
+            drafts_formatted += f"<{draft_idx}>\n{sanitize_for_prompt(draft, [draft_idx, 'drafts'])}\n</{draft_idx}>\n\n"
         response = self.invoke_llm(
-            specs=specs,
-            current_task=current_task,
+            specs=sanitize_for_prompt(specs, ['specs']),
+            current_task=sanitize_for_prompt(current_task, ['current_task']),
             drafts=drafts_formatted
         )
-        match = re.search(r'<winner>(\d+)</winner>', response, re.IGNORECASE)
+        match = re.search(r"<winner>(\d+)</winner>", response, re.IGNORECASE)
         try:
             winner_idx = int(match.group(1).strip())
             winning_code = drafts[winner_idx]
