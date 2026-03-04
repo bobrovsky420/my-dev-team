@@ -1,9 +1,31 @@
+from langgraph.graph import StateGraph, START, END
+from project import ProjectState
 from .base import BaseManager
 
 class StandardManager(BaseManager):
-    def __init__(self, developer_name: str):
-        super().__init__()
-        self.developer = developer_name
+    def build_graph(self, agents: dict, developers: dict, memory, human_interrupter):
+        workflow = StateGraph(ProjectState)
+        workflow.add_node('officer', self.queue_manager)
+        workflow.add_node('human', human_interrupter)
+        workflow.add_node('pm', agents['pm'].process)
+        workflow.add_node('architect', agents['architect'].process)
+        workflow.add_node('reviewer', agents['reviewer'].process)
+        workflow.add_node('qa', agents['qa'].process)
+        workflow.add_node('final-qa', agents['final-qa'].process)
+        workflow.add_node('reporter', agents['reporter'].process)
+        dev_name = developers.keys()[0]  # Get the first (and only) developer's name
+        workflow.add_node(dev_name, developers[dev_name].process)
+        workflow.add_conditional_edges(START, self.router)
+        workflow.add_conditional_edges('human', self.router)
+        workflow.add_conditional_edges('pm', self.router)
+        workflow.add_edge('architect', 'officer')
+        workflow.add_conditional_edges('officer', self.router)
+        workflow.add_edge(dev_name, 'reviewer')
+        workflow.add_conditional_edges('reviewer', self.router)
+        workflow.add_conditional_edges('qa', self.router)
+        workflow.add_conditional_edges('final-qa', self.router)
+        workflow.add_edge('reporter', END)
+        return workflow.compile(checkpointer=memory, interrupt_before=['human'])
 
     def router(self, state: dict) -> str:
         self.logger.info("Routing workflow (Standard)...")

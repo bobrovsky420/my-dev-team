@@ -1,3 +1,5 @@
+from langgraph.graph import StateGraph, START, END
+from project import ProjectState
 from .base import BaseManager
 
 class ABManager(BaseManager):
@@ -6,6 +8,31 @@ class ABManager(BaseManager):
     def __init__(self, developers: list[str]):
         super().__init__()
         self.developers = developers
+
+    def build_graph(self, agents: dict, developers: dict, memory, human_interrupter) -> StateGraph:
+        workflow = StateGraph(ProjectState)
+        workflow.add_node('officer', self.queue_manager)
+        workflow.add_node('human', human_interrupter)
+        for agent_name in agents:
+            workflow.add_node(agent_name, agents[agent_name].process)
+        for dev_name in developers:
+            workflow.add_node(dev_name, developers[dev_name].process)
+        workflow.add_conditional_edges(START, self.router)
+        workflow.add_conditional_edges('human', self.router)
+        workflow.add_conditional_edges('pm', self.router)
+        workflow.add_edge('architect', 'officer')
+        workflow.add_conditional_edges('officer', self.router)
+        for dev_name in developers:
+            workflow.add_conditional_edges(dev_name, self.router)
+        workflow.add_edge('judge', 'reviewer')
+        workflow.add_conditional_edges('reviewer', self.router)
+        workflow.add_conditional_edges('qa', self.router)
+        workflow.add_conditional_edges('final-qa', self.router)
+        workflow.add_edge('reporter', END)
+        return workflow.compile(
+            checkpointer=memory,
+            interrupt_before=['human']
+        )
 
     def router(self, state: dict) -> str:
         self.logger.info("Routing workflow (A/B Development)...")

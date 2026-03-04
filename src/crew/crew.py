@@ -1,8 +1,6 @@
 from functools import cached_property
 import logging
-from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
-from project import ProjectState
 from extensions import CrewExtension
 from managers import BaseManager
 
@@ -13,34 +11,16 @@ class VirtualCrew:
     def __init__(self, agents: dict, developers: dict, manager: BaseManager, extensions: list[CrewExtension] = None):
         self.logger = logging.getLogger(self.name or self.role)
         self.extensions = extensions or []
-        self.agents = agents | developers
-        self.developers = developers
-        self.manager = manager
-        self.app = self._build_graph()
+        self.app = manager.build_graph(
+            agents=agents,
+            developers=developers,
+            memory=self._memory,
+            human_interrupter=self._dummy_human_node
+        )
 
     @cached_property
     def _memory(self):
         return MemorySaver()
-
-    def _build_graph(self):
-        def add_node(node_name, *, agent_func = None, conditional_router = True, end_key = None):
-            workflow.add_node(node_name, agent_func or self.agents[node_name].process)
-            if conditional_router:
-                workflow.add_conditional_edges(node_name, self.manager.router)
-            if end_key:
-                workflow.add_edge(node_name, end_key)
-        workflow = StateGraph(ProjectState)
-        workflow.add_conditional_edges(START, self.manager.router)
-        add_node('officer', agent_func=self.manager.queue_manager)
-        add_node('human', agent_func=self._dummy_human_node)
-        for agent in self.agents:
-            if agent not in ['reporter']:
-                add_node(agent)
-        add_node('reporter', conditional_router=False, end_key=END)
-        return workflow.compile(
-            checkpointer=self._memory,
-            interrupt_before=['human']
-        )
 
     def _dummy_human_node(self, state: dict) -> dict:
         """Passthrough node for Human-in-the-Loop interruptions."""
@@ -88,4 +68,4 @@ class VirtualCrew:
         final_state = self.app.get_state(config).values
         for ext in self.extensions:
             ext.on_finish(thread_id, final_state)
-        return final_state.get('final_report', "No report generated.")
+        return final_state.get('final_report', 'No report generated.')
