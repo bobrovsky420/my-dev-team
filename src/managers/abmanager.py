@@ -1,5 +1,5 @@
 from langgraph.graph import StateGraph, START, END
-from project import ProjectState
+from crew.project import ProjectState
 from .base import BaseManager
 
 class ABManager(BaseManager):

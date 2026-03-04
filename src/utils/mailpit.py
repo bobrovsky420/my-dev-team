@@ -7,7 +7,7 @@ import time
 from email.message import EmailMessage
 from email.utils import formataddr
 import markdown
-from project.project import Project
+from crew.project import Project
 
 SMTP_HOST = 'localhost'
 SMTP_PORT = 1025
