@@ -17,8 +17,15 @@ class WorkspaceSaver(CrewExtension):
 
     def _save_tasks(self, base_dir: Path, tasks: list[str]):
         tasks_file = base_dir / 'tasks.md'
-        content = "# System Execution Plan\n\n" + "\n".join(f"{i+1}. {task}" for i, task in enumerate(tasks))
-        tasks_file.write_text(content, encoding='utf-8')
+        content = ["# System Execution Plan\n"]
+        for i, task in enumerate(tasks, start=1):
+            ticket_markdown = (
+                f"## Task {i}\n"
+                f"{task.strip()}\n\n"
+                f"---\n"
+            )
+            content.append(ticket_markdown)
+        tasks_file.write_text("\n".join(content), encoding='utf-8')
 
     def _save_code(self, base_dir: Path, code: str):
         code_file = base_dir / 'code.md'
