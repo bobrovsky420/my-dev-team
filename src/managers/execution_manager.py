@@ -4,9 +4,9 @@ from .base_manager import BaseManager
 
 class StandardExecutionManager(BaseManager):
     """Executes a single ticket using one developer."""
-    def build_graph(self, agents: dict, developers: dict, memory, human_interrupter) -> StateGraph:
+    def build_graph(self, agents: dict, memory) -> StateGraph:
         workflow = StateGraph(ExecutionState)
-        workflow.add_node('developer', developers['developer'].process)
+        workflow.add_node('developer', agents['developer'].process)
         workflow.add_node('reviewer', agents['reviewer'].process)
         workflow.add_node('qa', agents['qa'].process)
         workflow.add_edge(START, 'developer')

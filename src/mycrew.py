@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
 from crew import VirtualCrew
 from extensions import HumanInTheLoop, WorkspaceSaver, RateLimiter
-from managers import PlanningManager
+from managers import PlanningManager, StandardExecutionManager, IntegrationManager
 
 load_dotenv()
 
@@ -82,14 +82,61 @@ def generate_thread_id(project_name: str) -> str:
 if __name__ == '__main__':
     project_name, project_requirements = load_project_spec('project.txt')
     thread_id = generate_thread_id(project_name)
-    planning_crew = VirtualCrew(manager=PlanningManager(), agents=my_agents(), extensions=my_extensions())
-    initial_state={
+    # PLANNING
+    planning_crew = VirtualCrew(manager=PlanningManager(), agents={
+        'pm': ProductManager.from_config('agents/product-manager.md'),
+        'architect': SystemArchitect.from_config('agents/system-architect.md')
+    }, extensions=my_extensions())
+    plan_state = planning_crew.execute(thread_id=thread_id, initial_state={
         'requirements': project_requirements,
-        'communication_log': []}
-    planning_crew.execute(thread_id=thread_id, initial_state=initial_state)
-    """"
-    print("\n\n" + "="*50)
-    print("PROJECT COMPLETED - FINAL REPORT")
-    print("="*50)
-    print(final_report)
-    """
+        'communication_log': []
+    })
+    # EXECUTION
+    project_specs = plan_state.get('specs', '')
+    backlog = plan_state.get('pending_tasks', [])
+    if not backlog:
+        print("❌ Error: System Architect failed to generate a backlog. Exiting.")
+        exit(1)
+    current_codebase = ''
+    execution_crew = VirtualCrew(manager=StandardExecutionManager(), agents={
+        'developer': SeniorDeveloper.from_config('agents/senior-developer.md'),
+        'reviewer': CodeReviewer.from_config('agents/code-reviewer.md'),
+        'qa': QAEngineer.from_config('agents/qa-engineer.md')
+    }, extensions=my_extensions())
+    for i, user_story in enumerate(backlog, start=1):
+        print(f"\n--- 🎫 Starting Ticket {i}/{len(backlog)} ---")
+        task_state = execution_crew.execute(
+            thread_id=f'{thread_id}_task_{i}',
+            initial_state={
+                'specs': project_specs,
+                'current_task': user_story,
+                'existing_code': current_codebase,
+                'revision_count': 0,
+                'communication_log': []
+            }
+        )
+        current_codebase = task_state.get('code', current_codebase)
+    # INTEGRATION
+    integration_crew = VirtualCrew(manager=IntegrationManager(), agents={
+        'qa': FinalQAEngineer.from_config('agents/final-qa-engineer.md'),
+        'reporter': Reporter.from_config('agents/reporter.md')
+    }, extensions=my_extensions())
+    final_state = integration_crew.execute(
+        thread_id=f'{thread_id}_release',
+        initial_state={
+            'requirements': project_requirements,
+            'specs': project_specs,
+            'code': current_codebase,
+            'communication_log': []
+        }
+    )
+    final_report = final_state.get('final_report', 'No report generated.')
+    integration_bugs = final_state.get('integration_bugs', [])
+    if integration_bugs:
+        print("\n🚨 RELEASE FAILED: Integration bugs found!")
+        for bug in integration_bugs:
+            print(f" - {bug}")
+        print("Note: In a production system, these would be automatically appended to the Phase 2 Backlog.")
+    else:
+        print("\n🎉 PROJECT COMPLETED SUCCESSFULLY!")
+        print(final_report)

@@ -5,7 +5,7 @@ from .base_manager import BaseManager
 class IntegrationManager(BaseManager):
     role = 'Integration Manager'
 
-    def build_graph(self, agents: dict, developers: dict, memory, human_interrupter) -> StateGraph:
+    def build_graph(self, agents: dict, memory) -> StateGraph:
         workflow = StateGraph(IntegrationState)
         workflow.add_node('qa', agents['qa'].process)
 #        workflow.add_node('devops', agents['devops'].process)

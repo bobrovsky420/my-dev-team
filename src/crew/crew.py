@@ -6,26 +6,16 @@ class VirtualCrew:
     role = 'Virtual Crew'
     name: str = None
 
-    def __init__(self, manager, agents: dict = None, developers: dict = None, extensions: list = None):
+    def __init__(self, manager, agents: dict = None, extensions: list = None):
         self.logger = logging.getLogger(self.name or self.role)
         self.manager = manager
         self.agents = agents or {}
-        self.developers = developers or {}
         self.extensions = extensions or []
-        self.app = self.manager.build_graph(
-            agents=self.agents,
-            developers=self.developers,
-            memory=self._memory,
-            human_interrupter=self._dummy_human_node
-        )
+        self.app = self.manager.build_graph(agents=self.agents, memory=self.memory)
 
     @cached_property
-    def _memory(self):
+    def memory(self):
         return MemorySaver()
-
-    def _dummy_human_node(self, state: dict) -> dict:
-        self.logger.info("Human input received. Resuming workflow...")
-        return {'clarification_question': ''}
 
     def execute(self, thread_id: str, initial_state: dict = None) -> dict:
         config = {'configurable': {'thread_id': thread_id}}

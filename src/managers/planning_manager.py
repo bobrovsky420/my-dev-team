@@ -5,9 +5,9 @@ from .base_manager import BaseManager
 class PlanningManager(BaseManager):
     role = 'Planning Manager'
 
-    def build_graph(self, agents: dict, developers: dict, memory, human_interrupter) -> StateGraph:
+    def build_graph(self, agents: dict, memory) -> StateGraph:
         workflow = StateGraph(PlanningState)
-        workflow.add_node('human', human_interrupter)
+        workflow.add_node('human', self.dummy_human_node)
         workflow.add_node('pm', agents['pm'].process)
         workflow.add_node('architect', agents['architect'].process)
         workflow.add_conditional_edges(START, self.route_start)
@@ -15,6 +15,10 @@ class PlanningManager(BaseManager):
         workflow.add_conditional_edges('pm', self.route_start)
         workflow.add_edge('architect', END)
         return workflow.compile(checkpointer=memory, interrupt_before=['human'])
+
+    def dummy_human_node(self, state: dict) -> dict:
+        self.logger.info("Human input received. Resuming workflow...")
+        return {'clarification_question': ''}
 
     def route_start(self, state: dict) -> str:
         self.logger.info("Routing Planning Phase...")
