@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from .extension import CrewExtension
+from .base_extension import CrewExtension
 
 class WorkspaceSaver(CrewExtension):
     root_dir = Path('workspaces')

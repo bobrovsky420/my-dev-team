@@ -1,5 +1,5 @@
 from utils import sanitize_for_prompt
-from .base import BaseAgent
+from .base_agent import BaseAgent
 
 class Reporter(BaseAgent):
     def _build_inputs(self, state: dict) -> dict:

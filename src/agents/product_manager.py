@@ -1,4 +1,4 @@
-from .base import BaseAgent
+from .base_agent import BaseAgent
 
 class ProductManager(BaseAgent):
     def _update_state(self, parsed_data: dict, current_state: dict) -> dict:

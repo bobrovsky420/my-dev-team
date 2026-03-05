@@ -1,4 +1,4 @@
-from .extension import CrewExtension
+from .base_extension import CrewExtension
 
 class HumanInTheLoop(CrewExtension):
     """Extension that pauses the workflow to get human input at the 'human' node."""

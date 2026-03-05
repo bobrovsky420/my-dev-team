@@ -1,6 +1,6 @@
 import time
 import logging
-from .extension import CrewExtension
+from .base_extension import CrewExtension
 
 class RateLimiter(CrewExtension):
     """

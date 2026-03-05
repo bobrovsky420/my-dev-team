@@ -1,9 +1,9 @@
-from .base import BaseManager
-from .standard import StandardManager
-from .abmanager import ABManager
+from .execution_manager import StandardExecutionManager
+from .integration_manager import IntegrationManager
+from .planning_manager import PlanningManager
 
 __all__ = [
-    'BaseManager',
-    'StandardManager',
-    'ABManager'
+    'IntegrationManager',
+    'PlanningManager',
+    'StandardExecutionManager'
 ]

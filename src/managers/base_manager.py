@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import logging
-
 from langgraph.graph import StateGraph
 
 class BaseManager(ABC):

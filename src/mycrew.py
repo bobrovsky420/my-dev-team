@@ -2,10 +2,10 @@ from datetime import datetime
 import logging
 import re
 from dotenv import load_dotenv
-from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, QAFinal, Reporter
+from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
 from crew import VirtualCrew
 from extensions import HumanInTheLoop, WorkspaceSaver, RateLimiter
-from managers import ABManager, StandardManager
+from managers import PlanningManager
 
 load_dotenv()
 
@@ -30,11 +30,11 @@ def my_agents():
     return {
         'pm': ProductManager.from_config('agents/product-manager.md'),
         'architect': SystemArchitect.from_config('agents/system-architect.md'),
-        'judge': CodeJudge.from_config('agents/code-judge.md'),
-        'reviewer': CodeReviewer.from_config('agents/code-reviewer.md'),
-        'qa': QAEngineer.from_config('agents/qa-engineer.md'),
-        'final-qa': QAFinal.from_config('agents/final-qa-engineer.md'),
-        'reporter': Reporter.from_config('agents/reporter.md')
+#        'judge': CodeJudge.from_config('agents/code-judge.md'),
+#        'reviewer': CodeReviewer.from_config('agents/code-reviewer.md'),
+#        'qa': QAEngineer.from_config('agents/qa-engineer.md'),
+#        'final-qa': FinalQAEngineer.from_config('agents/final-qa-engineer.md'),
+#        'reporter': Reporter.from_config('agents/reporter.md')
     }
 
 def my_developers():
@@ -52,12 +52,12 @@ def my_extensions():
         RateLimiter()
     ]
 
-def my_manager():
-    return StandardManager()
+#def my_manager():
+#    return StandardManager()
 #    return ABManager(developers=list(my_developers().keys()))
 
-def my_crew():
-    return VirtualCrew(agents=my_agents(), developers=my_developers(), manager=my_manager(), extensions=my_extensions())
+#def my_crew():
+#    return VirtualCrew(agents=my_agents(), developers=my_developers(), manager=my_manager(), extensions=my_extensions())
 
 def load_project_spec(path: str = 'project.txt') -> tuple[str, str]:
     """Read the project file and return (name, description)."""
@@ -82,9 +82,14 @@ def generate_thread_id(project_name: str) -> str:
 if __name__ == '__main__':
     project_name, project_requirements = load_project_spec('project.txt')
     thread_id = generate_thread_id(project_name)
-    crew = my_crew()
-    final_report = crew.execute_project(requirements=project_requirements, thread_id=thread_id)
+    planning_crew = VirtualCrew(manager=PlanningManager(), agents=my_agents(), extensions=my_extensions())
+    initial_state={
+        'requirements': project_requirements,
+        'communication_log': []}
+    planning_crew.execute(thread_id=thread_id, initial_state=initial_state)
+    """"
     print("\n\n" + "="*50)
     print("PROJECT COMPLETED - FINAL REPORT")
     print("="*50)
     print(final_report)
+    """

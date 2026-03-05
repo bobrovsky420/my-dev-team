@@ -1,6 +1,6 @@
-from .base import BaseAgent
+from .base_agent import BaseAgent
 
-class QAFinal(BaseAgent):
+class FinalQAEngineer(BaseAgent):
     def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
         results = parsed_data.get('test_results') or parsed_data.get('raw_output', '').strip()
         status = 'PASSED' if results == 'PASSED' else 'INTEGRATION BUGS FOUND'
