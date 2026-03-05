@@ -14,13 +14,3 @@ class BaseManager(ABC):
     def build_graph(self, agents: dict, developers: dict, memory, human_interrupter) -> StateGraph:
         """Constructs and compiles the specific LangGraph workflow for this manager"""
         pass
-
-    @abstractmethod
-    def router(self, state: dict) -> str:
-        """Determines the next node in the LangGraph workflow"""
-        pass
-
-    @abstractmethod
-    def queue_manager(self, state: dict) -> dict:
-        """Pops the next task and resets task-specific environment variables"""
-        pass

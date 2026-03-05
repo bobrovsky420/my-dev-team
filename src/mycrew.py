@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, QAFinal, Reporter
 from crew import VirtualCrew
 from extensions import HumanInTheLoop, WorkspaceSaver, RateLimiter
-from managers.abmanager import ABManager
+from managers import ABManager, StandardManager
 
 load_dotenv()
 
@@ -40,9 +40,10 @@ def my_agents():
 def my_developers():
     name = 'dev'
     devs = SeniorDeveloper.from_config('agents/senior-developer.md')
-    if isinstance(devs, list):
-        return {f'{name}_{i+1}': dev for i, dev in enumerate(devs)}
-    return {name: devs}
+    return {name: devs[0]}
+#    if isinstance(devs, list):
+#        return {f'{name}_{i+1}': dev for i, dev in enumerate(devs)}
+#    return {name: devs}
 
 def my_extensions():
     return [
@@ -52,7 +53,8 @@ def my_extensions():
     ]
 
 def my_manager():
-    return ABManager(developers=list(my_developers().keys()))
+    return StandardManager()
+#    return ABManager(developers=list(my_developers().keys()))
 
 def my_crew():
     return VirtualCrew(agents=my_agents(), developers=my_developers(), manager=my_manager(), extensions=my_extensions())

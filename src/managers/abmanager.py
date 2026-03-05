@@ -34,6 +34,9 @@ class ABManager(BaseManager):
             interrupt_before=['human']
         )
 
+    def route_developer(self, state: dict) -> str:
+        pass
+
     def router(self, state: dict) -> str:
         self.logger.info("Routing workflow (A/B Development)...")
         feedback = state.get('review_feedback', '').strip().strip('.')
