@@ -26,35 +26,12 @@ logging.basicConfig(
 logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('httpcore').setLevel(logging.WARNING)
 
-def my_agents():
-    return {
-        'pm': ProductManager.from_config('agents/product-manager.md'),
-        'architect': SystemArchitect.from_config('agents/system-architect.md'),
-#        'judge': CodeJudge.from_config('agents/code-judge.md'),
-#        'reviewer': CodeReviewer.from_config('agents/code-reviewer.md'),
-#        'qa': QAEngineer.from_config('agents/qa-engineer.md'),
-#        'final-qa': FinalQAEngineer.from_config('agents/final-qa-engineer.md'),
-#        'reporter': Reporter.from_config('agents/reporter.md')
-    }
-
-def my_developers():
-    name = 'dev'
-    devs = SeniorDeveloper.from_config('agents/senior-developer.md')
-    return {name: devs[0]}
-#    if isinstance(devs, list):
-#        return {f'{name}_{i+1}': dev for i, dev in enumerate(devs)}
-#    return {name: devs}
-
 def my_extensions():
     return [
         WorkspaceSaver(),
         HumanInTheLoop(),
-        RateLimiter()
+#        RateLimiter()
     ]
-
-#def my_manager():
-#    return StandardManager()
-#    return ABManager(developers=list(my_developers().keys()))
 
 #def my_crew():
 #    return VirtualCrew(agents=my_agents(), developers=my_developers(), manager=my_manager(), extensions=my_extensions())

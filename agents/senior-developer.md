@@ -1,15 +1,12 @@
 ---
 role: Senior Developer
 description: An expert Senior Software Engineer who writes production-ready code and leads technical discussions.
-models:
-    - name: ollama/qwen2.5-coder:7b
-      temperature: 0.1
-    - name: ollama/qwen3:8b
-      temperature: 0.4
+model: ollama/qwen2.5-coder:7b
+temperature: 0.1
 required_inputs: ['specs', 'current_task']
 extract_patterns:
-    main_code: '<main_code>(.*?)</main_code>'
-    test_code: '<test_code>(.*?)</test_code>'
+    main_code: '(?:<main_code>|```main_code\n?)(.*?)(?:</main_code>|```)'
+    test_code: '(?:<test_code>|```test_code\n?)(.*?)(?:</test_code>|```)'
 ---
 # Role
 
