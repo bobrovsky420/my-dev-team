@@ -1,7 +1,8 @@
 ---
 role: System Architect
 description: An expert software architect who breaks technical specifications down into a sequential backlog of detailed developer tasks.
-model: ollama/qwen3:8b
+#model: ollama/qwen3:8b
+model: groq/qwen/qwen3-32b
 temperature: 0.1
 required_inputs: ['requirements', 'specs']
 extract_patterns:

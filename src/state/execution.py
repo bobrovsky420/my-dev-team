@@ -5,7 +5,8 @@ class ExecutionState(TypedDict):
     specs: str
     current_task: str
     existing_code: str
-    code: str
+    main_code: str
+    test_code: str
     review_feedback: str
     test_results: str
     revision_count: int

@@ -30,7 +30,7 @@ def my_extensions():
     return [
         WorkspaceSaver(),
         HumanInTheLoop(),
-#        RateLimiter()
+        RateLimiter()
     ]
 
 #def my_crew():
