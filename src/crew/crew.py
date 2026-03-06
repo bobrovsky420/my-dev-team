@@ -27,9 +27,10 @@ class VirtualCrew:
             self.logger.info("Resuming workflow from memory...")
         while True:
             input_data = initial_state if 'initial_state' in locals() and initial_state else None
-            for full_state in self.app.stream(input_data, config, stream_mode='values'):
+            for state_update in self.app.stream(input_data, config, stream_mode='updates'):
+                full_state = self.app.get_state(config).values
                 for ext in self.extensions:
-                    ext.on_step(thread_id, full_state)
+                    ext.on_step(thread_id, state_update=state_update, full_state=full_state)
             if initial_state:
                 initial_state = None
             state_snapshot = self.app.get_state(config)

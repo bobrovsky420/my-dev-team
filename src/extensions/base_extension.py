@@ -7,7 +7,7 @@ class CrewExtension(ABC):
         """Triggered right before the crew starts running."""
         pass
 
-    def on_step(self, thread_id: str, current_state: dict):
+    def on_step(self, thread_id: str, *, state_update: dict, full_state: dict):
         """Triggered every time LangGraph updates the state."""
         pass
 

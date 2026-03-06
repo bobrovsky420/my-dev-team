@@ -10,8 +10,8 @@ class ConsoleLogger(CrewExtension):
         elif 'code' in state and 'final_report' in state:
             print("Phase: 📦 Release & Integration")
 
-    def on_step(self, thread_id: str, state: dict):
-        logs = state.get('communication_log', [])
+    def on_step(self, thread_id: str, *, state_update: dict, full_state: dict):
+        logs = full_state.get('communication_log', [])
         if logs:
             latest_log = logs[-1]
             print(f"  ➜ {latest_log.splitlines()[0]}")

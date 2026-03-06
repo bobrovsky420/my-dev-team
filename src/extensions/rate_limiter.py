@@ -11,7 +11,7 @@ class RateLimiter(CrewExtension):
         self.call_timestamps = []
         self.logger = logging.getLogger('Rate Limiter')
 
-    def on_step(self, thread_id: str, current_state: dict):
+    def on_step(self, thread_id: str, *, state_update: dict, full_state: dict):
         current_time = time.time()
         self.call_timestamps = [t for t in self.call_timestamps if current_time - t < 60.0]
         if len(self.call_timestamps) >= self.rpm_limit:

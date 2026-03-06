@@ -88,6 +88,9 @@ if __name__ == '__main__':
                 'specs': project_specs,
                 'current_task': user_story,
                 'existing_code': current_codebase,
+                'code': '',
+                'review_feedback': '',
+                'test_results': '',
                 'revision_count': 0,
                 'communication_log': []
             }

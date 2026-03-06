@@ -27,50 +27,41 @@ class WorkspaceSaver(CrewExtension):
             content.append(ticket_markdown)
         tasks_file.write_text("\n".join(content), encoding='utf-8')
 
-    def _save_code(self, base_dir: Path, code: str):
-        code_file = base_dir / 'code.md'
+    def _save_code(self, base_dir: Path, code: str, revision_count: int):
+        code_file = base_dir / f'code_v{revision_count}.md'
         code_file.write_text(code, encoding='utf-8')
+
+    def _save_code_review(self, base_dir: Path, review_feedback: str, revision_count: int):
+        feedback_file = base_dir / f'feedback_v{revision_count}.md'
+        feedback_file.write_text(review_feedback, encoding='utf-8')
+
+    def _save_test_results(self, base_dir: Path, test_results: str, revision_count: int):
+        results_file = base_dir / f'test_results_v{revision_count}.md'
+        results_file.write_text(test_results, encoding='utf-8')
 
     def _save_final_report(self, base_dir: Path, report: str):
         report_file = base_dir / 'final_report.md'
         report_file.write_text(report, encoding='utf-8')
 
-    def on_step(self, thread_id: str, current_state: dict):
+    def on_step(self, thread_id: str, *, state_update: dict, full_state: dict):
         base_dir = self.root_dir / thread_id
-
-        pending = current_state.get('pending_tasks', [])
-        current = current_state.get('current_task', '')
-        completed = current_state.get('completed_tasks', [])
-        rev = current_state.get('revision_count', 0)
-
-        if current_state.get('specs'):
-            self._save_specs(base_dir, current_state['specs'])
-
-        if pending and not current and not completed:
-            self._save_tasks(base_dir, pending)
-
-        if current_state.get('code'):
-            self._save_code(base_dir, current_state['code'])
-
-        if current_state.get('final_report'):
-            self._save_final_report(base_dir, current_state['final_report'])
-
-        if current:
-            task_num = len(completed) + 1
-            task_dir = base_dir / f'task_{task_num:02d}'
-            drafts_dir = task_dir / 'drafts'
-            revisions_dir = task_dir / 'revisions'
-            os.makedirs(drafts_dir, exist_ok=True)
-            os.makedirs(revisions_dir, exist_ok=True)
-            task_file = task_dir / 'task_description.md'
-            task_file.write_text(current, encoding='utf-8')
-            if current_state.get('code_drafts'):
-                for idx, draft in enumerate(current_state['code_drafts']):
-                    draft_file = drafts_dir / f'draft_{idx}.md'
-                    draft_file.write_text(draft, encoding='utf-8')
-            if current_state.get('review_feedback'):
-                feedback_file = revisions_dir / f'feedback_v{rev}.md'
-                feedback_file.write_text(current_state['review_feedback'], encoding='utf-8')
-            if current_state.get('test_results'):
-                tests_file = revisions_dir / f'tests_v{rev}.md'
-                tests_file.write_text(current_state['test_results'], encoding='utf-8')
+        for node_name, node_update in state_update.items():
+            match node_name:
+                case 'pm':
+                    if specs := full_state.get('specs', ''):
+                        self._save_specs(base_dir, specs)
+                case 'architect':
+                    if pending := full_state.get('pending_tasks', []):
+                        self._save_tasks(base_dir, pending)
+                case 'developer':
+                    if code := full_state.get('code', ''):
+                        self._save_code(base_dir, code, state_update.get('revision_count', 0))
+                case 'reviewer':
+                    if review_feedback := full_state.get('review_feedback', ''):
+                        self._save_code_review(base_dir, review_feedback, full_state.get('revision_count', 0))
+                case 'qa':
+                    if test_results := full_state.get('test_results', ''):
+                        self._save_test_results(base_dir, test_results, full_state.get('revision_count', 0))
+                case 'reporter':
+                    if final_report := full_state.get('final_report'):
+                        self._save_final_report(base_dir, final_report)
