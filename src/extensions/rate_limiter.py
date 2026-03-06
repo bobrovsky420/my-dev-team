@@ -6,7 +6,7 @@ class RateLimiter(CrewExtension):
     """
     Prevents the crew from exceeding free tier API rate limits using a rolling time window.
     """
-    def __init__(self, requests_per_minute: int = 2):
+    def __init__(self, requests_per_minute: int = 3):
         self.rpm_limit = requests_per_minute
         self.call_timestamps = []
         self.logger = logging.getLogger('Rate Limiter')

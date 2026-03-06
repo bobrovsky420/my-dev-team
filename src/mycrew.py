@@ -1,6 +1,7 @@
 from datetime import datetime
 import logging
 import re
+from pathlib import Path
 from dotenv import load_dotenv
 from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
 from crew import VirtualCrew
@@ -26,11 +27,11 @@ logging.basicConfig(
 logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('httpcore').setLevel(logging.WARNING)
 
-def my_extensions():
+def my_extensions(project_dir: Path) -> list:
     return [
-        WorkspaceSaver(),
+        WorkspaceSaver(workspace_dir=project_dir),
         HumanInTheLoop(),
-        RateLimiter()
+        RateLimiter(requests_per_minute=1)
     ]
 
 #def my_crew():
@@ -59,15 +60,19 @@ def generate_thread_id(project_name: str) -> str:
 if __name__ == '__main__':
     project_name, project_requirements = load_project_spec('project.txt')
     thread_id = generate_thread_id(project_name)
+    project_folder = Path(f'workspaces/{thread_id}')
     # PLANNING
     planning_crew = VirtualCrew(manager=PlanningManager(), agents={
         'pm': ProductManager.from_config('agents/product-manager.md'),
         'architect': SystemArchitect.from_config('agents/system-architect.md')
-    }, extensions=my_extensions())
-    plan_state = planning_crew.execute(thread_id=thread_id, initial_state={
-        'requirements': project_requirements,
-        'communication_log': []
-    })
+    }, extensions=my_extensions(project_folder))
+    plan_state = planning_crew.execute(
+        thread_id=f'{thread_id}_plan',
+        initial_state={
+            'requirements': project_requirements,
+            'communication_log': []
+        }
+    )
     # EXECUTION
     project_specs = plan_state.get('specs', '')
     backlog = plan_state.get('pending_tasks', [])
@@ -79,7 +84,7 @@ if __name__ == '__main__':
         'developer': SeniorDeveloper.from_config('agents/senior-developer.md'),
         'reviewer': CodeReviewer.from_config('agents/code-reviewer.md'),
         'qa': QAEngineer.from_config('agents/qa-engineer.md')
-    }, extensions=my_extensions())
+    }, extensions=my_extensions(project_folder))
     for i, user_story in enumerate(backlog, start=1):
         print(f"\n--- 🎫 Starting Ticket {i}/{len(backlog)} ---")
         task_state = execution_crew.execute(
@@ -100,9 +105,9 @@ if __name__ == '__main__':
     integration_crew = VirtualCrew(manager=IntegrationManager(), agents={
         'qa': FinalQAEngineer.from_config('agents/final-qa-engineer.md'),
         'reporter': Reporter.from_config('agents/reporter.md')
-    }, extensions=my_extensions())
+    }, extensions=my_extensions(project_folder))
     final_state = integration_crew.execute(
-        thread_id=f'{thread_id}_release',
+        thread_id=f'{thread_id}_integration',
         initial_state={
             'requirements': project_requirements,
             'specs': project_specs,
