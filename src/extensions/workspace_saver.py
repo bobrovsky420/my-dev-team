@@ -60,6 +60,19 @@ class WorkspaceSaver(CrewExtension):
         results_file = self.base_dir / f'test_results_v{revision_count}.md'
         results_file.write_text(test_results, encoding='utf-8')
 
+    def _save_additional_files(self, raw_content: str):
+        if not raw_content.strip():
+            return
+        parts = raw_content.split('FILE: ')
+        for part in parts:
+            if not part.strip():
+                continue
+            lines = part.strip().split('\n')
+            filename = lines[0].strip()
+            content = '\n'.join(lines[1:])
+            additional_file = self.base_dir / filename
+            additional_file.write_text(content, encoding='utf-8')
+
     def _save_final_report(self, report: str):
         report_file = self.base_dir / 'final_report.md'
         report_file.write_text(report, encoding='utf-8')
@@ -78,6 +91,8 @@ class WorkspaceSaver(CrewExtension):
                     test_code = node_update.get('test_code', '')
                     revision_count = node_update.get('revision_count', 0)
                     self._save_code(main_code, test_code, revision_count)
+                    if extra := node_update.get('additional_files', ''):
+                        self._save_additional_files(extra)
                 case 'reviewer':
                     if review_feedback := node_update.get('review_feedback', ''):
                         current_rev = full_state.get('revision_count', 0)

@@ -17,7 +17,7 @@ class StandardExecutionManager(BaseManager):
 
     def route_reviewer(self, state: dict) -> str:
         feedback = state.get('review_feedback', '').strip().strip('.')
-        if feedback.upper() == 'APPROVED':
+        if feedback.upper() == 'APPROVED' or feedback.upper() == 'PASSED':
             return 'qa'
         if state.get('revision_count', 0) >= 3:
             self.logger.warning("Max revisions reached. Forcing completion.")
@@ -26,7 +26,7 @@ class StandardExecutionManager(BaseManager):
 
     def route_qa(self, state: dict) -> str:
         results = state.get('test_results', '').strip().strip('.')
-        if results.upper() == 'PASSED':
+        if results.upper() == 'APPROVED' or results.upper() == 'PASSED':
             self.logger.info("Task '%s' passed all checks!", state.get('current_task'))
             return END
         if state.get('revision_count', 0) >= 3:
