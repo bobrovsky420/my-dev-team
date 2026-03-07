@@ -1,7 +1,8 @@
 ---
 role: Senior Developer
 description: An expert Senior Software Engineer who writes production-ready code and leads technical discussions.
-model: ollama/qwen2.5-coder:7b
+#model: ollama/qwen2.5-coder:7b
+model: groq/compound
 #model: groq/qwen/qwen3-32b
 temperature: 0.1
 required_inputs: ['specs', 'current_task']

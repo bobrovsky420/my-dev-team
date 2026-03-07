@@ -14,7 +14,9 @@ def get_llm(model_name: str, temperature: float) -> BaseChatModel:
     if model_name.startswith('ollama/'):
         return ChatOllama(model=model_name[7:], temperature=temperature)
     elif model_name.startswith('groq/'):
-        return ChatGroq(model=model_name[5:], temperature=temperature)
+        if model_name == 'groq/compound':
+            return ChatGroq(model=model_name, temperature=temperature, max_retries=2)
+        return ChatGroq(model=model_name[5:], temperature=temperature, max_retries=2)
     raise ValueError(f"Unsupported model: {model_name}")
 
 class BaseAgent(ABC):
