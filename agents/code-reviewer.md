@@ -1,8 +1,8 @@
 ---
 role: Code Reviewer
 description: An expert senior developer who strictly reviews code for bugs, logic errors, and spec adherence.
-#model: ollama/qwen2.5-coder:7b
-model: groq/qwen/qwen3-32b
+model: ollama/qwen2.5-coder:7b
+#model: groq/qwen/qwen3-32b
 temperature: 0.1
 required_inputs: ['specs', 'current_task', 'main_code', 'test_code']
 extract_patterns:

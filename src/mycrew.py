@@ -61,7 +61,9 @@ if __name__ == '__main__':
     project_name, project_requirements = load_project_spec('project.txt')
     thread_id = generate_thread_id(project_name)
     project_folder = Path(f'workspaces/{thread_id}')
+
     # PLANNING
+
     planning_crew = VirtualCrew(manager=PlanningManager(), agents={
         'pm': ProductManager.from_config('agents/product-manager.md'),
         'architect': SystemArchitect.from_config('agents/system-architect.md')
@@ -73,27 +75,32 @@ if __name__ == '__main__':
             'communication_log': []
         }
     )
+
     # EXECUTION
+
     project_specs = plan_state.get('specs', '')
     backlog = plan_state.get('pending_tasks', [])
     if not backlog:
         print("❌ Error: System Architect failed to generate a backlog. Exiting.")
         exit(1)
-    current_codebase = ''
+    current_main_codebase = ""
+    current_test_codebase = ""
     execution_crew = VirtualCrew(manager=StandardExecutionManager(), agents={
         'developer': SeniorDeveloper.from_config('agents/senior-developer.md'),
         'reviewer': CodeReviewer.from_config('agents/code-reviewer.md'),
         'qa': QAEngineer.from_config('agents/qa-engineer.md')
     }, extensions=my_extensions(project_folder))
     for i, user_story in enumerate(backlog, start=1):
-        print(f"\n--- 🎫 Starting Ticket {i}/{len(backlog)} ---")
+        print(f"\n--- 🎫 Starting task {i}/{len(backlog)} ---")
         task_state = execution_crew.execute(
             thread_id=f'{thread_id}_task_{i}',
             initial_state={
                 'specs': project_specs,
                 'current_task': user_story,
-                'existing_code': current_codebase,
-                'code': '',
+                'existing_main_code': current_main_codebase,
+                'existing_test_code': current_test_codebase,
+                'main_code': '',
+                'test_code': '',
                 'review_feedback': '',
                 'test_results': '',
                 'revision_count': 0,
@@ -101,7 +108,9 @@ if __name__ == '__main__':
             }
         )
         current_codebase = task_state.get('code', current_codebase)
+
     # INTEGRATION
+
     integration_crew = VirtualCrew(manager=IntegrationManager(), agents={
         'qa': FinalQAEngineer.from_config('agents/final-qa-engineer.md'),
         'reporter': Reporter.from_config('agents/reporter.md')
