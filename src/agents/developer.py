@@ -4,32 +4,40 @@ from .base_agent import BaseAgent
 class SeniorDeveloper(BaseAgent):
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
-        context = ''
-        if existing_main := state.get('existing_main_code'):
-            context += f"<existing_main_code>\n{sanitize_for_prompt(existing_main, ['existing_main_code', 'context'])}\n</existing_main_code>\n\n"
-        if existing_test := state.get('existing_test_code'):
-            context += f"<existing_test_code>\n{sanitize_for_prompt(existing_test, ['existing_test_code', 'context'])}\n</existing_test_code>\n\n"
-        if main_code := state.get('main_code'):
-            context += f"<current_main_draft>\n{sanitize_for_prompt(main_code, ['current_main_draft', 'context'])}\n</current_main_draft>\n\n"
-        if test_code := state.get('test_code'):
-            context += f"<current_test_draft>\n{sanitize_for_prompt(test_code, ['current_test_draft', 'context'])}\n</current_test_draft>\n\n"
-        if feedback := state.get('review_feedback'):
-            context += f"<review_feedback>\n{sanitize_for_prompt(feedback, ['review_feedback', 'context'])}\n</review_feedback>\n\n"
-        if test_results := state.get('test_results'):
-            context += f"<test_results>\n{sanitize_for_prompt(test_results, ['test_results', 'context'])}\n</test_results>\n\n"
-        inputs['context'] = context.strip()
+        workspace_str = ''
+        workspace_files = state.get('workspace_files', {})
+        if workspace_files:
+            for filepath, content in workspace_files.items():
+                clean_content = sanitize_for_prompt(content, [filepath, 'workspace'])
+                workspace_str += f"--- FILE: {filepath} ---\n{clean_content}\n\n"
+        else:
+            workspace_str = "No files exist yet. This is the first task. Please create the initial file structure."
+        feedback_str = ''
+        if review := state.get('review_feedback'):
+            feedback_str += f"<review_feedback>\n{sanitize_for_prompt(review, ['review_feedback'])}\n</review_feedback>\n\n"
+        if test_res := state.get('test_results'):
+            feedback_str += f"<test_results>\n{sanitize_for_prompt(test_res, ['test_results'])}\n</test_results>\n\n"
+        if feedback_str:
+            workspace_str += f"\n\n### ACTIVE BUG REPORTS TO FIX ###\n{feedback_str}"
+        inputs['workspace'] = workspace_str.strip()
         return inputs
 
     def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
-        main_code = parsed_data.get('main_code', '').strip()
-        test_code = parsed_data.get('test_code', '').strip()
-        is_revision = bool(current_state.get('main_code'))
+        workspace_files = current_state.get('workspace_files', {}).copy()
+        extracted_files = parsed_data.get('workspace_files', [])
+        files_modified = 0
+        for filepath, content in extracted_files:
+            filepath = filepath.strip()
+            workspace_files[filepath] = content.strip()
+            files_modified += 1
+        is_revision = bool(current_state.get('review_feedback') or current_state.get('test_results'))
         new_revision_count = current_state.get('revision_count', 0) + (1 if is_revision else 0)
         return {
-            'main_code': main_code,
-            'test_code': test_code,
+            'workspace_files': workspace_files,
             'revision_count': new_revision_count,
             'review_feedback': '',
             'test_results': '',
-            'communication_log': [f"**[{self.name or self.role}]**: Wrote code draft. (Revision: {new_revision_count})"]
+            'communication_log': [
+                f"**[{self.name or self.role}]**: Wrote/modified {files_modified} file(s). (Revision: {new_revision_count})"
+            ]
         }

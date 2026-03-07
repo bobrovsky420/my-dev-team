@@ -83,8 +83,7 @@ if __name__ == '__main__':
     if not backlog:
         print("❌ Error: System Architect failed to generate a backlog. Exiting.")
         exit(1)
-    current_main_codebase = ""
-    current_test_codebase = ""
+    current_workspace = {}
     execution_crew = VirtualCrew(manager=StandardExecutionManager(), agents={
         'developer': SeniorDeveloper.from_config('agents/senior-developer.md'),
         'reviewer': CodeReviewer.from_config('agents/code-reviewer.md'),
@@ -97,17 +96,14 @@ if __name__ == '__main__':
             initial_state={
                 'specs': project_specs,
                 'current_task': user_story,
-                'existing_main_code': current_main_codebase,
-                'existing_test_code': current_test_codebase,
-                'main_code': '',
-                'test_code': '',
+                'workspace_files': current_workspace,
                 'review_feedback': '',
                 'test_results': '',
                 'revision_count': 0,
                 'communication_log': []
             }
         )
-        current_codebase = task_state.get('code', current_codebase)
+        current_workspace = task_state.get('workspace_files', current_workspace)
 
     # INTEGRATION
 

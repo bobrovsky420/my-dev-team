@@ -58,8 +58,16 @@ class BaseAgent(ABC):
         updates = {}
         for key, pattern in patterns.items():
             if matches := re.findall(pattern, response, re.DOTALL | re.IGNORECASE):
-                clean_matches = [m.strip() for m in matches if m.strip()]
-                updates[key] = clean_matches if key in self._list_outputs else clean_matches[0]
+                clean_matches = []
+                for m in matches:
+                    if isinstance(m, tuple):
+                        clean_tuple = tuple(item.strip() for item in m)
+                        clean_matches.append(clean_tuple)
+                    else:
+                        if m.strip():
+                            clean_matches.append(m.strip())
+                if clean_matches:
+                    updates[key] = clean_matches if key in self._list_outputs else clean_matches[0]
         return updates
 
     def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
