@@ -15,7 +15,7 @@ class CodeReviewer(BaseAgent):
         return inputs
 
     def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
-        feedback = parsed_data.get('review_feedback', '')
+        feedback = parsed_data.review_feedback
         if is_approved_status(feedback):
             feedback = 'APPROVED'
         status = 'APPROVED' if feedback == 'APPROVED' else 'REQUESTED CHANGES'

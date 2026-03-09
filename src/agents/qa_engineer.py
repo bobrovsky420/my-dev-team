@@ -15,7 +15,7 @@ class QAEngineer(BaseAgent):
         return inputs
 
     def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
-        results = parsed_data.get('test_results', '')
+        results = parsed_data.test_results
         if is_approved_status(results):
             results = 'APPROVED'
         status = 'APPROVED' if results == 'APPROVED' else 'BUGS FOUND'

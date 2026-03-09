@@ -61,6 +61,8 @@ if __name__ == '__main__':
     project_name, project_requirements = load_project_spec('project.txt')
     thread_id = generate_thread_id(project_name)
     project_folder = Path(f'workspaces/{thread_id}')
+    global_communication_log = []
+    total_revisions = 0
 
     # PLANNING
 
@@ -78,6 +80,8 @@ if __name__ == '__main__':
     if plan_state.get('abort_requested'):
         print("❌ Planning phase aborted by an agent. Exiting.")
         exit(0)
+    if p_log := plan_state.get('communication_log'):
+        global_communication_log.extend(p_log)
 
     # EXECUTION
 
@@ -94,6 +98,7 @@ if __name__ == '__main__':
     }, extensions=my_extensions(project_folder))
     for i, user_story in enumerate(backlog, start=1):
         print(f"\n--- 🎫 Starting task {i}/{len(backlog)} ---")
+        global_communication_log.append(f"\n### Task {i}: {user_story.split('**')[1] if '**' in user_story else 'Task execution'} ###")
         task_state = execution_crew.execute(
             thread_id=f'{thread_id}_task_{i}',
             initial_state={
@@ -110,6 +115,9 @@ if __name__ == '__main__':
             print(f"❌ Task {i} aborted by an agent. Exiting.")
             exit(0)
         current_workspace = task_state.get('workspace_files', current_workspace)
+        if t_log := task_state.get('communication_log'):
+            global_communication_log.extend(t_log)
+        total_revisions += task_state.get('revision_count', 0)
 
     # INTEGRATION
 
@@ -122,11 +130,9 @@ if __name__ == '__main__':
         initial_state={
             'requirements': project_requirements,
             'specs': project_specs,
-            'code': '\n\n'.join(
-                f"--- FILE: {filepath} ---\n{content}"
-                for filepath, content in current_workspace.items()
-            ),
-            'communication_log': []
+            'workspace_files': current_workspace,
+            'communication_log': global_communication_log,
+            'revision_count': total_revisions
         }
     )
     if final_state.get('abort_requested'):

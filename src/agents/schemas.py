@@ -30,3 +30,6 @@ class QAEngineerResponse(BaseModel):
 
 class FinalQAEngineerResponse(BaseModel):
     test_results: str
+
+class FinalReportResponse(BaseModel):
+    final_report: str

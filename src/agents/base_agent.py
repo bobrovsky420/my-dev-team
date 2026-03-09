@@ -40,14 +40,6 @@ class BaseAgent(ABC):
         return self.config.get('required_inputs', [])
 
     @cached_property
-    def _extract_patterns(self) -> dict[str, str]:
-        return self.config.get('extract_patterns', {})
-
-    @cached_property
-    def _list_outputs(self) -> list[str]:
-        return self.config.get('list_outputs', [])
-
-    @cached_property
     def _output_schema(self):
         if schema_name := self.config.get('output_schema', None):
             return getattr(schema_module, schema_name)
@@ -63,23 +55,7 @@ class BaseAgent(ABC):
     def _parse_outputs(self, response: str) -> dict:
         if self._output_schema:
             return self._parse_structured_output(response)
-        patterns = self._extract_patterns
-        if not patterns:
-            return {'raw_output': response}
-        updates = {}
-        for key, pattern in patterns.items():
-            if matches := re.findall(pattern, response, re.DOTALL | re.IGNORECASE):
-                clean_matches = []
-                for m in matches:
-                    if isinstance(m, tuple):
-                        clean_tuple = tuple(item.strip() for item in m)
-                        clean_matches.append(clean_tuple)
-                    else:
-                        if m.strip():
-                            clean_matches.append(m.strip())
-                if clean_matches:
-                    updates[key] = clean_matches if key in self._list_outputs else clean_matches[0]
-        return updates
+        return {'raw_output': response}
 
     def _extract_json_payload(self, response: str) -> str:
         if fenced_match := re.search(r'```json\s*(\{.*?\})\s*```', response, re.DOTALL | re.IGNORECASE):

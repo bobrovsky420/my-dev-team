@@ -1,12 +1,11 @@
-from utils import sanitize_for_prompt
+from utils import sanitize_for_prompt, workspace_str_from_files
 from .base_agent import BaseAgent
 
 class SeniorDeveloper(BaseAgent):
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
-        workspace_str = ''
-        workspace_files = state.get('workspace_files', {})
-        if workspace_files:
+        if workspace_files := state.get('workspace_files', {}):
+            workspace_str = workspace_str_from_files(workspace_files)
             for filepath, content in workspace_files.items():
                 clean_content = sanitize_for_prompt(content, [filepath, 'workspace'])
                 workspace_str += f"--- FILE: {filepath} ---\n{clean_content}\n\n"
@@ -19,7 +18,7 @@ class SeniorDeveloper(BaseAgent):
             feedback_str += f"<test_results>\n{sanitize_for_prompt(test_res, ['test_results'])}\n</test_results>\n\n"
         if feedback_str:
             workspace_str += f"\n\n### ACTIVE BUG REPORTS TO FIX ###\n{feedback_str}"
-        inputs['workspace'] = workspace_str.strip()
+        inputs['workspace'] = workspace_str
         return inputs
 
     def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
