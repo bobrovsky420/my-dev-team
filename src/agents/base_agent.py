@@ -1,5 +1,7 @@
 from abc import ABC
 from functools import cached_property
+from typing import Any
+import json
 import logging
 import re
 import yaml
@@ -8,6 +10,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_groq import ChatGroq
 from langchain_ollama import ChatOllama
 from utils import sanitize_for_prompt
+from . import schemas as schema_module
 
 def get_llm(model_name: str, temperature: float) -> BaseChatModel:
     """Returns a configured LLM instance."""
@@ -44,6 +47,12 @@ class BaseAgent(ABC):
     def _list_outputs(self) -> list[str]:
         return self.config.get('list_outputs', [])
 
+    @cached_property
+    def _output_schema(self):
+        if schema_name := self.config.get('output_schema', None):
+            return getattr(schema_module, schema_name)
+        return None
+
     def _build_inputs(self, state: dict) -> dict:
         inputs = {}
         for key in self._required_inputs:
@@ -52,6 +61,8 @@ class BaseAgent(ABC):
         return inputs
 
     def _parse_outputs(self, response: str) -> dict:
+        if self._output_schema:
+            return self._parse_structured_output(response)
         patterns = self._extract_patterns
         if not patterns:
             return {'raw_output': response}
@@ -70,14 +81,33 @@ class BaseAgent(ABC):
                     updates[key] = clean_matches if key in self._list_outputs else clean_matches[0]
         return updates
 
+    def _extract_json_payload(self, response: str) -> str:
+        if fenced_match := re.search(r'```json\s*(\{.*?\})\s*```', response, re.DOTALL | re.IGNORECASE):
+            return fenced_match.group(1)
+        if json_match := re.search(r'(\{.*\})', response, re.DOTALL):
+            return json_match.group(1)
+        raise ValueError("No JSON payload found in the response.")
+
+    def _parse_structured_output(self, response: str) -> Any:
+        payload = self._extract_json_payload(response)
+        data = json.loads(payload)
+        return self._output_schema.model_validate(data)
+
     def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
-        return parsed_data
+        return parsed_data.model_dump()
 
     def process(self, state: dict) -> dict:
         self.logger.info("Executing...")
         inputs = self._build_inputs(state)
         response = self._invoke_llm(**inputs)
-        parsed_data = self._parse_outputs(response)
+        try:
+            parsed_data = self._parse_outputs(response)
+        except ValueError as e:
+            self.logger.error("Error parsing outputs: %s", e)
+            return {
+                'abort_requested': True,
+                'communication_log': [f"**[{self.name or self.role}]**: Parsing error: {e}"]
+            }
         final_state = self._update_state(parsed_data, state)
         if 'communication_log' not in final_state:
             final_state['communication_log'] = [f"**[{self.name or self.role}]**: Completed step with response:\n```\n{response}\n```"]

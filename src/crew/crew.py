@@ -32,6 +32,12 @@ class VirtualCrew:
                 full_state = self.app.get_state(config).values
                 for ext in self.extensions:
                     ext.on_step(thread_id, state_update=state_update, full_state=full_state)
+                if full_state.get('abort_requested'):
+                    abort_requested = True
+                    self.logger.info("Abort requested during execution. Ending workflow.")
+                    break
+            if abort_requested:
+                break
             if initial_state:
                 initial_state = None
             state_snapshot = self.app.get_state(config)
