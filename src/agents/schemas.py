@@ -16,7 +16,7 @@ class SystemArchitectResponse(BaseModel):
     pending_tasks: list[str] = Field(min_length=1)
 
 class WorkspaceFile(BaseModel):
-    filename: str
+    path: str
     content: str
 
 class DeveloperResponse(BaseModel):

@@ -24,12 +24,9 @@ class SeniorDeveloper(BaseAgent):
 
     def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
         workspace_files = current_state.get('workspace_files', {}).copy()
-        extracted_files = parsed_data.get('workspace_files', [])
-        files_modified = 0
-        for filepath, content in extracted_files:
-            filepath = filepath.strip()
-            workspace_files[filepath] = content.strip()
-            files_modified += 1
+        for file_obj in parsed_data.workspace_files:
+            workspace_files[file_obj.path] = file_obj.content
+        files_modified = len(parsed_data.workspace_files)
         is_revision = bool(current_state.get('review_feedback') or current_state.get('test_results'))
         new_revision_count = current_state.get('revision_count', 0) + (1 if is_revision else 0)
         return {
