@@ -1,6 +1,5 @@
-from abc import ABC
 from functools import cached_property
-from typing import Any
+from typing import Any, Generic, TypeVar
 import json
 import logging
 import re
@@ -9,6 +8,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_groq import ChatGroq
 from langchain_ollama import ChatOllama
+from pydantic import BaseModel
 from utils import sanitize_for_prompt
 from . import schemas as schema_module
 
@@ -22,7 +22,9 @@ def get_llm(model_name: str, temperature: float) -> BaseChatModel:
         return ChatGroq(model=model_name[5:], temperature=temperature, max_retries=2)
     raise ValueError(f"Unsupported model: {model_name}")
 
-class BaseAgent(ABC):
+T = TypeVar('T', bound=BaseModel)
+
+class BaseAgent(Generic[T]):
     model_name: str = 'ollama/qwen3:8b'
     temperature: float = 0.2
 
@@ -52,10 +54,10 @@ class BaseAgent(ABC):
             inputs[key] = sanitize_for_prompt(str(val), [key]) if val else ''
         return inputs
 
-    def _parse_outputs(self, response: str) -> dict:
-        if self._output_schema:
-            return self._parse_structured_output(response)
-        return {'raw_output': response}
+    def _parse_outputs(self, response: str) -> T:
+        payload = self._extract_json_payload(response)
+        data = json.loads(payload)
+        return self._output_schema.model_validate(data)
 
     def _extract_json_payload(self, response: str) -> str:
         if fenced_match := re.search(r'```json\s*(\{.*?\})\s*```', response, re.DOTALL | re.IGNORECASE):
@@ -64,12 +66,7 @@ class BaseAgent(ABC):
             return json_match.group(1)
         raise ValueError("No JSON payload found in the response.")
 
-    def _parse_structured_output(self, response: str) -> Any:
-        payload = self._extract_json_payload(response)
-        data = json.loads(payload)
-        return self._output_schema.model_validate(data)
-
-    def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
+    def _update_state(self, parsed_data: T, current_state: dict) -> dict:
         return parsed_data.model_dump()
 
     def process(self, state: dict) -> dict:

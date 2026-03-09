@@ -1,7 +1,8 @@
 from .base_agent import BaseAgent
+from .schemas import ProductManagerResponse
 
-class ProductManager(BaseAgent):
-    def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
+class ProductManager(BaseAgent[ProductManagerResponse]):
+    def _update_state(self, parsed_data: ProductManagerResponse, current_state: dict) -> dict:
         if parsed_data.question:
             self.logger.info("Need clarification from the user")
             return {

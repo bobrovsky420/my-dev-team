@@ -1,7 +1,8 @@
 from utils import sanitize_for_prompt, workspace_str_from_files
 from .base_agent import BaseAgent
+from .schemas import DeveloperResponse
 
-class SeniorDeveloper(BaseAgent):
+class SeniorDeveloper(BaseAgent[DeveloperResponse]):
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
         if workspace_files := state.get('workspace_files', {}):
@@ -21,7 +22,7 @@ class SeniorDeveloper(BaseAgent):
         inputs['workspace'] = workspace_str
         return inputs
 
-    def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
+    def _update_state(self, parsed_data: DeveloperResponse, current_state: dict) -> dict:
         workspace_files = current_state.get('workspace_files', {}).copy()
         for file_obj in parsed_data.workspace_files:
             workspace_files[file_obj.path] = file_obj.content

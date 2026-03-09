@@ -1,7 +1,8 @@
 from utils import sanitize_for_prompt, is_approved_status
 from .base_agent import BaseAgent
+from .schemas import QAEngineerResponse
 
-class QAEngineer(BaseAgent):
+class QAEngineer(BaseAgent[QAEngineerResponse]):
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
         workspace_str = ''
@@ -14,7 +15,7 @@ class QAEngineer(BaseAgent):
         inputs['workspace'] = workspace_str.strip()
         return inputs
 
-    def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
+    def _update_state(self, parsed_data: QAEngineerResponse, current_state: dict) -> dict:
         results = parsed_data.test_results
         if is_approved_status(results):
             results = 'APPROVED'

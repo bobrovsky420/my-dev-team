@@ -1,7 +1,8 @@
 from utils import sanitize_for_prompt, is_approved_status
 from .base_agent import BaseAgent
+from .schemas import CodeReviewerResponse
 
-class CodeReviewer(BaseAgent):
+class CodeReviewer(BaseAgent[CodeReviewerResponse]):
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
         workspace_str = ''
@@ -14,7 +15,7 @@ class CodeReviewer(BaseAgent):
         inputs['workspace'] = workspace_str.strip()
         return inputs
 
-    def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
+    def _update_state(self, parsed_data: CodeReviewerResponse, current_state: dict) -> dict:
         feedback = parsed_data.review_feedback
         if is_approved_status(feedback):
             feedback = 'APPROVED'

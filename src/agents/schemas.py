@@ -28,8 +28,5 @@ class CodeReviewerResponse(BaseModel):
 class QAEngineerResponse(BaseModel):
     test_results: str
 
-class FinalQAEngineerResponse(BaseModel):
-    test_results: str
-
 class FinalReportResponse(BaseModel):
     final_report: str
