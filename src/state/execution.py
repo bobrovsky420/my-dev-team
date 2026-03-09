@@ -1,5 +1,5 @@
 import operator
-from typing import Dict, TypedDict, Annotated, List
+from typing import Dict, TypedDict, Annotated, List, NotRequired
 
 class ExecutionState(TypedDict):
     specs: str
@@ -8,4 +8,5 @@ class ExecutionState(TypedDict):
     review_feedback: str
     test_results: str
     revision_count: int
+    abort_requested: NotRequired[bool]
     communication_log: Annotated[List[str], operator.add]

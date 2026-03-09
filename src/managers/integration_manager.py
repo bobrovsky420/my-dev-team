@@ -1,5 +1,6 @@
 from langgraph.graph import StateGraph, START, END
 from state import IntegrationState
+from utils import is_approved_status
 from .base_manager import BaseManager
 
 class IntegrationManager(BaseManager):
@@ -17,8 +18,8 @@ class IntegrationManager(BaseManager):
         return workflow.compile(checkpointer=memory)
 
     def route_qa(self, state: dict) -> str:
-        results = state.get('test_results', '').strip().strip('.')
-        if results.upper() == 'PASSED':
+        results = state.get('test_results', '')
+        if is_approved_status(results):
             self.logger.info("Integration tests passed. Proceeding to DevOps.")
             return 'reporter'
 #            return 'devops'

@@ -75,6 +75,9 @@ if __name__ == '__main__':
             'communication_log': []
         }
     )
+    if plan_state.get('abort_requested'):
+        print("❌ Planning phase aborted by an agent. Exiting.")
+        exit(0)
 
     # EXECUTION
 
@@ -103,6 +106,9 @@ if __name__ == '__main__':
                 'communication_log': []
             }
         )
+        if task_state.get('abort_requested'):
+            print(f"❌ Task {i} aborted by an agent. Exiting.")
+            exit(0)
         current_workspace = task_state.get('workspace_files', current_workspace)
 
     # INTEGRATION
@@ -116,10 +122,16 @@ if __name__ == '__main__':
         initial_state={
             'requirements': project_requirements,
             'specs': project_specs,
-            'code': current_codebase,
+            'code': '\n\n'.join(
+                f"--- FILE: {filepath} ---\n{content}"
+                for filepath, content in current_workspace.items()
+            ),
             'communication_log': []
         }
     )
+    if final_state.get('abort_requested'):
+        print("❌ Integration phase aborted by an agent. Exiting.")
+        exit(0)
     final_report = final_state.get('final_report', 'No report generated.')
     integration_bugs = final_state.get('integration_bugs', [])
     if integration_bugs:

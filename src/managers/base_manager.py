@@ -10,6 +10,6 @@ class BaseManager(ABC):
         self.logger = logging.getLogger(self.name or self.role)
 
     @abstractmethod
-    def build_graph(self, agents: dict, memory, human_interrupter) -> StateGraph:
+    def build_graph(self, agents: dict, memory) -> StateGraph:
         """Constructs and compiles the specific LangGraph workflow for this manager"""
         pass

@@ -19,6 +19,7 @@ class VirtualCrew:
 
     def execute(self, thread_id: str, initial_state: dict = None) -> dict:
         config = {'configurable': {'thread_id': thread_id}}
+        abort_requested = False
         if initial_state:
             self.logger.info("Starting workflow...")
             for ext in self.extensions:
@@ -44,9 +45,17 @@ class VirtualCrew:
                 if update:
                     self.app.update_state(config, update)
                     update_provided = True
+                    if update.get('abort_requested'):
+                        abort_requested = True
+                        break
+            if abort_requested:
+                self.logger.info("Abort requested. Ending workflow.")
+                break
             if not update_provided:
                 break
         final_state = self.app.get_state(config).values
+        if abort_requested:
+            final_state['abort_requested'] = True
         for ext in self.extensions:
             ext.on_finish(thread_id, final_state)
         return final_state

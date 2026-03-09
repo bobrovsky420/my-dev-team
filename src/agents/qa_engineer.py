@@ -1,4 +1,4 @@
-from utils import sanitize_for_prompt
+from utils import sanitize_for_prompt, is_approved_status
 from .base_agent import BaseAgent
 
 class QAEngineer(BaseAgent):
@@ -15,8 +15,8 @@ class QAEngineer(BaseAgent):
         return inputs
 
     def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
-        results = parsed_data.get('test_results', '').strip()
-        if 'APPROVED' in results.upper() or 'PASSED' in results.upper():
+        results = parsed_data.get('test_results', '')
+        if is_approved_status(results):
             results = 'APPROVED'
         status = 'APPROVED' if results == 'APPROVED' else 'BUGS FOUND'
         return {

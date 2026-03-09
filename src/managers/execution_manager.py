@@ -1,5 +1,6 @@
 from langgraph.graph import StateGraph, START, END
 from state import ExecutionState
+from utils import is_approved_status
 from .base_manager import BaseManager
 
 class StandardExecutionManager(BaseManager):
@@ -16,8 +17,8 @@ class StandardExecutionManager(BaseManager):
         return workflow.compile(checkpointer=memory)
 
     def route_reviewer(self, state: dict) -> str:
-        feedback = state.get('review_feedback', '').strip().strip('.')
-        if feedback.upper() == 'APPROVED' or feedback.upper() == 'PASSED':
+        feedback = state.get('review_feedback', '')
+        if is_approved_status(feedback):
             return 'qa'
         if state.get('revision_count', 0) >= 3:
             self.logger.warning("Max revisions reached. Forcing completion.")
@@ -25,8 +26,8 @@ class StandardExecutionManager(BaseManager):
         return 'developer'
 
     def route_qa(self, state: dict) -> str:
-        results = state.get('test_results', '').strip().strip('.')
-        if results.upper() == 'APPROVED' or results.upper() == 'PASSED':
+        results = state.get('test_results', '')
+        if is_approved_status(results):
             self.logger.info("Task '%s' passed all checks!", state.get('current_task'))
             return END
         if state.get('revision_count', 0) >= 3:

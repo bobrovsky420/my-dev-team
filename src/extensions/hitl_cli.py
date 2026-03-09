@@ -13,7 +13,10 @@ class HumanInTheLoop(CrewExtension):
             user_input = input("Your Answer (or type 'exit' to abort): ")
             if user_input.lower() in ['exit', 'quit']:
                 print("Aborting project...")
-                exit(0)
+                return {
+                    'abort_requested': True,
+                    'communication_log': [f"**[Human]**: Aborted the workflow."]
+                }
             return {
                 'human_answer': user_input,
                 'communication_log': [f"**[Human]**: {user_input}"]

@@ -1,4 +1,4 @@
-from utils import sanitize_for_prompt
+from utils import sanitize_for_prompt, is_approved_status
 from .base_agent import BaseAgent
 
 class CodeReviewer(BaseAgent):
@@ -15,8 +15,8 @@ class CodeReviewer(BaseAgent):
         return inputs
 
     def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
-        feedback = parsed_data.get('review_feedback', '').strip()
-        if 'APPROVED' in feedback.upper() or 'PASSED' in feedback.upper():
+        feedback = parsed_data.get('review_feedback', '')
+        if is_approved_status(feedback):
             feedback = 'APPROVED'
         status = 'APPROVED' if feedback == 'APPROVED' else 'REQUESTED CHANGES'
         return {

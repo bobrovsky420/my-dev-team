@@ -1,5 +1,5 @@
 import operator
-from typing import TypedDict, Annotated, List
+from typing import NotRequired, TypedDict, Annotated, List
 
 class PlanningState(TypedDict):
     requirements: str
@@ -7,4 +7,5 @@ class PlanningState(TypedDict):
     clarification_question: str
     specs: str
     pending_tasks: List[str]
+    abort_requested: NotRequired[bool]
     communication_log: Annotated[List[str], operator.add]
