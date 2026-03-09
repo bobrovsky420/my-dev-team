@@ -27,7 +27,7 @@ Format requirement (abstract):
 
 - Return exactly one of these JSON shapes:
     - Ask clarification:
-        {{"question": "Your single clarifying question"}}
+        {{"clarification_question": "Your single clarifying question"}}
     - Provide specs:
         {{"specs": "Markdown technical specification content"}}
 - The `specs` value must be clean Markdown (headings, lists, tables, checklists as needed).
