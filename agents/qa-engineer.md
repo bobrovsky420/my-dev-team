@@ -54,5 +54,3 @@ Below is the overarching specification for the project, followed by the complete
 <workspace>
 {workspace}
 </workspace>
-
-{retry_feedback}

@@ -44,5 +44,3 @@ This is your specific assignment for this step. You must complete this task usin
 <drafts>
 {drafts}
 </drafts>
-
-{retry_feedback}

@@ -49,5 +49,3 @@ You must strictly output a JSON object exactly like this:
 <workspace>
 {workspace}
 </workspace>
-
-{retry_feedback}

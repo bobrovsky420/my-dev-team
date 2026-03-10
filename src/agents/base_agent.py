@@ -40,12 +40,12 @@ class BaseAgent(Generic[T]):
         self.logger = logging.getLogger(self.name or self.role)
 
     @cached_property
-    def _required_inputs(self) -> list[str]:
+    def required_inputs(self) -> list[str]:
         return self.config.get('required_inputs', [])
 
     def _build_inputs(self, state: dict) -> dict:
-        inputs = {'retry_feedback': ''}
-        for key in self._required_inputs:
+        inputs = {}
+        for key in self.required_inputs:
             val = state.get(key, '')
             inputs[key] = sanitize_for_prompt(str(val), [key]) if val else ''
         return inputs
@@ -76,12 +76,7 @@ class BaseAgent(Generic[T]):
                 self.logger.error("Attempt %i/%i failed to parse: %s", attempt, self.max_retries, e)
                 if attempt < self.max_retries:
                     self._bump_temperature(attempt)
-                    inputs['retry_feedback'] = (
-                        f"YOUR PREVIOUS RESPONSE COULD NOT BE PARSED. Error: {e}\n"
-                        f"You MUST respond with valid JSON matching the required schemd. "
-                        f"Wrap your JSON in ```json ... ``` fences. "
-                        f"Do not include any text inside the JSON block that is not valid JSON."
-                    )
+                    self._bump_prompt(last_error)
                 continue
             final_state = self._update_state(parsed_data, state)
             if 'communication_log' not in final_state:
@@ -96,16 +91,25 @@ class BaseAgent(Generic[T]):
     def _bump_temperature(self, attempt: int):
         new_temp = min(self.temperature + (attempt * 0.1), 1.0)
         self.logger.info("Bumping temperature to %.1f for retry", new_temp)
-        self._retry_temp = new_temp
+        self._retry_temperature = new_temp
         del self.__dict__['llm']
+
+    def _bump_prompt(self, last_error: Exception):
+        self._retry_prompt = self.prompt_template + "\n\n" + (
+            f"YOUR PREVIOUS RESPONSE COULD NOT BE PARSED. Error: {last_error}\n"
+            f"You MUST respond with valid JSON matching the required schemd. "
+            f"Wrap your JSON in ```json ... ``` fences. "
+            f"Do not include any text inside the JSON block that is not valid JSON."
+        )
+        del self.__dict__['prompt']
 
     @cached_property
     def llm(self) -> BaseChatModel:
-        return get_llm(model_name=self.model_name, temperature=self._retry_temp if '_retry_temp' in self.__dict__ else self.temperature)
+        return get_llm(model_name=self.model_name, temperature=self._retry_temperature if '_retry_temp' in self.__dict__ else self.temperature)
 
     @cached_property
     def prompt(self):
-        return PromptTemplate.from_template(self.prompt_template)
+        return PromptTemplate.from_template(self._retry_prompt if '_retry_prompt' in self.__dict__ else self.prompt_template)
 
     def _clean_response(self, text: str) -> str:
         """Removes DeepSeek <think> tags and returns the clean output."""

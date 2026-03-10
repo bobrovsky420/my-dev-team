@@ -57,5 +57,3 @@ You must strictly output a JSON object exactly like this, containing all created
 <workspace>
 {workspace}
 </workspace>
-
-{retry_feedback}
