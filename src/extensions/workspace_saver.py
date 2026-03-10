@@ -46,20 +46,21 @@ class WorkspaceSaver(CrewExtension):
             content.append(ticket_markdown)
         tasks_file.write_text("\n".join(content), encoding='utf-8')
 
-    def _save_workspace(self, revision_dir: str, workspace_files: dict):
+    def _save_workspace(self, workspace_files: dict, current_rev: int):
         if not workspace_files:
             return
+        revision_dir = f'rev_{current_rev}'
         for filepath, content in workspace_files.items():
             full_file_path = self.base_dir / revision_dir / filepath
             full_file_path.parent.mkdir(parents=True, exist_ok=True)
             full_file_path.write_text(content, encoding='utf-8')
 
-    def _save_code_review(self, review_feedback: str, revision_count: int):
-        feedback_file = self.base_dir / f'feedback_v{revision_count}.md'
+    def _save_code_review(self, review_feedback: str, current_rev: int):
+        feedback_file = self.base_dir / f'feedback_v{current_rev}.md'
         feedback_file.write_text(review_feedback, encoding='utf-8')
 
-    def _save_test_results(self, test_results: str, revision_count: int):
-        results_file = self.base_dir / f'test_results_v{revision_count}.md'
+    def _save_test_results(self, test_results: str, current_rev: int):
+        results_file = self.base_dir / f'test_results_v{current_rev}.md'
         results_file.write_text(test_results, encoding='utf-8')
 
     def _save_final_report(self, report: str):
@@ -77,16 +78,15 @@ class WorkspaceSaver(CrewExtension):
                         self._save_tasks(pending)
                 case 'developer':
                     workspace_files = node_update.get('workspace_files', {})
-                    revision_count = full_state.get('revision_count', 0)
-                    revision_dir = f'rev_{revision_count}'
-                    self._save_workspace(revision_dir, workspace_files)
+                    current_rev = node_update.get('revision_count', 0)
+                    self._save_workspace(workspace_files, current_rev)
                 case 'reviewer':
                     if review_feedback := node_update.get('review_feedback', ''):
-                        current_rev = full_state.get('revision_count', 0)
+                        current_rev = node_update.get('revision_count', 0)
                         self._save_code_review(review_feedback, current_rev)
                 case 'qa':
                     if test_results := node_update.get('test_results', ''):
-                        current_rev = full_state.get('revision_count', 0)
+                        current_rev = node_update.get('revision_count', 0)
                         self._save_test_results(test_results, current_rev)
                 case 'reporter':
                     if final_report := node_update.get('final_report', ''):
