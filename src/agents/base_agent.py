@@ -27,6 +27,7 @@ T = TypeVar('T', bound=BaseModel)
 class BaseAgent(Generic[T]):
     model_name: str = 'ollama/qwen3:8b'
     temperature: float = 0.2
+    max_retries: int = 2
     output_schema: type[T]
 
     def __init__(self, config: dict, prompt_template: str, model: dict = None):
@@ -65,23 +66,36 @@ class BaseAgent(Generic[T]):
     def process(self, state: dict) -> dict:
         self.logger.info("Executing...")
         inputs = self._build_inputs(state)
-        response = self._invoke_llm(**inputs)
-        try:
-            parsed_data = self._parse_outputs(response)
-        except ValueError as e:
-            self.logger.error("Error parsing outputs: %s", e)
-            return {
-                'abort_requested': True,
-                'communication_log': [f"**[{self.name or self.role}]**: Parsing error: {e}"]
-            }
-        final_state = self._update_state(parsed_data, state)
-        if 'communication_log' not in final_state:
-            final_state['communication_log'] = [f"**[{self.name or self.role}]**: Completed step with response:\n```\n{response}\n```"]
-        return final_state
+        last_error = None
+        for attempt in range(1, self.max_retries + 1):
+            response = self._invoke_llm(**inputs)
+            try:
+                parsed_data = self._parse_outputs(response)
+            except (ValueError, json.JSONDecodeError) as e:
+                last_error = e
+                self.logger.error("Attempt %i/%i failed to parse: %s", attempt, self.max_retries, e)
+                if attempt < self.max_retries:
+                    self._bump_temperature(attempt)
+                continue
+            final_state = self._update_state(parsed_data, state)
+            if 'communication_log' not in final_state:
+                final_state['communication_log'] = [f"**[{self.name or self.role}]**: Completed step with response:\n```\n{response}\n```"]
+            return final_state
+        self.logger.error("All %i attempts failed. Last error: %s", self.max_retries, last_error)
+        return {
+            'abort_requested': True,
+            'communication_log': [f"**[{self.name or self.role}]**: Failed after {self.max_retries} attempts. Last error: {last_error}"]
+        }
+
+    def _bump_temperature(self, attempt: int):
+        new_temp = min(self.temperature + (attempt * 0.1), 1.0)
+        self.logger.info("Bumping temperature to %.1f for retry", new_temp)
+        self._retry_temp = new_temp
+        del self.__dict__['llm']
 
     @cached_property
     def llm(self) -> BaseChatModel:
-        return get_llm(model_name=self.model_name, temperature=self.temperature)
+        return get_llm(model_name=self.model_name, temperature=self._retry_temp if '_retry_temp' in self.__dict__ else self.temperature)
 
     @cached_property
     def prompt(self):
