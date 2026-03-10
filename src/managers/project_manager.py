@@ -89,7 +89,7 @@ class ProjectManager(BaseManager):
                 }
             current_workspace = task_state.get('workspace_files', current_workspace)
             total_revisions += task_state.get('revision_count', 0)
-            execution_logs.append(task_state.get('communication_log', []))
+            execution_logs.extend(task_state.get('communication_log', []))
         return {
             'workspace_files': current_workspace,
             'total_revisions': total_revisions,
@@ -104,7 +104,7 @@ class ProjectManager(BaseManager):
                 'qa': self.agents['final_qa'],
                 'reporter': self.agents['reporter']
             },
-            extensions=self.extension
+            extensions=self.extensions
         )
         final_state = integration_crew.execute(
             thread_id=f'{self.base_thread_id}_integration',

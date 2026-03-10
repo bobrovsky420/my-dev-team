@@ -1,7 +1,10 @@
 from utils import sanitize_for_prompt
 from .base_agent import BaseAgent
+from .schemas import CodeJudgeResponse
 
-class CodeJudge(BaseAgent):
+class CodeJudge(BaseAgent[CodeJudgeResponse]):
+    output_schema = CodeJudgeResponse
+
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
         drafts = state.get('code_drafts', [])
@@ -13,9 +16,9 @@ class CodeJudge(BaseAgent):
         inputs['drafts'] = drafts_formatted
         return inputs
 
-    def _update_state(self, parsed_data: dict, current_state: dict) -> dict:
+    def _update_state(self, parsed_data: CodeJudgeResponse, current_state: dict) -> dict:
         try:
-            winner_index = int(parsed_data.get('winner_index', 0))
+            winner_index = parsed_data.winner_index
             winning_code = current_state.get('code_drafts', [])[winner_index]
         except (ValueError, IndexError):
             self.logger.warning("Judge hallucinated; defaulting to draft 0")

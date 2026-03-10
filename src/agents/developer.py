@@ -9,9 +9,6 @@ class SeniorDeveloper(BaseAgent[DeveloperResponse]):
         inputs = super()._build_inputs(state)
         if workspace_files := state.get('workspace_files', {}):
             workspace_str = workspace_str_from_files(workspace_files)
-            for filepath, content in workspace_files.items():
-                clean_content = sanitize_for_prompt(content, [filepath, 'workspace'])
-                workspace_str += f"--- FILE: {filepath} ---\n{clean_content}\n\n"
         else:
             workspace_str = "No files exist yet. This is the first task. Please create the initial file structure."
         feedback_str = ''

@@ -25,6 +25,9 @@ class DeveloperResponse(BaseModel):
 class CodeReviewerResponse(BaseModel):
     review_feedback: str
 
+class CodeJudgeResponse(BaseModel):
+    winner_index: int = 0
+
 class QAEngineerResponse(BaseModel):
     test_results: str
 
