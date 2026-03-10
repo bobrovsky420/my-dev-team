@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
 from crew import VirtualCrew
 from extensions import HumanInTheLoop, WorkspaceSaver, RateLimiter
-from managers import PlanningManager, StandardExecutionManager, IntegrationManager
+from managers import ProjectManager
 
 load_dotenv()
 
@@ -61,83 +61,47 @@ if __name__ == '__main__':
     project_name, project_requirements = load_project_spec('project.txt')
     thread_id = generate_thread_id(project_name)
     project_folder = Path(f'workspaces/{thread_id}')
-    global_communication_log = []
-    total_revisions = 0
 
-    # PLANNING
-
-    planning_crew = VirtualCrew(manager=PlanningManager(), agents={
-        'pm': ProductManager.from_config('agents/product-manager.md'),
-        'architect': SystemArchitect.from_config('agents/system-architect.md')
-    }, extensions=my_extensions(project_folder))
-    plan_state = planning_crew.execute(
-        thread_id=f'{thread_id}_plan',
+    project_crew = VirtualCrew(
+        manager=ProjectManager(
+            base_thread_id=thread_id,
+            project_folder=project_folder,
+            extensions=my_extensions(project_folder)
+        ),
+        agents={
+            'pm': ProductManager.from_config('agents/product-manager.md'),
+            'architect': SystemArchitect.from_config('agents/system-architect.md'),
+            'developer': SeniorDeveloper.from_config('agents/senior-developer.md'),
+            'reviewer': CodeReviewer.from_config('agents/code-reviewer.md'),
+            'qa': QAEngineer.from_config('agents/qa-engineer.md'),
+            'final_qa': FinalQAEngineer.from_config('agents/final-qa-engineer.md'),
+            'reporter': Reporter.from_config('agents/reporter.md')
+        }
+    )
+    final_state = project_crew.execute(
+        thread_id=f'{thread_id}_lifecycle',
         initial_state={
             'requirements': project_requirements,
+            'specs': '',
+            'pending_tasks': [],
+            'workspace_files': {},
+            'final_report': '',
+            'integration_bugs': [],
             'communication_log': []
         }
     )
-    if plan_state.get('abort_requested'):
-        print("❌ Planning phase aborted by an agent. Exiting.")
-        exit(0)
-    if p_log := plan_state.get('communication_log'):
-        global_communication_log.extend(p_log)
+#    if p_log := plan_state.get('communication_log'):
+#        global_communication_log.extend(p_log)
+#        global_communication_log.append(f"\n### Task {i}: {user_story.split('**')[1] if '**' in user_story else 'Task execution'} ###")
+#        if t_log := task_state.get('communication_log'):
+#            global_communication_log.extend(t_log)
 
-    # EXECUTION
-
-    project_specs = plan_state.get('specs', '')
-    backlog = plan_state.get('pending_tasks', [])
-    if not backlog:
-        print("❌ Error: System Architect failed to generate a backlog. Exiting.")
-        exit(1)
-    current_workspace = {}
-    execution_crew = VirtualCrew(manager=StandardExecutionManager(), agents={
-        'developer': SeniorDeveloper.from_config('agents/senior-developer.md'),
-        'reviewer': CodeReviewer.from_config('agents/code-reviewer.md'),
-        'qa': QAEngineer.from_config('agents/qa-engineer.md')
-    }, extensions=my_extensions(project_folder))
-    for i, user_story in enumerate(backlog, start=1):
-        print(f"\n--- 🎫 Starting task {i}/{len(backlog)} ---")
-        global_communication_log.append(f"\n### Task {i}: {user_story.split('**')[1] if '**' in user_story else 'Task execution'} ###")
-        task_state = execution_crew.execute(
-            thread_id=f'{thread_id}_task_{i}',
-            initial_state={
-                'specs': project_specs,
-                'current_task': user_story,
-                'workspace_files': current_workspace,
-                'review_feedback': '',
-                'test_results': '',
-                'revision_count': 0,
-                'communication_log': []
-            }
-        )
-        if task_state.get('abort_requested'):
-            print(f"❌ Task {i} aborted by an agent. Exiting.")
-            exit(0)
-        current_workspace = task_state.get('workspace_files', current_workspace)
-        if t_log := task_state.get('communication_log'):
-            global_communication_log.extend(t_log)
-        total_revisions += task_state.get('revision_count', 0)
-
-    # INTEGRATION
-
-    integration_crew = VirtualCrew(manager=IntegrationManager(), agents={
-        'qa': FinalQAEngineer.from_config('agents/final-qa-engineer.md'),
-        'reporter': Reporter.from_config('agents/reporter.md')
-    }, extensions=my_extensions(project_folder))
-    final_state = integration_crew.execute(
-        thread_id=f'{thread_id}_integration',
-        initial_state={
-            'requirements': project_requirements,
-            'specs': project_specs,
-            'workspace_files': current_workspace,
-            'communication_log': global_communication_log,
-            'revision_count': total_revisions
-        }
-    )
     if final_state.get('abort_requested'):
-        print("❌ Integration phase aborted by an agent. Exiting.")
+        print("❌ Workflow aborted by user or validation failure.")
         exit(0)
+    if not final_state.get('pending_tasks'):
+        print("❌ System architect failed to generate a backlog.")
+        exit(1)
     final_report = final_state.get('final_report', 'No report generated.')
     integration_bugs = final_state.get('integration_bugs', [])
     if integration_bugs:
