@@ -3,6 +3,8 @@ from .base_agent import BaseAgent
 from .schemas import FinalReportResponse
 
 class Reporter(BaseAgent[FinalReportResponse]):
+    output_schema = FinalReportResponse
+
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
         if workspace_files := state.get('workspace_files', {}):

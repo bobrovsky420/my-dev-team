@@ -3,6 +3,8 @@ from .base_agent import BaseAgent
 from .schemas import CodeReviewerResponse
 
 class CodeReviewer(BaseAgent[CodeReviewerResponse]):
+    output_schema = CodeReviewerResponse
+
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
         workspace_str = ''

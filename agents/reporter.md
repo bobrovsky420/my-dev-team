@@ -5,7 +5,6 @@ description: The Reporter writes a detailed Final Markdown Report for the stakeh
 model: groq/compound
 temperature: 0.0
 required_inputs: ['requirements', 'specs', 'workspace', 'revision_count']
-output_schema: FinalReportResponse
 ---
 # Role
 

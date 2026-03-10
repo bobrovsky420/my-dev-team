@@ -3,6 +3,8 @@ from .base_agent import BaseAgent
 from .schemas import QAEngineerResponse
 
 class QAEngineer(BaseAgent[QAEngineerResponse]):
+    output_schema = QAEngineerResponse
+
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
         workspace_str = ''

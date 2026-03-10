@@ -6,7 +6,6 @@ model: groq/compound
 #model: groq/qwen/qwen3-32b
 temperature: 0.4
 required_inputs: ['requirements', 'human_answer']
-output_schema: ProductManagerResponse
 ---
 # Role
 

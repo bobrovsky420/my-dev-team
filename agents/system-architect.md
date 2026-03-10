@@ -6,7 +6,6 @@ model: groq/compound
 #model: groq/qwen/qwen3-32b
 temperature: 0.1
 required_inputs: ['requirements', 'specs']
-output_schema: SystemArchitectResponse
 ---
 # Role
 

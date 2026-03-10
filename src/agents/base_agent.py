@@ -27,6 +27,7 @@ T = TypeVar('T', bound=BaseModel)
 class BaseAgent(Generic[T]):
     model_name: str = 'ollama/qwen3:8b'
     temperature: float = 0.2
+    output_schema: type[T]
 
     def __init__(self, config: dict, prompt_template: str, model: dict = None):
         self.config = config
@@ -41,12 +42,6 @@ class BaseAgent(Generic[T]):
     def _required_inputs(self) -> list[str]:
         return self.config.get('required_inputs', [])
 
-    @cached_property
-    def _output_schema(self):
-        if schema_name := self.config.get('output_schema', None):
-            return getattr(schema_module, schema_name)
-        return None
-
     def _build_inputs(self, state: dict) -> dict:
         inputs = {}
         for key in self._required_inputs:
@@ -55,16 +50,14 @@ class BaseAgent(Generic[T]):
         return inputs
 
     def _parse_outputs(self, response: str) -> T:
-        payload = self._extract_json_payload(response)
-        data = json.loads(payload)
-        return self._output_schema.model_validate(data)
-
-    def _extract_json_payload(self, response: str) -> str:
         if fenced_match := re.search(r'```json\s*(\{.*?\})\s*```', response, re.DOTALL | re.IGNORECASE):
-            return fenced_match.group(1)
-        if json_match := re.search(r'(\{.*\})', response, re.DOTALL):
-            return json_match.group(1)
-        raise ValueError("No JSON payload found in the response.")
+            payload = fenced_match.group(1)
+        elif json_match := re.search(r'(\{.*\})', response, re.DOTALL):
+            payload = json_match.group(1)
+        else:
+            raise ValueError("No JSON payload found in the response.")
+        data = json.loads(payload)
+        return self.output_schema.model_validate(data)
 
     def _update_state(self, parsed_data: T, current_state: dict) -> dict:
         return parsed_data.model_dump()

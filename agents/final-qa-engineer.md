@@ -5,7 +5,6 @@ description: An expert Integration QA Engineer who evaluates the fully assembled
 model: groq/compound
 temperature: 0.2
 required_inputs: ['specs', 'workspace']
-output_schema: QAEngineerResponse
 ---
 # Role
 
