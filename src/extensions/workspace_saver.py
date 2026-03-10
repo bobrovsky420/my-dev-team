@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from .base_extension import CrewExtension
 
@@ -7,24 +6,24 @@ class WorkspaceSaver(CrewExtension):
 
     def __init__(self, workspace_dir: Path):
         self.workspace_dir = workspace_dir
-        os.makedirs(self.workspace_dir, exist_ok=True)
+        self.workspace_dir.mkdir(parents=True, exist_ok=True)
 
     def on_start(self, thread_id: str, initial_state: dict):
-        os.makedirs(self.workspace_dir, exist_ok=True)
-        if thread_id.endswith('_plan'):
-            folder_name = '00_planning'
-        elif '_task_' in thread_id:
-            task_num = thread_id.split('_task_')[-1]
-            folder_name = f'{task_num.zfill(2)}_task'
-        elif thread_id.endswith('_integration'):
-            folder_name = '90_integration'
-        else:
-            folder_name = 'misc'
-        self.base_dir = self.workspace_dir / folder_name
-        os.makedirs(self.base_dir, exist_ok=True)
-        is_planning_phase = 'requirements' in initial_state and 'specs' not in initial_state
-        if is_planning_phase:
-            self._save_requirements(initial_state['requirements'])
+        self.base_dir = self._get_target_dir('pm', initial_state)
+        self.base_dir.mkdir(parents=True, exist_ok=True)
+        if requirements := initial_state.get('requirements'):
+            self._save_requirements(requirements)
+
+    def _get_target_dir(self, node_name: str, full_state: dict) -> Path:
+        if node_name in ['pm', 'architect']:
+            return self.workspace_dir / '00_planning'
+        elif node_name in ['reporter', 'final_qa']:
+            return self.workspace_dir / '90_integration'
+        elif node_name == 'qa' and full_state.get('current_task') == 'ALL_DONE':
+            return self.workspace_dir / '90_integration'
+        if task_idx := full_state.get('current_task_index', 0):
+            return self.workspace_dir / f'{task_idx:02d}_task'
+        return self.workspace_dir / '00_planning'
 
     def _save_requirements(self, requirements: str):
         requirements_file = self.base_dir / 'requirements.md'
@@ -69,6 +68,8 @@ class WorkspaceSaver(CrewExtension):
 
     def on_step(self, thread_id: str, *, state_update: dict, full_state: dict):
         for node_name, node_update in state_update.items():
+            self.base_dir = self._get_target_dir(node_name, full_state)
+            self.base_dir.mkdir(parents=True, exist_ok=True)
             match node_name:
                 case 'pm':
                     if specs := node_update.get('specs', ''):

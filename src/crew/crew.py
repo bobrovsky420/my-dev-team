@@ -27,7 +27,12 @@ class VirtualCrew:
         else:
             self.logger.info("Resuming workflow from memory...")
         while True:
-            for state_update in self.app.stream(initial_state, config, stream_mode='updates'):
+            stream_gen = self.app.stream(initial_state, config, stream_mode='updates', subgraphs=True)
+            for event in stream_gen:
+                if isinstance(event, tuple) and len(event) == 2:
+                    namespace, state_update = event
+                else:
+                    state_update = event
                 full_state = self.app.get_state(config).values
                 for ext in self.extensions:
                     ext.on_step(thread_id, state_update=state_update, full_state=full_state)

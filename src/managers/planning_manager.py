@@ -1,12 +1,12 @@
 from langgraph.graph import StateGraph, START, END
-from state import PlanningState
+from state import ProjectState
 from .base_manager import BaseManager
 
 class PlanningManager(BaseManager):
     role = 'Planning Manager'
 
-    def build_graph(self, agents: dict, memory) -> StateGraph:
-        workflow = StateGraph(PlanningState)
+    def build_graph(self, agents: dict, **kwargs) -> StateGraph:
+        workflow = StateGraph(ProjectState)
         workflow.add_node('human', self.dummy_human_node)
         workflow.add_node('pm', agents['pm'].process)
         workflow.add_node('architect', agents['architect'].process)
@@ -14,7 +14,7 @@ class PlanningManager(BaseManager):
         workflow.add_conditional_edges('human', self.route_start)
         workflow.add_conditional_edges('pm', self.route_start)
         workflow.add_edge('architect', END)
-        return workflow.compile(checkpointer=memory, interrupt_before=['human'])
+        return workflow.compile(interrupt_before=['human'])
 
     def dummy_human_node(self, state: dict) -> dict:
         self.logger.info("Human input received. Resuming workflow...")

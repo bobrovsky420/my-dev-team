@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 import json
 import logging
 import re
@@ -8,9 +8,8 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_groq import ChatGroq
 from langchain_ollama import ChatOllama
-from pydantic import BaseModel
-from utils import sanitize_for_prompt
-from . import schemas as schema_module
+from pydantic import BaseModel, ValidationError
+from utils import rate_limiter, sanitize_for_prompt
 
 def get_llm(model_name: str, temperature: float) -> BaseChatModel:
     """Returns a configured LLM instance."""
@@ -79,7 +78,7 @@ class BaseAgent(Generic[T]):
             response = self._invoke_llm(**inputs)
             try:
                 parsed_data = self._parse_outputs(response)
-            except (ValueError, json.JSONDecodeError) as e:
+            except (ValueError, ValidationError, json.JSONDecodeError) as e:
                 last_error = e
                 self.logger.error("Attempt %i/%i failed to parse: %s", attempt, self.max_retries, e)
                 if attempt < self.max_retries:
@@ -126,6 +125,7 @@ class BaseAgent(Generic[T]):
 
     def _invoke_llm(self, **kwargs) -> str:
         chain = self.prompt | self.llm
+        rate_limiter.wait_if_needed()
         response = self._clean_response(chain.invoke(kwargs).content)
         self.logger.debug("*"*50 + "\n%s\n" + "*"*50, response)
         return response

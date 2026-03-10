@@ -5,7 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
 from crew import VirtualCrew
-from extensions import HumanInTheLoop, WorkspaceSaver, RateLimiter
+from extensions import HumanInTheLoop, WorkspaceSaver
 from managers import ProjectManager
 
 load_dotenv()
@@ -15,7 +15,7 @@ LOG_FILE = 'mycrew.log'
 file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
 file_handler.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
+console_handler.setLevel(logging.INFO)
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(levelname)s [%(name)s]: %(message)s',
@@ -27,15 +27,29 @@ logging.basicConfig(
 logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('httpcore').setLevel(logging.WARNING)
 
+def my_agents() -> dict:
+    return {
+        'pm': ProductManager.from_config('agents/product-manager.md'),
+        'architect': SystemArchitect.from_config('agents/system-architect.md'),
+        'developer': SeniorDeveloper.from_config('agents/senior-developer.md'),
+        'reviewer': CodeReviewer.from_config('agents/code-reviewer.md'),
+        'qa': QAEngineer.from_config('agents/qa-engineer.md'),
+        'final_qa': FinalQAEngineer.from_config('agents/final-qa-engineer.md'),
+        'reporter': Reporter.from_config('agents/reporter.md')
+    }
+
 def my_extensions(project_dir: Path) -> list:
     return [
         WorkspaceSaver(workspace_dir=project_dir),
-        HumanInTheLoop(),
-        RateLimiter(requests_per_minute=1)
+        HumanInTheLoop()
     ]
 
-#def my_crew():
-#    return VirtualCrew(agents=my_agents(), developers=my_developers(), manager=my_manager(), extensions=my_extensions())
+def my_crew(project_folder):
+    return VirtualCrew(
+        manager=ProjectManager(),
+        agents=my_agents(),
+        extensions=my_extensions(project_folder)
+    )
 
 def load_project_spec(path: str = 'project.txt') -> tuple[str, str]:
     """Read the project file and return (name, description)."""
@@ -61,41 +75,23 @@ if __name__ == '__main__':
     project_name, project_requirements = load_project_spec('project.txt')
     thread_id = generate_thread_id(project_name)
     project_folder = Path(f'workspaces/{thread_id}')
-
-    project_crew = VirtualCrew(
-        manager=ProjectManager(
-            base_thread_id=thread_id,
-            project_folder=project_folder,
-            extensions=my_extensions(project_folder)
-        ),
-        agents={
-            'pm': ProductManager.from_config('agents/product-manager.md'),
-            'architect': SystemArchitect.from_config('agents/system-architect.md'),
-            'developer': SeniorDeveloper.from_config('agents/senior-developer.md'),
-            'reviewer': CodeReviewer.from_config('agents/code-reviewer.md'),
-            'qa': QAEngineer.from_config('agents/qa-engineer.md'),
-            'final_qa': FinalQAEngineer.from_config('agents/final-qa-engineer.md'),
-            'reporter': Reporter.from_config('agents/reporter.md')
-        }
-    )
+    project_crew = my_crew(project_folder)
     final_state = project_crew.execute(
-        thread_id=f'{thread_id}_lifecycle',
+        thread_id=thread_id,
         initial_state={
             'requirements': project_requirements,
             'specs': '',
             'pending_tasks': [],
+            'current_task_index': 0,
+            'current_task': '',
             'workspace_files': {},
             'final_report': '',
             'integration_bugs': [],
-            'communication_log': []
+            'communication_log': [],
+            'revision_count': 0,
+            'total_revisions': 0
         }
     )
-#    if p_log := plan_state.get('communication_log'):
-#        global_communication_log.extend(p_log)
-#        global_communication_log.append(f"\n### Task {i}: {user_story.split('**')[1] if '**' in user_story else 'Task execution'} ###")
-#        if t_log := task_state.get('communication_log'):
-#            global_communication_log.extend(t_log)
-
     if final_state.get('abort_requested'):
         print("❌ Workflow aborted by user or validation failure.")
         exit(0)
