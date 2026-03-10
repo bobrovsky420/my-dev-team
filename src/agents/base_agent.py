@@ -57,14 +57,22 @@ class BaseAgent(Generic[T]):
             payload = json_match.group(1)
         else:
             raise ValueError("No JSON payload found in the response.")
-        data = json.loads(payload)
-        return self.output_schema.model_validate(data)
+        return self.output_schema.model_validate(json.loads(payload))
 
     def _update_state(self, parsed_data: T, current_state: dict) -> dict:
         return parsed_data.model_dump()
 
+    def _reset_run_state(self):
+        if hasattr(self, '_retry_temperature'):
+            del self._retry_temperature
+            self.__dict__.pop('llm', None)
+        if hasattr(self, '_retry_prompt'):
+            del self._retry_prompt
+            self.__dict__.pop('prompt', None)
+
     def process(self, state: dict) -> dict:
         self.logger.info("Executing...")
+        self._reset_run_state()
         inputs = self._build_inputs(state)
         last_error = None
         for attempt in range(1, self.max_retries + 1):
@@ -92,7 +100,7 @@ class BaseAgent(Generic[T]):
         new_temp = min(self.temperature + (attempt * 0.1), 1.0)
         self.logger.info("Bumping temperature to %.1f for retry", new_temp)
         self._retry_temperature = new_temp
-        del self.__dict__['llm']
+        self.__dict__.pop('llm', None)
 
     def _bump_prompt(self, last_error: Exception):
         self._retry_prompt = self.prompt_template + "\n\n" + (
@@ -101,15 +109,15 @@ class BaseAgent(Generic[T]):
             f"Wrap your JSON in ```json ... ``` fences. "
             f"Do not include any text inside the JSON block that is not valid JSON."
         )
-        del self.__dict__['prompt']
+        self.__dict__.pop('prompt', None)
 
     @cached_property
     def llm(self) -> BaseChatModel:
-        return get_llm(model_name=self.model_name, temperature=self._retry_temperature if '_retry_temp' in self.__dict__ else self.temperature)
+        return get_llm(model_name=self.model_name, temperature=getattr(self, '_retry_temperature', self.temperature))
 
     @cached_property
     def prompt(self):
-        return PromptTemplate.from_template(self._retry_prompt if '_retry_prompt' in self.__dict__ else self.prompt_template)
+        return PromptTemplate.from_template(getattr(self, '_retry_prompt', self.prompt_template))
 
     def _clean_response(self, text: str) -> str:
         """Removes DeepSeek <think> tags and returns the clean output."""
