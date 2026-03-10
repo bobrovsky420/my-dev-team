@@ -41,3 +41,5 @@ You must strictly output a JSON object exactly like this:
 <specs>
 {specs}
 </specs>
+
+{retry_feedback}

@@ -24,9 +24,9 @@ You are the Reporter. The software project has successfully concluded.
 
 You must strictly output a JSON object exactly like this:
 
-{
+{{
     "final_report": "# Project Final Report\n\n## Executive Summary\nThe goal of this project was to...\n\n## Final Deliverables\n### ..."
-}
+}}
 
 # Input Data
 
@@ -49,3 +49,5 @@ You must strictly output a JSON object exactly like this:
 <workspace>
 {workspace}
 </workspace>
+
+{retry_feedback}

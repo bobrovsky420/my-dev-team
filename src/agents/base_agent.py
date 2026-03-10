@@ -44,7 +44,7 @@ class BaseAgent(Generic[T]):
         return self.config.get('required_inputs', [])
 
     def _build_inputs(self, state: dict) -> dict:
-        inputs = {}
+        inputs = {'retry_feedback': ''}
         for key in self._required_inputs:
             val = state.get(key, '')
             inputs[key] = sanitize_for_prompt(str(val), [key]) if val else ''
@@ -76,6 +76,12 @@ class BaseAgent(Generic[T]):
                 self.logger.error("Attempt %i/%i failed to parse: %s", attempt, self.max_retries, e)
                 if attempt < self.max_retries:
                     self._bump_temperature(attempt)
+                    inputs['retry_feedback'] = (
+                        f"YOUR PREVIOUS RESPONSE COULD NOT BE PARSED. Error: {e}\n"
+                        f"You MUST respond with valid JSON matching the required schemd. "
+                        f"Wrap your JSON in ```json ... ``` fences. "
+                        f"Do not include any text inside the JSON block that is not valid JSON."
+                    )
                 continue
             final_state = self._update_state(parsed_data, state)
             if 'communication_log' not in final_state:
