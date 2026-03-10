@@ -47,7 +47,7 @@ class ProjectManager(BaseManager):
         updates = {
             'specs': plan_state.get('specs', ''),
             'pending_tasks': plan_state.get('pending_tasks', ''),
-            'communication_log': [f"**[{self.name or self.role}]**: Planning phase completed."]
+            'communication_log': plan_state.get('communication_log', []) + [f"**[{self.name or self.role}]**: Planning phase completed."]
         }
         if plan_state.get('abort_requested'):
             updates['abort_requested'] = True
@@ -57,6 +57,7 @@ class ProjectManager(BaseManager):
         backlog = state.get('pending_tasks', [])
         current_workspace = state.get('workspace_files', {}).copy()
         total_revisions = 0
+        execution_logs: list[str] = []
         execution_crew = VirtualCrew(
             manager=StandardExecutionManager(),
             agents={
@@ -84,14 +85,15 @@ class ProjectManager(BaseManager):
                 return {
                     'abort_requested': True,
                     'workspace_files': current_workspace,
-                    'communication_log': [f"**[{self.name or self.role}]**: Execution aborted at task {i}."]
+                    'communication_log': execution_logs + [f"**[{self.name or self.role}]**: Execution aborted at task {i}."]
                 }
             current_workspace = task_state.get('workspace_files', current_workspace)
             total_revisions += task_state.get('revision_count', 0)
+            execution_logs.append(task_state.get('communication_log', []))
         return {
             'workspace_files': current_workspace,
             'total_revisions': total_revisions,
-            'communication_log': [f"**[{self.name or self.role}]**: Execution phase completed ({len(backlog)} tasks)."]
+            'communication_log': execution_logs + [f"**[{self.name or self.role}]**: Execution phase completed ({len(backlog)} tasks)."]
         }
 
     def run_integration(self, state: dict) -> dict:
@@ -111,13 +113,13 @@ class ProjectManager(BaseManager):
                 'specs': state.get('specs', ''),
                 'workspace_files': current_workspace,
                 'total_revisions': state.get('total_revisions', 0),
-                'communication_log': []
+                'communication_log': state.get('communication_log', []).copy()
             }
         )
         updates = {
             'final_report': final_state.get('final_report', 'No report generated.'),
             'integration_bugs': final_state.get('integration_bugs', []),
-            'communication_log': [f"**[{self.name or self.role}]**: Integration phase completed."]
+            'communication_log': final_state.get('communication_log', []) + [f"**[{self.name or self.role}]**: Integration phase completed."]
         }
         if final_state.get('abort_requested'):
             updates['abort_requested'] = True
