@@ -1,5 +1,6 @@
 from langgraph.graph import StateGraph, START, END
 from ..state import ProjectState
+from ..utils import task_to_markdown
 from .base_manager import BaseManager
 from .planning_manager import PlanningManager
 from .execution_manager import StandardExecutionManager
@@ -40,15 +41,17 @@ class ProjectManager(BaseManager):
         current_revisions = state.get('revision_count', 0)
         if idx < len(pending):
             task = pending[idx]
-            self.logger.info("Routing to Task %i/%i", idx + 1, len(pending))
+            t_name = task.get('task_name', f'Task {idx+1}')
+            formatted_task = task_to_markdown(task, idx + 1)
+            self.logger.info("Routing to Task %i/%i: %s", idx + 1, len(pending), t_name)
             return {
-                'current_task': task,
+                'current_task': formatted_task,
                 'current_task_index': idx + 1,
-                'total_revisions': current_revisions,
-                'revision_count': 0,
+                'total_revisions': current_revisions, # Pass task revisions to total aggregator
+                'revision_count': 0,                  # Reset loop counter for new task
                 'review_feedback': '',
                 'test_results': '',
-                'communication_log': [f"\n### Task {idx + 1}: {task.split('**')[1] if '**' in task else 'Task execution'} ###"]
+                'communication_log': [f"\n### Task {idx + 1}: {t_name} ###"]
             }
         self.logger.info("Execution phase completed. Routing to integration.")
         return {

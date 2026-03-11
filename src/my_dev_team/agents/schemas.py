@@ -20,10 +20,22 @@ class ProductManagerResponse(BaseModel):
             raise ValueError("Exactly one of 'clarification_question' or 'specs' must be provided, and the other must be empty.")
         return self
 
-class SystemArchitectResponse(BaseModel):
-    pending_tasks: list[str] = Field(
+class DevelopmentTask(BaseModel):
+    task_name: str = Field(
+        description="A clear, concise name for the task."
+    )
+    user_story: str = Field(
+        description="The user story describing the 'why' and 'what' (e.g., 'As a user, I want to...')."
+    )
+    acceptance_criteria: list[str] = Field(
         min_length=1,
-        description="A sequential backlog of development tasks. Each string must contain the complete Markdown definition of a single task, starting with a level-2 Markdown header (e.g., '## Task 1: [Component Name]'), followed by the '**User Story:**' and a bulleted list of '**Acceptance Criteria:**'. Ensure newlines are properly encoded within each string."
+        description="A bulleted list of specific, testable conditions that must be met for this task to be considered complete."
+    )
+
+class SystemArchitectResponse(BaseModel):
+    pending_tasks: list[DevelopmentTask] = Field(
+        min_length=1,
+        description="A sequential backlog of development tasks required to build the project."
     )
 
 class WorkspaceFile(BaseModel):

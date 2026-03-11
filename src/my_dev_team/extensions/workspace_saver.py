@@ -1,4 +1,5 @@
 from pathlib import Path
+from ..utils import task_to_markdown
 from .base_extension import CrewExtension
 
 class WorkspaceSaver(CrewExtension):
@@ -33,17 +34,12 @@ class WorkspaceSaver(CrewExtension):
         specs_file = self.base_dir / 'specs.md'
         specs_file.write_text(specs, encoding='utf-8')
 
-    def _save_tasks(self, tasks: list[str]):
+    def _save_tasks(self, tasks: list):
         tasks_file = self.base_dir / 'tasks.md'
         content = ["# System Execution Plan\n"]
-        for i, task in enumerate(tasks, start=1):
-            ticket_markdown = (
-                f"## Task {i}\n"
-                f"{task.strip()}\n\n"
-                f"---\n"
-            )
-            content.append(ticket_markdown)
-        tasks_file.write_text("\n".join(content), encoding='utf-8')
+        for idx, task in enumerate(tasks, start=1):
+            content.append(task_to_markdown(task, idx))
+        tasks_file.write_text('\n'.join(content), encoding='utf-8')
 
     def _save_workspace(self, workspace_files: dict, current_rev: int):
         if not workspace_files:
