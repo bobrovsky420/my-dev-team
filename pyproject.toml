@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my-dev-team"
+version = "0.1.0"
+description = "An autonomous, LangGraph-powered AI development agency."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "langgraph>=0.0.20",
+    "langchain>=0.1.0",
+    "langchain-groq",
+    "langchain-ollama",
+    "pydantic>=2.0",
+    "python-dotenv"
+]
+
+[project.scripts]
+dev-team = "my_dev_team.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"my_dev_team.agents.prompts" = ["*.md"]
+
+[tool.pylint.messages_control]
+disable = [
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "missing-module-docstring",
+    "too-few-public-methods",
+    "unnecessary-pass"
+]
+
+[tool.pylint.format]
+max-line-length = 160

@@ -1,5 +1,16 @@
-venv/
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
 __pycache__/
+*.py[cod]
+*$py.class
+
+venv/
 .env
+
 *.log
+
 workspaces/
