@@ -7,6 +7,7 @@ from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, 
 from crew import VirtualCrew
 from extensions import HumanInTheLoop, WorkspaceSaver
 from managers import ProjectManager
+from utils import RateLimiter
 
 load_dotenv()
 
@@ -48,7 +49,8 @@ def my_crew(project_folder):
     return VirtualCrew(
         manager=ProjectManager(),
         agents=my_agents(),
-        extensions=my_extensions(project_folder)
+        extensions=my_extensions(project_folder),
+        rate_limiter=RateLimiter(requests_per_minute=3)
     )
 
 def load_project_spec(path: str = 'project.txt') -> tuple[str, str]:

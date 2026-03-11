@@ -1,16 +1,20 @@
 import logging
 from functools import cached_property
 from langgraph.checkpoint.memory import MemorySaver
+from utils import RateLimiter
 
 class VirtualCrew:
     role = 'Virtual Crew'
     name: str = None
 
-    def __init__(self, manager, agents: dict = None, extensions: list = None):
+    def __init__(self, manager, agents: dict = None, extensions: list = None, rate_limiter: RateLimiter = None):
         self.logger = logging.getLogger(self.name or self.role)
         self.manager = manager
         self.agents = agents or {}
         self.extensions = extensions or []
+        if rate_limiter:
+            for agent in self.agents.values():
+                agent.rate_limiter = rate_limiter
         self.app = self.manager.build_graph(agents=self.agents, memory=self.memory)
 
     @cached_property

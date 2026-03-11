@@ -21,5 +21,3 @@ class RateLimiter():
             current_time = time.time()
             self.call_timestamps = [t for t in self.call_timestamps if current_time - t < 60.0]
         self.call_timestamps.append(time.time())
-
-rate_limiter = RateLimiter(requests_per_minute=3)

@@ -9,7 +9,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_groq import ChatGroq
 from langchain_ollama import ChatOllama
 from pydantic import BaseModel, ValidationError
-from utils import rate_limiter, sanitize_for_prompt
+from utils import RateLimiter, sanitize_for_prompt
 
 def get_llm(model_name: str, temperature: float) -> BaseChatModel:
     """Returns a configured LLM instance."""
@@ -27,6 +27,7 @@ class BaseAgent(Generic[T]):
     model_name: str = 'ollama/qwen3:8b'
     temperature: float = 0.2
     max_retries: int = 2
+    rate_limiter: RateLimiter = None
     output_schema: type[T]
 
     def __init__(self, config: dict, prompt_template: str, model: dict = None):
@@ -125,7 +126,8 @@ class BaseAgent(Generic[T]):
 
     def _invoke_llm(self, **kwargs) -> str:
         chain = self.prompt | self.llm
-        rate_limiter.wait_if_needed()
+        if self.rate_limiter:
+            self.rate_limiter.wait_if_needed()
         response = self._clean_response(chain.invoke(kwargs).content)
         self.logger.debug("*"*50 + "\n%s\n" + "*"*50, response)
         return response
