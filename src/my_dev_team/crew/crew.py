@@ -26,17 +26,7 @@ class VirtualCrew:
         abort_requested = False
         if requirements is not None:
             initial_state = {
-                'requirements': requirements,
-                'specs': '',
-                'pending_tasks': [],
-                'current_task_index': 0,
-                'current_task': '',
-                'workspace_files': {},
-                'final_report': '',
-                'integration_bugs': [],
-                'communication_log': [],
-                'revision_count': 0,
-                'total_revisions': 0
+                'requirements': requirements
             }
             self.logger.info("Starting new workflow...")
             for ext in self.extensions:
