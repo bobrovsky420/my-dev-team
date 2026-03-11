@@ -17,7 +17,7 @@ LOG_FILE = 'mycrew.log'
 file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
 file_handler.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.DEBUG)
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(levelname)s [%(name)s]: %(message)s',

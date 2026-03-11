@@ -1,10 +1,10 @@
 from .base_agent import BaseAgent
-from .schemas import QAEngineerResponse
+from .schemas import FinalQAResponse
 
-class FinalQAEngineer(BaseAgent[QAEngineerResponse]):
-    output_schema = QAEngineerResponse
+class FinalQAEngineer(BaseAgent[FinalQAResponse]):
+    output_schema = FinalQAResponse
 
-    def _update_state(self, parsed_data: QAEngineerResponse, current_state: dict) -> dict:
+    def _update_state(self, parsed_data: FinalQAResponse, current_state: dict) -> dict:
         results = parsed_data.test_results
         status = 'PASSED' if results == 'PASSED' else 'INTEGRATION BUGS FOUND'
         updates = {
