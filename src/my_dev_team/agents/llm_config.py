@@ -22,7 +22,7 @@ def get_llm(model_name: str, temperature: float) -> BaseChatModel:
         model_name = TEST_MODELS[model_name[5:]]
     if model_name.startswith('ollama/'):
         return ChatOllama(model=model_name[7:], temperature=temperature, format="json")
-    elif model_name.startswith('groq/'):
+    if model_name.startswith('groq/'):
         actual_model = model_name if model_name == 'groq/compound' else model_name[5:]
         llm = ChatGroq(model=actual_model, temperature=temperature, max_retries=2)
         return llm.bind(response_format={'type': 'json_object'})

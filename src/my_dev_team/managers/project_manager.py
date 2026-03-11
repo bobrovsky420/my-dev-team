@@ -8,7 +8,7 @@ from .integration_manager import IntegrationManager
 class ProjectManager(BaseManager):
     role = 'Project Manager'
 
-    def build_graph(self, agents: dict, memory = None) -> StateGraph:
+    def build_graph(self, agents: dict, memory = None) -> StateGraph: # pylint: disable=arguments-differ
         self.agents = agents
         workflow = StateGraph(ProjectState)
         planning_graph = PlanningManager().build_graph(agents)

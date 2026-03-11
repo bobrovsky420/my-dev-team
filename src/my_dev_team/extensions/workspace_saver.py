@@ -17,9 +17,9 @@ class WorkspaceSaver(CrewExtension):
     def _get_target_dir(self, node_name: str, full_state: dict) -> Path:
         if node_name in ['pm', 'architect']:
             return self.workspace_dir / '00_planning'
-        elif node_name in ['reporter', 'final_qa']:
+        if node_name in ['reporter', 'final_qa']:
             return self.workspace_dir / '90_integration'
-        elif node_name == 'qa' and full_state.get('current_task') == 'ALL_DONE':
+        if node_name == 'qa' and full_state.get('current_task') == 'ALL_DONE':
             return self.workspace_dir / '90_integration'
         if task_idx := full_state.get('current_task_index', 0):
             return self.workspace_dir / f'{task_idx:02d}_task'

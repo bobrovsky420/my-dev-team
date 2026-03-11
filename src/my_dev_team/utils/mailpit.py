@@ -123,7 +123,7 @@ def send_question(question: str, role: str = 'Crew Manager', *, receiver = HUMAN
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
         server.send_message(msg)
     set_question_context(question_subject, question_subject)
-    logging.info(f"Clarification question sent from {role}: {question}")
+    logging.info("Clarification question sent from %s: %s", role, question)
 
 def wait_for_clarification(max_wait_seconds: int = 300, receiver = MANAGER_ADDRESS, sender = HUMAN_ADDRESS):
     """
@@ -132,7 +132,7 @@ def wait_for_clarification(max_wait_seconds: int = 300, receiver = MANAGER_ADDRE
     wait_start = time.time()
     while True:
         if time.time() - wait_start > max_wait_seconds:
-            logging.warning(f"No clarification received within {max_wait_seconds} seconds")
+            logging.warning("No clarification received within %i seconds", max_wait_seconds)
             return None
         response = requests.get(f"{MAILPIT_URL}/api/v1/messages?to={receiver}&from={sender}")
         messages = response.json().get('messages', [])

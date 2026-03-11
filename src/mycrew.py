@@ -1,11 +1,12 @@
 from datetime import datetime
 import logging
 import re
+import sys
 import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
 from my_dev_team import VirtualCrew, ProjectManager
-from my_dev_team.agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
+from my_dev_team.agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
 from my_dev_team.extensions import HumanInTheLoop, WorkspaceSaver
 from my_dev_team.utils import RateLimiter
 
@@ -84,10 +85,10 @@ if __name__ == '__main__':
     ))
     if final_state.abort_requested:
         print("❌ Workflow aborted by user or validation failure.")
-        exit(0)
+        sys.exit(0)
     if not final_state.pending_tasks:
         print("❌ System architect failed to generate a backlog.")
-        exit(1)
+        sys.exit(1)
     if final_state.has_bugs:
         print("\n🚨 RELEASE FAILED: Integration bugs found!")
         for bug in final_state.integration_bugs:

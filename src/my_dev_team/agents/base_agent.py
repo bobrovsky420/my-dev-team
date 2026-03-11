@@ -165,5 +165,4 @@ class BaseAgent(Generic[T]):
                 agent = cls(config, prompt, model)
                 agents.append(agent)
             return agents
-        else:
-            return cls(config, prompt)
+        return cls(config, prompt)

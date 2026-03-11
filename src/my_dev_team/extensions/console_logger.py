@@ -23,11 +23,11 @@ class ConsoleLogger(CrewExtension):
             return {'clarification_question': '', 'human_answer': user_input}
         return None
 
-    def on_finish(self, thread_id: str, state: dict):
+    def on_finish(self, thread_id: str, final_state: dict):
         print(f"✅ [FINISHED THREAD: {thread_id}]\n")
-        if tasks := state.get('pending_tasks'):
+        if tasks := final_state.get('pending_tasks'):
             print(f"Generated {len(tasks)} tasks for the backlog.")
-        elif code := state.get('code'):
-            print(f"Code updated. Revisions took: {state.get('revision_count', 0)}")
-        elif report := state.get('final_report'):
+        elif code := final_state.get('code'):
+            print(f"Code updated. Revisions took: {final_state.get('revision_count', 0)}")
+        elif report := final_state.get('final_report'):
             print("Release report generated successfully.")

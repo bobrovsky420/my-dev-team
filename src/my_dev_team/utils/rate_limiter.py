@@ -19,7 +19,7 @@ class RateLimiter():
         if len(self.call_timestamps) >= self.rpm_limit:
             sleep_time = 60.0 - (current_time - self.call_timestamps[0])
             if sleep_time > 0:
-                self.logger.warning(f"Rate limit reached (%i RPM). Pausing for %i seconds...", self.rpm_limit, sleep_time)
+                self.logger.warning("Rate limit reached (%i RPM). Pausing for %i seconds...", self.rpm_limit, sleep_time)
                 await asyncio.sleep(sleep_time)
             current_time = time.time()
             self.call_timestamps = [t for t in self.call_timestamps if current_time - t < 60.0]

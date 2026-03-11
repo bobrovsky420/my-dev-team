@@ -1,0 +1,10 @@
+[MESSAGES CONTROL]
+disable=
+    missing-class-docstring,
+    missing-function-docstring,
+    missing-module-docstring,
+    too-few-public-methods,
+    unnecessary-pass
+
+[FORMAT]
+max-line-length=160

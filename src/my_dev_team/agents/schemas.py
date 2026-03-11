@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field, model_validator
 
+# pylint: disable=line-too-long
+
 class ProductManagerResponse(BaseModel):
     clarification_question: str | None = Field(
         default=None,
