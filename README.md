@@ -50,9 +50,43 @@ The fastest way to use the framework is via the terminal command included in the
 dev-team project.txt
 ```
 
-This will automatically create a unique workspace folder (e.g., `workspaces/web_scraper_cli_20260311_181552/`), execute the workflow, and save your generated code there.
+### Advanced CLI Options
 
-## 3. Usage (Python API)
+You can easily switch between cloud providers and local models, and adjust rate limits based on your API tier:
+
+```sh
+# Run entirely locally for free using Ollama, with no rate limit!
+dev-team project.txt --provider ollama
+
+# Run using OpenAI's flagship models, limited to 15 requests per minute
+dev-team project.txt --provider openai --rpm 15
+```
+
+#### Available Arguments
+
+* `--provider`: Choose the LLM backend. Options: groq, ollama (default), openai.
+
+* `--rpm`: API requests per minute. Set to 0 to disable rate limiting (default: 0 = disabled).
+
+Note: Ensure you have the corresponding API keys (e.g., `GROQ_API_KEY`, `OPENAI_API_KEY`) set in your `.env` file, or ensure your local Ollama instance is running.
+
+## 3. Intelligent Model Routing (The LLM Factory)
+
+**My Dev Team** doesn't just use one model for everything. It uses an advanced **Semantic Routing** architecture via `LLMFactory`.
+
+Instead of hardcoding a specific model (like `gpt-5.3-codex`), each agent requests a specific capability category and temperature. The Factory evaluates your chosen `--provider` and dynamically spins up the most cost-effective, capable model for that exact task.
+
+#### The Categories
+
+* `reasoning`: For the System Architect and Product Manager. Maps to deep-thinking models.
+
+* `code-generator`: For the Senior Developer. Maps to strict, syntax-heavy models.
+
+* `code-analyzer`: For the QA and Reviewer agents. Maps to deep-context evaluation models.
+
+* `fast-utility`: For the Reporter. Maps to blazing-fast, ultra-cheap models for simple text summarization.
+
+## 4. Usage (Python API)
 
 If you want to integrate the crew into your own application or customize the agents, use the clean Python API:
 
@@ -70,7 +104,7 @@ from my_dev_team.extensions import HumanInTheLoop, WorkspaceSaver
 
 load_dotenv()
 
-def build_crew(workspace_dir: Path) -> VirtualCrew:
+def build_crew(project_folder: Path, llm_factory: LLMFactory, rpm: int = 0) -> VirtualCrew:
     # Initialize agents using built-in prompt templates
     agents = {
         'pm': ProductManager.from_config('product-manager.md'),
@@ -91,14 +125,15 @@ def build_crew(workspace_dir: Path) -> VirtualCrew:
     return VirtualCrew(
         manager=ProjectManager(),
         agents=agents,
-        extensions=extensions
+        extensions=extensions,
+        rate_limiter=RateLimiter(requests_per_minute=rpm) if rpm > 0 else None
     )
 
 async def main():
     requirements = "Build a simple Python calculator CLI with basic arithmetic."
     workspace = Path('./workspaces/calculator_app')
 
-    crew = build_crew(workspace)
+    crew = build_crew(workspace, provider='groq', rpm=30)
 
     print("🚀 Starting the AI Dev Team...")
     final_state = await crew.execute(
