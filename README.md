@@ -12,7 +12,7 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 
 * **Structured Outputs:** Powered by Pydantic and LangChain, ensuring zero "Markdown spillage" and robust JSON state management.
 
-* **Extensible:** Easily add custom tools like HumanInTheLoop or WorkspaceSaver.
+* **Extensible:** Easily add custom tools like `HumanInTheLoop` or `WorkspaceSaver`.
 
 ## Installation
 
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## The AI Agents
+## AI Agents
 
 * **Product Manager:** Analyzes requirements, asks clarifying questions, and writes detailed Technical Specifications.
 
