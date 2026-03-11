@@ -6,20 +6,9 @@ import re
 import yaml
 from langchain_core.prompts import PromptTemplate
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_groq import ChatGroq
-from langchain_ollama import ChatOllama
 from pydantic import BaseModel, ValidationError
 from utils import RateLimiter, sanitize_for_prompt
-
-def get_llm(model_name: str, temperature: float) -> BaseChatModel:
-    """Returns a configured LLM instance."""
-    if model_name.startswith('ollama/'):
-        return ChatOllama(model=model_name[7:], temperature=temperature)
-    elif model_name.startswith('groq/'):
-        if model_name == 'groq/compound':
-            return ChatGroq(model=model_name, temperature=temperature, max_retries=2)
-        return ChatGroq(model=model_name[5:], temperature=temperature, max_retries=2)
-    raise ValueError(f"Unsupported model: {model_name}")
+from .llm_config import get_llm
 
 T = TypeVar('T', bound=BaseModel)
 
@@ -51,13 +40,7 @@ class BaseAgent(Generic[T]):
         return inputs
 
     def _parse_outputs(self, response: str) -> T:
-        if fenced_match := re.search(r'```json\s*(\{.*?\})\s*```', response, re.DOTALL | re.IGNORECASE):
-            payload = fenced_match.group(1)
-        elif json_match := re.search(r'(\{.*\})', response, re.DOTALL):
-            payload = json_match.group(1)
-        else:
-            raise ValueError("No JSON payload found in the response.")
-        return self.output_schema.model_validate(json.loads(payload))
+        return self.output_schema.model_validate(json.loads(response))
 
     def _update_state(self, parsed_data: T, current_state: dict) -> dict:
         return parsed_data.model_dump()
