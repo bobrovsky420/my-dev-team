@@ -88,7 +88,7 @@ Instead of hardcoding a specific model (like `gpt-5.3-codex`), each agent reques
 
 ## 4. Usage (Python API)
 
-If you want to integrate the crew into your own application or customize the agents, use the clean Python API:
+If you want to integrate the crew into your own application, customize the LLM Factory's routing table, or override specific agent behaviors, use the clean Python API:
 
 ```python
 import asyncio
@@ -113,7 +113,8 @@ def build_crew(project_folder: Path, llm_factory: LLMFactory, rpm: int = 0) -> V
         'reviewer': CodeReviewer.from_config('code-reviewer.md'),
         'qa': QAEngineer.from_config('qa-engineer.md'),
         'final_qa': FinalQAEngineer.from_config('final-qa-engineer.md'),
-        'reporter': Reporter.from_config('reporter.md')
+        # Example: Forcing the reporter to use a more creative reasoning model
+        'reporter': Reporter.from_config('reporter.md', model_category='reasoning', temperature=0.7)
     }
 
     # Add extensions like saving files to disk or requiring human approval
@@ -141,10 +142,17 @@ async def main():
         requirements=requirements
     )
 
-    if final_state.get('integration_bugs'):
-        print("🚨 Completed with integration bugs.")
-    else:
+    if final_state.abort_requested:
+        print("❌ Workflow aborted by user or validation failure.")
+    elif final_state.success:
         print("🎉 Project completed successfully!")
+        print(f"Total Revisions: {final_state.total_revisions}")
+        if final_state.final_report:
+            print(final_state.final_report)
+    else:
+        print("🚨 Release failed: Integration bugs found!")
+        for bug in final_state.integration_bugs:
+            print(f" - {bug}")
 
 if __name__ == "__main__":
     asyncio.run(main())

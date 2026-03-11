@@ -145,7 +145,7 @@ class BaseAgent(Generic[T]):
             raise ValueError(f"Failed to parse JSON. Error: {e}")
 
     @classmethod
-    def from_config(cls, config_path: str):
+    def from_config(cls, config_path: str, *, model_category: str = None, temperature: float = None):
         package_path = 'my_dev_team.agents.prompts'
         try:
             prompt_file = resources.files(package_path).joinpath(config_path)
@@ -157,10 +157,8 @@ class BaseAgent(Generic[T]):
             raise ValueError(f"Invalid format in {config_path}. Missing YAML frontmatter")
         config = yaml.safe_load(parts[1])
         prompt = parts[2].strip()
-        if 'models' in config:
-            agents = []
-            for model in config['models']:
-                agent = cls(config, prompt, model)
-                agents.append(agent)
-            return agents
+        if model_category is not None:
+            config['model'] = model_category
+        if temperature is not None:
+            config['temperature'] = temperature
         return cls(config, prompt)
