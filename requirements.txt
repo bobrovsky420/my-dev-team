@@ -1,7 +1,5 @@
 langgraph
 langchain
-langchain-groq
-langchain-ollama
 markdown
 pydantic
 python-dotenv

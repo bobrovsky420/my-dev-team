@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv
 
-from my_dev_team import VirtualCrew, ProjectManager
+from my_dev_team import VirtualCrew, ProjectManager, LLMFactory
 from my_dev_team.agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
 from my_dev_team.extensions import HumanInTheLoop, WorkspaceSaver
 from my_dev_team.utils import RateLimiter
@@ -46,7 +46,7 @@ def generate_thread_id(project_name: str) -> str:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     return f"{safe_name}_{timestamp}"
 
-def build_crew(project_folder: Path) -> VirtualCrew:
+def build_crew(project_folder: Path, llm_factory: LLMFactory) -> VirtualCrew:
     """Instantiates the agents and returns the crew instance"""
     agents = {
         'pm': ProductManager.from_config('product-manager.md'),
@@ -65,14 +65,16 @@ def build_crew(project_folder: Path) -> VirtualCrew:
         manager=ProjectManager(),
         agents=agents,
         extensions=extensions,
+        llm_factory=llm_factory,
         rate_limiter=RateLimiter(requests_per_minute=3)
     )
 
-async def async_main(project_file_path: str):
+async def async_main(project_file_path: str, provider: str):
     project_name, project_requirements = load_project_spec(project_file_path)
     thread_id = generate_thread_id(project_name)
     project_folder = Path(f'workspaces/{thread_id}')
-    crew = build_crew(project_folder)
+    llm_factory = LLMFactory(provider=provider)
+    crew = build_crew(project_folder, llm_factory)
     print(f"🚀 Starting AI Dev Team...")
     print(f"📁 Workspace: {project_folder.absolute()}\n")
     final_state = await crew.execute(
@@ -98,13 +100,14 @@ def main():
 
     parser = argparse.ArgumentParser(description="Run the AI Dev Team autonomous framework.")
     parser.add_argument('project_file', help="Path to the text file containing your project requirements")
+    parser.add_argument("--provider", type=str, default='ollama', choices=['groq', 'ollama', 'openai'])
     args = parser.parse_args()
 
     if not Path(args.project_file).exists():
         print(f"❌ Error: Could not find project file '{args.project_file}'")
         exit(1)
 
-    asyncio.run(async_main(args.project_file))
+    asyncio.run(async_main(args.project_file, args.provider))
 
 if __name__ == '__main__':
     main()

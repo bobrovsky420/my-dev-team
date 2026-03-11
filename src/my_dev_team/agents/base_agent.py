@@ -9,26 +9,32 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.language_models.chat_models import BaseChatModel
 from pydantic import BaseModel, ValidationError
-from ..utils import RateLimiter, sanitize_for_prompt
-from .llm_config import get_llm
+from ..utils import LLMFactory, RateLimiter, sanitize_for_prompt
 
 T = TypeVar('T', bound=BaseModel)
 
 class BaseAgent(Generic[T]):
-    model_name: str = 'ollama/qwen3:8b'
-    temperature: float = 0.2
+    llm_factory: LLMFactory
+    model_category: str = 'reasoning'
+    base_temp: float = 0.2
     max_retries: int = 2
     rate_limiter: RateLimiter = None
     output_schema: type[T]
 
-    def __init__(self, config: dict, prompt_template: str, model: dict = None):
+    def __init__(self, config: dict, prompt_template: str):
         self.config = config
         self.role = config.get('role', 'Agent')
         self.name = config.get('name', None)
-        self.model_name = model.get('name') if model else config.get('model', self.model_name)
-        self.temperature = model.get('temperature') if model else config.get('temperature', self.temperature)
+        self.model_category = config.get('model', self.model_category)
+        self.base_temp = config.get('temperature', self.base_temp)
         self.prompt_template = prompt_template
         self.logger = logging.getLogger(self.name or self.role)
+
+    def _build_chain(self, temperature: float, retry_prompt: str = None):
+        """Builds the LangChain pipeline"""
+        llm = self.llm_factory.create(category=self.model_category, temperature=temperature)
+        prompt = self._build_prompt(retry_prompt)
+        self.chain = prompt | llm
 
     @cached_property
     def required_inputs(self) -> list[str]:
@@ -45,12 +51,11 @@ class BaseAgent(Generic[T]):
         return parsed_data.model_dump()
 
     def _reset_run_state(self):
-        if hasattr(self, '_retry_temperature'):
-            del self._retry_temperature
-            self.__dict__.pop('llm', None)
-        if hasattr(self, '_retry_prompt'):
-            del self._retry_prompt
-            self.__dict__.pop('prompt', None)
+        if hasattr(self, '_bumped'):
+            del self._bumped
+            self._build_chain(temperature=self.base_temp)
+        elif not hasattr(self, 'chain'):
+            self._build_chain(temperature=self.base_temp)
 
     async def process(self, state: dict) -> dict:
         self.logger.info("Executing...")
@@ -65,8 +70,7 @@ class BaseAgent(Generic[T]):
                 last_error = e
                 self.logger.error("Attempt %i/%i failed to parse: %s", attempt, self.max_retries, e)
                 if attempt < self.max_retries:
-                    self._bump_temperature(attempt)
-                    self._bump_prompt(last_error)
+                    self._bump_temperature(attempt, last_error)
                 continue
             final_state = self._update_state(parsed_data, state)
             if 'communication_log' not in final_state:
@@ -78,13 +82,14 @@ class BaseAgent(Generic[T]):
             'communication_log': [f"**[{self.name or self.role}]**: Failed after {self.max_retries} attempts. Last error: {last_error}"]
         }
 
-    def _bump_temperature(self, attempt: int):
-        new_temp = min(self.temperature + (attempt * 0.1), 1.0)
+    def _bump_temperature(self, attempt: int, last_error: Exception):
+        new_temp = min(self.base_temp + (attempt * 0.1), 1.0)
         self.logger.info("Bumping temperature to %.1f for retry", new_temp)
-        self._retry_temperature = new_temp
-        self.__dict__.pop('llm', None)
+        retry_prompt = self._bump_prompt(last_error)
+        self._bumped = True
+        self._build_chain(temperature=new_temp, retry_prompt=retry_prompt)
 
-    def _bump_prompt(self, last_error: Exception):
+    def _bump_prompt(self, last_error: Exception) -> str:
         if isinstance(last_error, ValidationError):
             error_details = [f"Field '{e.get('loc', [''])[0]}': {e.get('msg', '')}" for e in last_error.errors()]
             concise_error = "Schema mismatch: " + "; ".join(error_details)
@@ -94,7 +99,7 @@ class BaseAgent(Generic[T]):
             if "Invalid json output" in concise_error:
                 concise_error = "Invalid JSON syntax. You likely included Markdown formatting or text outside the JSON brackets."
         error_msg = concise_error.replace('{', '{{').replace('}', '}}')
-        self._retry_prompt = (
+        return (
             f"### VALIDATION ERROR ON PREVIOUS ATTEMPT ###\n"
             f"Your previous response failed schema validation with the following error:\n"
             f"{error_msg}\n\n"
@@ -102,17 +107,11 @@ class BaseAgent(Generic[T]):
             f"You must return ONLY raw, valid JSON that strictly conforms to the requested schema. "
             f"Do NOT wrap the output in markdown code blocks."
         )
-        self.__dict__.pop('prompt', None)
 
-    @cached_property
-    def llm(self) -> BaseChatModel:
-        return get_llm(model_name=self.model_name, temperature=getattr(self, '_retry_temperature', self.temperature))
-
-    @cached_property
-    def prompt(self):
+    def _build_prompt(self, retry_prompt: str = None) -> PromptTemplate:
         base_template = self.prompt_template + "\n\n# Output Format\n{format_instructions}"
-        if hasattr(self, '_retry_prompt'):
-            base_template += f"\n\n{self._retry_prompt}"
+        if retry_prompt:
+            base_template += f"\n\n{retry_prompt}"
         return PromptTemplate(
             template=base_template,
             partial_variables={'format_instructions': self.parser.get_format_instructions()}
@@ -123,10 +122,9 @@ class BaseAgent(Generic[T]):
         return PydanticOutputParser(pydantic_object=self.output_schema)
 
     async def _invoke_llm(self, **kwargs) -> str:
-        chain = self.prompt | self.llm
         if self.rate_limiter:
             await self.rate_limiter.wait_if_needed()
-        response = await chain.ainvoke(kwargs)
+        response = await self.chain.ainvoke(kwargs)
         response = response.content
         self.logger.debug("*"*50 + "\n%s\n" + "*"*50, response)
         return response
