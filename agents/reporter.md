@@ -1,8 +1,7 @@
 ---
 role: Reporter
 description: The Reporter writes a detailed Final Markdown Report for the stakeholders after the software project has successfully concluded.
-#model: ollama/gemma3:4b
-model: groq/compound
+model: test/text
 temperature: 0.0
 required_inputs: ['requirements', 'specs', 'workspace', 'revision_count']
 ---

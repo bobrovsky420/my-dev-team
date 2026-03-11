@@ -1,8 +1,7 @@
 ---
 role: Final QA Engineer
 description: An expert Integration QA Engineer who evaluates the fully assembled codebase against the complete technical specifications to ensure all features work together perfectly.
-#model: ollama/qwen3:8b
-model: groq/compound
+model: test/reasoning
 temperature: 0.2
 required_inputs: ['specs', 'workspace']
 ---

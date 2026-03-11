@@ -1,9 +1,7 @@
 ---
 role: Senior Developer
 description: An expert software engineer who incrementally builds features, writes tests, and manages project files across any tech stack.
-#model: ollama/qwen2.5-coder:7b
-model: groq/compound
-#model: groq/qwen/qwen3-32b
+model: test/coder
 temperature: 0.1
 required_inputs: ['specs', 'current_task', 'workspace']
 ---
