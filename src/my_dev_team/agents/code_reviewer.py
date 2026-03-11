@@ -1,9 +1,9 @@
-from utils import sanitize_for_prompt, is_approved_status
+from ..utils import sanitize_for_prompt, is_approved_status
 from .base_agent import BaseAgent
-from .schemas import QAEngineerResponse
+from .schemas import CodeReviewerResponse
 
-class QAEngineer(BaseAgent[QAEngineerResponse]):
-    output_schema = QAEngineerResponse
+class CodeReviewer(BaseAgent[CodeReviewerResponse]):
+    output_schema = CodeReviewerResponse
 
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
@@ -17,12 +17,12 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
         inputs['workspace'] = workspace_str.strip()
         return inputs
 
-    def _update_state(self, parsed_data: QAEngineerResponse, current_state: dict) -> dict:
-        results = parsed_data.test_results
-        if is_approved_status(results):
-            results = 'APPROVED'
-        status = 'APPROVED' if results == 'APPROVED' else 'BUGS FOUND'
+    def _update_state(self, parsed_data: CodeReviewerResponse, current_state: dict) -> dict:
+        feedback = parsed_data.review_feedback
+        if is_approved_status(feedback):
+            feedback = 'APPROVED'
+        status = 'APPROVED' if feedback == 'APPROVED' else 'REQUESTED CHANGES'
         return {
-            'test_results': results,
-            'communication_log': [f"**[{self.name or self.role}]:** {status}\n{results}"]
+            'review_feedback': feedback,
+            'communication_log': [f"**[{self.name or self.role}]:** {status}\n{feedback}"]
         }

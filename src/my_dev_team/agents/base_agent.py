@@ -1,4 +1,5 @@
 from functools import cached_property
+from importlib import resources
 from typing import Generic, TypeVar
 import json
 import logging
@@ -8,7 +9,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.language_models.chat_models import BaseChatModel
 from pydantic import BaseModel, ValidationError
-from utils import RateLimiter, sanitize_for_prompt
+from ..utils import RateLimiter, sanitize_for_prompt
 from .llm_config import get_llm
 
 T = TypeVar('T', bound=BaseModel)
@@ -147,11 +148,15 @@ class BaseAgent(Generic[T]):
 
     @classmethod
     def from_config(cls, config_path: str):
-        with open(config_path, 'r') as f:
-            content = f.read()
+        package_path = 'my_dev_team.agents.prompts'
+        try:
+            prompt_file = resources.files(package_path).joinpath(config_path)
+            content = prompt_file.read_text(encoding='utf-8')
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Could not find '{config_path}' in the package '{package_path}'")
         parts = content.split('---', 2)
         if len(parts) < 3:
-            raise ValueError(f"Invalid format in {config_path}. Missing YAML frontmatter.")
+            raise ValueError(f"Invalid format in {config_path}. Missing YAML frontmatter")
         config = yaml.safe_load(parts[1])
         prompt = parts[2].strip()
         if 'models' in config:

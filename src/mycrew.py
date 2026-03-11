@@ -4,11 +4,11 @@ import re
 import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
-from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
-from crew import VirtualCrew
-from extensions import HumanInTheLoop, WorkspaceSaver
-from managers import ProjectManager
-from utils import RateLimiter
+from my_dev_team import VirtualCrew
+from my_dev_team.agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
+from my_dev_team.extensions import HumanInTheLoop, WorkspaceSaver
+from my_dev_team.managers import ProjectManager
+from my_dev_team.utils import RateLimiter
 
 load_dotenv()
 
@@ -31,13 +31,13 @@ logging.getLogger('httpcore').setLevel(logging.WARNING)
 
 def my_agents() -> dict:
     return {
-        'pm': ProductManager.from_config('agents/product-manager.md'),
-        'architect': SystemArchitect.from_config('agents/system-architect.md'),
-        'developer': SeniorDeveloper.from_config('agents/senior-developer.md'),
-        'reviewer': CodeReviewer.from_config('agents/code-reviewer.md'),
-        'qa': QAEngineer.from_config('agents/qa-engineer.md'),
-        'final_qa': FinalQAEngineer.from_config('agents/final-qa-engineer.md'),
-        'reporter': Reporter.from_config('agents/reporter.md')
+        'pm': ProductManager.from_config('product-manager.md'),
+        'architect': SystemArchitect.from_config('system-architect.md'),
+        'developer': SeniorDeveloper.from_config('senior-developer.md'),
+        'reviewer': CodeReviewer.from_config('code-reviewer.md'),
+        'qa': QAEngineer.from_config('qa-engineer.md'),
+        'final_qa': FinalQAEngineer.from_config('final-qa-engineer.md'),
+        'reporter': Reporter.from_config('reporter.md')
     }
 
 def my_extensions(project_dir: Path) -> list:

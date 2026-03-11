@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, START, END
-from state import ProjectState
-from utils import is_approved_status
+from ..state import ProjectState
+from ..utils import is_approved_status
 from .base_manager import BaseManager
 
 class IntegrationManager(BaseManager):

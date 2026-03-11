@@ -1,4 +1,4 @@
-from utils import sanitize_for_prompt, workspace_str_from_files
+from ..utils import sanitize_for_prompt, workspace_str_from_files
 from .base_agent import BaseAgent
 from .schemas import DeveloperResponse
 

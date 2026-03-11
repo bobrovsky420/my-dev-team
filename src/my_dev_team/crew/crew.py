@@ -1,7 +1,7 @@
 import logging
 from functools import cached_property
 from langgraph.checkpoint.memory import MemorySaver
-from utils import RateLimiter
+from ..utils import RateLimiter
 
 class VirtualCrew:
     role = 'Virtual Crew'

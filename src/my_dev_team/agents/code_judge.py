@@ -1,4 +1,4 @@
-from utils import sanitize_for_prompt
+from ..utils import sanitize_for_prompt
 from .base_agent import BaseAgent
 from .schemas import CodeJudgeResponse
 
