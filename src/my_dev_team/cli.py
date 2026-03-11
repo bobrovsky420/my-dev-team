@@ -46,7 +46,7 @@ def generate_thread_id(project_name: str) -> str:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     return f"{safe_name}_{timestamp}"
 
-def build_crew(project_folder: Path, llm_factory: LLMFactory) -> VirtualCrew:
+def build_crew(project_folder: Path, llm_factory: LLMFactory, rpm: int = 0) -> VirtualCrew:
     """Instantiates the agents and returns the crew instance"""
     agents = {
         'pm': ProductManager.from_config('product-manager.md'),
@@ -66,15 +66,15 @@ def build_crew(project_folder: Path, llm_factory: LLMFactory) -> VirtualCrew:
         agents=agents,
         extensions=extensions,
         llm_factory=llm_factory,
-        rate_limiter=RateLimiter(requests_per_minute=3)
+        rate_limiter=RateLimiter(requests_per_minute=rpm) if rpm > 0 else None
     )
 
-async def async_main(project_file_path: str, provider: str):
+async def async_main(project_file_path: str, provider: str, rpm: int = 0):
     project_name, project_requirements = load_project_spec(project_file_path)
     thread_id = generate_thread_id(project_name)
     project_folder = Path(f'workspaces/{thread_id}')
     llm_factory = LLMFactory(provider=provider)
-    crew = build_crew(project_folder, llm_factory)
+    crew = build_crew(project_folder, llm_factory, rpm)
     print(f"🚀 Starting AI Dev Team...")
     print(f"📁 Workspace: {project_folder.absolute()}\n")
     final_state = await crew.execute(
@@ -99,8 +99,9 @@ def main():
     setup_logging()
 
     parser = argparse.ArgumentParser(description="Run the AI Dev Team autonomous framework.")
-    parser.add_argument('project_file', help="Path to the text file containing your project requirements")
-    parser.add_argument("--provider", type=str, default='ollama', choices=['groq', 'ollama', 'openai'])
+    parser.add_argument('project_file', help="path to the text file containing your project requirements")
+    parser.add_argument("--provider", type=str, default='ollama', choices=['groq', 'ollama', 'openai'], help="LLM provider to use (default: ollama)")
+    parser.add_argument("--rpm", type=int, default=0, help="API requests per minute (default: 0 = none)")
     args = parser.parse_args()
 
     if not Path(args.project_file).exists():
