@@ -4,10 +4,9 @@ import re
 import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
-from my_dev_team import VirtualCrew
+from my_dev_team import VirtualCrew, ProjectManager
 from my_dev_team.agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
 from my_dev_team.extensions import HumanInTheLoop, WorkspaceSaver
-from my_dev_team.managers import ProjectManager
 from my_dev_team.utils import RateLimiter
 
 load_dotenv()
@@ -81,19 +80,7 @@ if __name__ == '__main__':
     project_crew = my_crew(project_folder)
     final_state = asyncio.run(project_crew.execute(
         thread_id=thread_id,
-        initial_state={
-            'requirements': project_requirements,
-            'specs': '',
-            'pending_tasks': [],
-            'current_task_index': 0,
-            'current_task': '',
-            'workspace_files': {},
-            'final_report': '',
-            'integration_bugs': [],
-            'communication_log': [],
-            'revision_count': 0,
-            'total_revisions': 0
-        }
+        requirements=project_requirements
     ))
     if final_state.get('abort_requested'):
         print("❌ Workflow aborted by user or validation failure.")

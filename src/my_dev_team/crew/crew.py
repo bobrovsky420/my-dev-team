@@ -21,14 +21,28 @@ class VirtualCrew:
     def memory(self):
         return MemorySaver()
 
-    async def execute(self, thread_id: str, initial_state: dict = None) -> dict:
+    async def execute(self, thread_id: str, *, requirements: str = None) -> dict:
         config = {'configurable': {'thread_id': thread_id}}
         abort_requested = False
-        if initial_state:
-            self.logger.info("Starting workflow...")
+        if requirements is not None:
+            initial_state = {
+                'requirements': requirements,
+                'specs': '',
+                'pending_tasks': [],
+                'current_task_index': 0,
+                'current_task': '',
+                'workspace_files': {},
+                'final_report': '',
+                'integration_bugs': [],
+                'communication_log': [],
+                'revision_count': 0,
+                'total_revisions': 0
+            }
+            self.logger.info("Starting new workflow...")
             for ext in self.extensions:
                 ext.on_start(thread_id, initial_state)
         else:
+            initial_state = None
             self.logger.info("Resuming workflow from memory...")
         while True:
             async for event in self.app.astream(initial_state, config, stream_mode='updates', subgraphs=True):
