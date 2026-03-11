@@ -82,19 +82,17 @@ if __name__ == '__main__':
         thread_id=thread_id,
         requirements=project_requirements
     ))
-    if final_state.get('abort_requested'):
+    if final_state.abort_requested:
         print("❌ Workflow aborted by user or validation failure.")
         exit(0)
-    if not final_state.get('pending_tasks'):
+    if not final_state.pending_tasks:
         print("❌ System architect failed to generate a backlog.")
         exit(1)
-    final_report = final_state.get('final_report', 'No report generated.')
-    integration_bugs = final_state.get('integration_bugs', [])
-    if integration_bugs:
+    if final_state.has_bugs:
         print("\n🚨 RELEASE FAILED: Integration bugs found!")
-        for bug in integration_bugs:
+        for bug in final_state.integration_bugs:
             print(f" - {bug}")
         print("Note: In a production system, these would be automatically appended to the Phase 2 Backlog.")
     else:
         print("\n🎉 PROJECT COMPLETED SUCCESSFULLY!")
-        print(final_report)
+        print(final_state.final_report)

@@ -2,6 +2,7 @@ import logging
 from functools import cached_property
 from langgraph.checkpoint.memory import MemorySaver
 from ..utils import RateLimiter
+from .final_result import FinalResult
 
 class VirtualCrew:
     role = 'Virtual Crew'
@@ -21,7 +22,7 @@ class VirtualCrew:
     def memory(self):
         return MemorySaver()
 
-    async def execute(self, thread_id: str, *, requirements: str = None) -> dict:
+    async def execute(self, thread_id: str, *, requirements: str = None) -> FinalResult:
         config = {'configurable': {'thread_id': thread_id}}
         abort_requested = False
         if requirements is not None:
@@ -75,4 +76,5 @@ class VirtualCrew:
             final_state['abort_requested'] = True
         for ext in self.extensions:
             ext.on_finish(thread_id, final_state)
-        return final_state
+        final_state['thread_id'] = thread_id
+        return FinalResult(**final_state)
