@@ -21,7 +21,7 @@ class VirtualCrew:
     def memory(self):
         return MemorySaver()
 
-    def execute(self, thread_id: str, initial_state: dict = None) -> dict:
+    async def execute(self, thread_id: str, initial_state: dict = None) -> dict:
         config = {'configurable': {'thread_id': thread_id}}
         abort_requested = False
         if initial_state:
@@ -31,8 +31,7 @@ class VirtualCrew:
         else:
             self.logger.info("Resuming workflow from memory...")
         while True:
-            stream_gen = self.app.stream(initial_state, config, stream_mode='updates', subgraphs=True)
-            for event in stream_gen:
+            async for event in self.app.astream(initial_state, config, stream_mode='updates', subgraphs=True):
                 if isinstance(event, tuple) and len(event) == 2:
                     namespace, state_update = event
                 else:

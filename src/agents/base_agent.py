@@ -70,13 +70,13 @@ class BaseAgent(Generic[T]):
             del self._retry_prompt
             self.__dict__.pop('prompt', None)
 
-    def process(self, state: dict) -> dict:
+    async def process(self, state: dict) -> dict:
         self.logger.info("Executing...")
         self._reset_run_state()
         inputs = self._build_inputs(state)
         last_error = None
         for attempt in range(1, self.max_retries + 1):
-            response = self._invoke_llm(**inputs)
+            response = await self._invoke_llm(**inputs)
             try:
                 parsed_data = self._parse_outputs(response)
             except (ValueError, ValidationError, json.JSONDecodeError) as e:
@@ -124,11 +124,12 @@ class BaseAgent(Generic[T]):
         cleaned_text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL | re.IGNORECASE)
         return cleaned_text.strip()
 
-    def _invoke_llm(self, **kwargs) -> str:
+    async def _invoke_llm(self, **kwargs) -> str:
         chain = self.prompt | self.llm
         if self.rate_limiter:
-            self.rate_limiter.wait_if_needed()
-        response = self._clean_response(chain.invoke(kwargs).content)
+            await self.rate_limiter.wait_if_needed()
+        response = await chain.ainvoke(kwargs)
+        response = self._clean_response(response.content)
         self.logger.debug("*"*50 + "\n%s\n" + "*"*50, response)
         return response
 

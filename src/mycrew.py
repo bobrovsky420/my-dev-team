@@ -1,6 +1,7 @@
 from datetime import datetime
 import logging
 import re
+import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
 from agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeJudge, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
@@ -78,7 +79,7 @@ if __name__ == '__main__':
     thread_id = generate_thread_id(project_name)
     project_folder = Path(f'workspaces/{thread_id}')
     project_crew = my_crew(project_folder)
-    final_state = project_crew.execute(
+    final_state = asyncio.run(project_crew.execute(
         thread_id=thread_id,
         initial_state={
             'requirements': project_requirements,
@@ -93,7 +94,7 @@ if __name__ == '__main__':
             'revision_count': 0,
             'total_revisions': 0
         }
-    )
+    ))
     if final_state.get('abort_requested'):
         print("❌ Workflow aborted by user or validation failure.")
         exit(0)
