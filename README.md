@@ -5,13 +5,11 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 ## Features
 
 * **Multi-Agent Architecture:** Specialized AI agents handle distinct phases of the software development lifecycle.
-
-* **Incremental Development:** The System Architect breaks down requirements into a manageable backlog of tasks.
-
+* **Semantic Model Routing:** Automatically routes tasks to the most cost-effective or capable LLMs based on the task type (reasoning, coding, or fast-utility).
+* **Strict Test-Driven Development (TDD):** Testing is never an afterthought. Tasks are generated with embedded testing criteria, and the Developer writes unit tests alongside implementation code for immediate QA validation.
+* **Incremental Development:** The System Architect breaks down requirements into a manageable backlog of strictly formatted JSON tasks.
 * **Self-Healing Code:** The Developer, Reviewer, and QA Engineer agents continuously loop until unit tests pass and code meets specifications.
-
-* **Structured Outputs:** Powered by Pydantic and LangChain, ensuring zero "Markdown spillage" and robust JSON state management.
-
+* **Structured Outputs:** Powered by Pydantic and LangChain, ensuring zero "Markdown spillage" and robust state management.
 * **Extensible:** Easily add custom tools like `HumanInTheLoop` or `WorkspaceSaver`.
 
 ## Installation
@@ -161,15 +159,9 @@ if __name__ == "__main__":
 ## AI Agents
 
 * **Product Manager:** Analyzes requirements, asks clarifying questions, and writes detailed Technical Specifications.
-
 * **System Architect:** Breaks specifications down into a cohesive backlog of developer tasks.
-
 * **Senior Developer:** Incrementally writes code and unit tests for the current task.
-
 * **Code Reviewer:** Analyzes the generated code for security, style, and logic issues.
-
 * **QA Engineer:** Mentally simulates execution and evaluates the code against the task requirements.
-
 * **Final QA Engineer:** Performs a full-repository integration test once all tasks are complete.
-
 * **Reporter:** Generates a comprehensive final Markdown report for stakeholders.
