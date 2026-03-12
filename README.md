@@ -7,6 +7,7 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 * **Multi-Agent Architecture:** Specialized AI agents handle distinct phases of the software development lifecycle.
 * **Semantic Model Routing:** Automatically routes tasks to the most cost-effective or capable LLMs based on the task type (reasoning, coding, or fast-utility).
 * **Strict Test-Driven Development (TDD):** Testing is never an afterthought. Tasks are generated with embedded testing criteria, and the Developer writes unit tests alongside implementation code for immediate QA validation.
+* **State Recovery & Resiliency:** Powered by asynchronous SQLite checkpointing. If an API rate limit is hit or a workflow is interrupted, you can resume the exact thread without losing a single token of progress.
 * **Incremental Development:** The System Architect breaks down requirements into a manageable backlog of strictly formatted JSON tasks.
 * **Self-Healing Code:** The Developer, Reviewer, and QA Engineer agents continuously loop until unit tests pass and code meets specifications.
 * **Structured Outputs:** Powered by Pydantic and LangChain, ensuring zero "Markdown spillage" and robust state management.
@@ -58,13 +59,17 @@ devteam project.txt --provider ollama
 
 # Run using OpenAI's flagship models, limited to 15 requests per minute
 devteam project.txt --provider openai --rpm 15
+
+# Resume an interrupted run exactly where it left off
+dev-team --resume web_scraper_cli_20260312_083500
 ```
 
-#### Available Arguments
+#### Available Arguments:
 
+* `project_file`: (Optional if resuming) Path to your project requirements text file.
+* `--resume`: Resume a specific thread ID (e.g., my_app_20260312_083500).
 * `--provider`: Choose the LLM backend. Options: groq, ollama (default), openai.
-
-* `--rpm`: API requests per minute. Set to 0 to disable rate limiting (default: 0 = disabled).
+* `--rpm`: API requests per minute. Set to 0 to disable rate limiting (default: 0).
 
 Note: Ensure you have the corresponding API keys (e.g., `GROQ_API_KEY`, `OPENAI_API_KEY`) set in your `.env` file, or ensure your local Ollama instance is running.
 
@@ -77,11 +82,8 @@ Instead of hardcoding a specific model (like `gpt-5.3-codex`), each agent reques
 #### The Categories
 
 * `reasoning`: For the System Architect and Product Manager. Maps to deep-thinking models.
-
 * `code-generator`: For the Senior Developer. Maps to strict, syntax-heavy models.
-
 * `code-analyzer`: For the QA and Reviewer agents. Maps to deep-context evaluation models.
-
 * `fast-utility`: For the Reporter. Maps to blazing-fast, ultra-cheap models for simple text summarization.
 
 ## 4. Usage (Python API)
@@ -90,9 +92,11 @@ If you want to integrate the crew into your own application, customize the LLM F
 
 ```python
 import asyncio
+import aiosqlite
 from pathlib import Path
 from dotenv import load_dotenv
 
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from devteam import VirtualCrew, ProjectManager
 from devteam.agents import (
     ProductManager, SystemArchitect, SeniorDeveloper,
@@ -102,7 +106,7 @@ from devteam.extensions import HumanInTheLoop, WorkspaceSaver
 
 load_dotenv()
 
-def build_crew(project_folder: Path, llm_factory: LLMFactory, rpm: int = 0) -> VirtualCrew:
+def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver, rpm: int = 0) -> VirtualCrew:
     # Initialize agents using built-in prompt templates
     agents = {
         'pm': ProductManager.from_config('product-manager.md'),
@@ -125,20 +129,26 @@ def build_crew(project_folder: Path, llm_factory: LLMFactory, rpm: int = 0) -> V
         manager=ProjectManager(),
         agents=agents,
         extensions=extensions,
+        checkpointer=checkpointer,
         rate_limiter=RateLimiter(requests_per_minute=rpm) if rpm > 0 else None
     )
 
 async def main():
     requirements = "Build a simple Python calculator CLI with basic arithmetic."
     workspace = Path('./workspaces/calculator_app')
+    workspace.mkdir(parents=True, exist_ok=True)
 
-    crew = build_crew(workspace, provider='groq', rpm=30)
+    db_path = workspace / 'state.db'
 
-    print("🚀 Starting the AI Dev Team...")
-    final_state = await crew.execute(
-        thread_id="calc_run_01",
-        requirements=requirements
-    )
+    async with aiosqlite.connect(db_path) as conn:
+        checkpointer = AsyncSqliteSaver(conn)
+        crew = build_crew(workspace, provider='groq', checkpointer=checkpointer, rpm=30)
+
+        print("🚀 Starting the AI Dev Team...")
+        final_state = await crew.execute(
+            thread_id="calc_run_01",
+            requirements=requirements
+        )
 
     if final_state.abort_requested:
         print("❌ Workflow aborted by user or validation failure.")
@@ -158,10 +168,10 @@ if __name__ == "__main__":
 
 ## AI Agents
 
-* **Product Manager:** Analyzes requirements, asks clarifying questions, and writes detailed Technical Specifications.
-* **System Architect:** Breaks specifications down into a cohesive backlog of developer tasks.
-* **Senior Developer:** Incrementally writes code and unit tests for the current task.
-* **Code Reviewer:** Analyzes the generated code for security, style, and logic issues.
-* **QA Engineer:** Mentally simulates execution and evaluates the code against the task requirements.
-* **Final QA Engineer:** Performs a full-repository integration test once all tasks are complete.
-* **Reporter:** Generates a comprehensive final Markdown report for stakeholders.
+1) **Product Manager:** Analyzes requirements, asks clarifying questions, and writes detailed Technical Specifications.
+2) **System Architect:** Breaks specifications down into a cohesive backlog of developer tasks.
+3) **Senior Developer:** Incrementally writes code and unit tests for the current task.
+4) **Code Reviewer:** Analyzes the generated code for security, style, and logic issues.
+5) **QA Engineer:** Mentally simulates execution and evaluates the code against the task requirements.
+6) **Final QA Engineer:** Performs a full-repository integration test once all tasks are complete.
+7) **Reporter:** Generates a comprehensive final Markdown report for stakeholders.
