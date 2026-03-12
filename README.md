@@ -73,7 +73,7 @@ dev-team --resume web_scraper_cli_20260312_083500
 
 Note: Ensure you have the corresponding API keys (e.g., `GROQ_API_KEY`, `OPENAI_API_KEY`) set in your `.env` file, or ensure your local Ollama instance is running.
 
-## 3. Intelligent Model Routing (The LLM Factory)
+## 3. Intelligent Model Routing (LLM Factory)
 
 **My Dev Team** doesn't just use one model for everything. It uses an advanced **Semantic Routing** architecture via `LLMFactory`.
 

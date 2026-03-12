@@ -1,6 +1,9 @@
 langgraph
 langgraph-checkpoint-sqlite
 langchain
+langchain-groq
+langchain-ollama
+langchain-openai
 aiosqlite
 pydantic
 python-dotenv
