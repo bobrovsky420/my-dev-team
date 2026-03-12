@@ -6,10 +6,10 @@ from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv
 
-from my_dev_team import VirtualCrew, ProjectManager, LLMFactory
-from my_dev_team.agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
-from my_dev_team.extensions import HumanInTheLoop, WorkspaceSaver
-from my_dev_team.utils import RateLimiter
+from devteam import VirtualCrew, ProjectManager, LLMFactory
+from devteam.agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
+from devteam.extensions import HumanInTheLoop, WorkspaceSaver
+from devteam.utils import RateLimiter
 
 def setup_logging():
     file_handler = logging.FileHandler('mycrew.log', encoding='utf-8')

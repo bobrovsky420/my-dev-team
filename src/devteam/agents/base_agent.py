@@ -4,6 +4,7 @@ from typing import Generic, TypeVar
 import json
 import logging
 import re
+import sys
 import yaml
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
@@ -146,7 +147,8 @@ class BaseAgent(Generic[T]):
 
     @classmethod
     def from_config(cls, config_path: str, *, model_category: str = None, temperature: float = None):
-        package_path = 'my_dev_team.agents.prompts'
+        base_package = sys.modules[cls.__module__].__package__
+        package_path = f"{base_package}.prompts"
         try:
             prompt_file = resources.files(package_path).joinpath(config_path)
             content = prompt_file.read_text(encoding='utf-8')

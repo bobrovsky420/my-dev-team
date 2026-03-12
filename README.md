@@ -45,7 +45,7 @@ Requirements:
 The fastest way to use the framework is via the terminal command included in the package.
 
 ```sh
-dev-team project.txt
+devteam project.txt
 ```
 
 ### Advanced CLI Options
@@ -54,10 +54,10 @@ You can easily switch between cloud providers and local models, and adjust rate 
 
 ```sh
 # Run entirely locally for free using Ollama, with no rate limit!
-dev-team project.txt --provider ollama
+devteam project.txt --provider ollama
 
 # Run using OpenAI's flagship models, limited to 15 requests per minute
-dev-team project.txt --provider openai --rpm 15
+devteam project.txt --provider openai --rpm 15
 ```
 
 #### Available Arguments
@@ -93,12 +93,12 @@ import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
 
-from my_dev_team import VirtualCrew, ProjectManager
-from my_dev_team.agents import (
+from devteam import VirtualCrew, ProjectManager
+from devteam.agents import (
     ProductManager, SystemArchitect, SeniorDeveloper,
     CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
 )
-from my_dev_team.extensions import HumanInTheLoop, WorkspaceSaver
+from devteam.extensions import HumanInTheLoop, WorkspaceSaver
 
 load_dotenv()
 
