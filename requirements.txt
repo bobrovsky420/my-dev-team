@@ -1,6 +1,7 @@
 langgraph
+langgraph-checkpoint-sqlite
 langchain
-markdown
+aiosqlite
 pydantic
 python-dotenv
 pyyaml

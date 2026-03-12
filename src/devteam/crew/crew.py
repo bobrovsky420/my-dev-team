@@ -8,7 +8,7 @@ class VirtualCrew:
     role = 'Virtual Crew'
     name: str = None
 
-    def __init__(self, manager, agents: dict, llm_factory: LLMFactory, extensions: list = None, rate_limiter: RateLimiter = None):
+    def __init__(self, manager, agents: dict, llm_factory: LLMFactory, extensions: list = None, rate_limiter: RateLimiter = None, checkpointer = None):
         self.logger = logging.getLogger(self.name or self.role)
         self.manager = manager
         self.agents = agents or {}
@@ -17,7 +17,7 @@ class VirtualCrew:
             agent.llm_factory = llm_factory
             if rate_limiter:
                 agent.rate_limiter = rate_limiter
-        self.app = self.manager.build_graph(agents=self.agents, memory=self.memory)
+        self.app = self.manager.build_graph(agents=self.agents, memory=checkpointer or self.memory)
 
     @cached_property
     def memory(self):
@@ -26,7 +26,7 @@ class VirtualCrew:
     async def execute(self, thread_id: str, *, requirements: str = None) -> FinalResult:
         config = {'configurable': {'thread_id': thread_id}}
         abort_requested = False
-        if requirements is not None:
+        if requirements:
             initial_state = {
                 'requirements': requirements
             }
