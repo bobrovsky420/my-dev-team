@@ -42,7 +42,8 @@ class VirtualCrew:
                     namespace, state_update = event
                 else:
                     state_update = event
-                full_state = self.app.get_state(config).values
+                state_object = await self.app.aget_state(config)
+                full_state = state_object.values
                 for ext in self.extensions:
                     ext.on_step(thread_id, state_update=state_update, full_state=full_state)
                 if full_state.get('abort_requested'):
