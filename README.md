@@ -62,7 +62,7 @@ devteam project.txt --provider ollama
 devteam project.txt --provider openai --rpm 15
 
 # Resume an interrupted run exactly where it left off
-dev-team --resume web_scraper_cli_20260312_083500
+devteam --resume web_scraper_cli_20260312_083500
 ```
 
 #### Available Arguments:
