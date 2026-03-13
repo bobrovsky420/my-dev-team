@@ -1,5 +1,5 @@
 from langgraph.graph import StateGraph, START, END
-from ..state import ProjectState
+from ..crew import ProjectState
 from ..utils import task_to_markdown
 from .base_manager import BaseManager
 from .planning_manager import PlanningManager

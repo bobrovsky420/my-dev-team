@@ -11,6 +11,7 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from devteam import VirtualCrew, ProjectManager, LLMFactory
 from devteam.agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
 from devteam.extensions import HumanInTheLoop, WorkspaceSaver
+from devteam.tools import DockerSandbox
 from devteam.utils import RateLimiter, TelemetryTracker
 
 WORKSPACES_DIR = 'workspaces'
@@ -59,7 +60,8 @@ def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: Asyn
         'architect': SystemArchitect.from_config('system-architect.md'),
         'developer': SeniorDeveloper.from_config('senior-developer.md'),
         'reviewer': CodeReviewer.from_config('code-reviewer.md'),
-        'qa': QAEngineer.from_config('qa-engineer.md'),
+#        'qa': QAEngineer.from_config('qa-engineer.md'),
+        'qa': QAEngineer.from_config('qa-engineer-sandbox.md').with_sandbox(DockerSandbox()),
         'final_qa': FinalQAEngineer.from_config('final-qa-engineer.md'),
         'reporter': Reporter.from_config('reporter.md')
     }

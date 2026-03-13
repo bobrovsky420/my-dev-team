@@ -9,3 +9,4 @@ aiosqlite
 pydantic
 python-dotenv
 pyyaml
+docker

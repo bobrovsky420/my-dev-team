@@ -1,9 +1,16 @@
+import tempfile
+from pathlib import Path
+from ..tools import DockerSandbox
 from ..utils import sanitize_for_prompt, is_approved_status
 from .base_agent import BaseAgent
 from .schemas import QAEngineerResponse
 
 class QAEngineer(BaseAgent[QAEngineerResponse]):
     output_schema = QAEngineerResponse
+    sandbox: DockerSandbox = None
+
+    def __init__(self, config: dict, prompt_template: str):
+        super().__init__(config, prompt_template)
 
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
@@ -12,10 +19,26 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
             for filepath, content in workspace_files.items():
                 clean_content = sanitize_for_prompt(content, [filepath, 'workspace'])
                 workspace_str += f"--- FILE: {filepath} ---\n{clean_content}\n\n"
+            if self.sandbox:
+                test_results = self._run_tests(state)
+                inputs['test_results'] = sanitize_for_prompt(test_results, ['test_results'])
         else:
             workspace_str = "No files exist in the workspace."
         inputs['workspace'] = workspace_str.strip()
         return inputs
+
+    def _run_tests(self, state: dict) -> str:
+        workspace_files = state['workspace_files']
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            for filepath, content in workspace_files.items():
+                full_path = temp_path / filepath
+                full_path.parent.mkdir(parents=True, exist_ok=True)
+                full_path.write_text(content, encoding='utf-8')
+            self.logger.info("🐳 Running tests in Docker Sandbox...")
+            test_results = self.sandbox.run_tests(temp_path)
+            self.logger.debug("Sandbox Output:\n%s", test_results)
+            return test_results
 
     def _update_state(self, parsed_data: QAEngineerResponse, current_state: dict) -> dict:
         results = parsed_data.test_results
@@ -26,3 +49,7 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
             'test_results': results,
             'communication_log': [f"**[{self.name or self.role}]:** {status}\n{results}"]
         }
+
+    def with_sandbox(self, sandbox: DockerSandbox):
+        self.sandbox = sandbox
+        return self
