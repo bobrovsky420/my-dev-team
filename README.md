@@ -8,6 +8,7 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 * **Semantic Model Routing:** Automatically routes tasks to the most cost-effective or capable LLMs based on the task type (reasoning, coding, or fast-utility).
 * **Strict Test-Driven Development (TDD):** Testing is never an afterthought. Tasks are generated with embedded testing criteria, and the Developer writes unit tests alongside implementation code for immediate QA validation.
 * **State Recovery & Resiliency:** Powered by asynchronous SQLite checkpointing. If an API rate limit is hit or a workflow is interrupted, you can resume the exact thread without losing a single token of progress.
+* **Telemetry & Cost Tracking:** Automatically tallies prompt and completion tokens across the entire workflow. Calculates exact USD costs dynamically using LiteLLM's live pricing registry, printing a detailed receipt at the end of every run.
 * **Incremental Development:** The System Architect breaks down requirements into a manageable backlog of strictly formatted JSON tasks.
 * **Self-Healing Code:** The Developer, Reviewer, and QA Engineer agents continuously loop until unit tests pass and code meets specifications.
 * **Structured Outputs:** Powered by Pydantic and LangChain, ensuring zero "Markdown spillage" and robust state management.
@@ -97,12 +98,10 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from devteam import VirtualCrew, ProjectManager
-from devteam.agents import (
-    ProductManager, SystemArchitect, SeniorDeveloper,
-    CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
-)
+from devteam import VirtualCrew, ProjectManager, LLMFactory
+from devteam.agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
 from devteam.extensions import HumanInTheLoop, WorkspaceSaver
+from devteam.utils import RateLimiter, TelemetryTracker
 
 load_dotenv()
 
@@ -118,13 +117,11 @@ def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: Asyn
         # Example: Forcing the reporter to use a more creative reasoning model
         'reporter': Reporter.from_config('reporter.md', model_category='reasoning', temperature=0.7)
     }
-
     # Add extensions like saving files to disk or requiring human approval
     extensions = [
         WorkspaceSaver(workspace_dir=workspace_dir),
         HumanInTheLoop()
     ]
-
     return VirtualCrew(
         manager=ProjectManager(),
         agents=agents,
@@ -137,30 +134,36 @@ async def main():
     requirements = "Build a simple Python calculator CLI with basic arithmetic."
     workspace = Path('./workspaces/calculator_app')
     workspace.mkdir(parents=True, exist_ok=True)
-
     db_path = workspace / 'state.db'
+    telemetry = TelemetryTracker()
+    factory = LLMFactory(provider='groq', callbacks=[telemetry])
+    try:
+        async with aiosqlite.connect(db_path) as conn:
+            checkpointer = AsyncSqliteSaver(conn)
+            crew = build_crew(workspace, provider='groq', checkpointer=checkpointer, rpm=30)
+            print("🚀 Starting the AI Dev Team...")
+            final_state = await crew.execute(
+                thread_id="calc_run_01",
+                requirements=requirements
+            )
+        if final_state.abort_requested:
+            print("❌ Workflow aborted by user or validation failure.")
+        elif final_state.success:
+            print("🎉 Project completed successfully!")
+            print(f"Total Revisions: {final_state.total_revisions}")
+            if final_state.final_report:
+                print(final_state.final_report)
+        else:
+            print("🚨 Release failed: Integration bugs found!")
+            for bug in final_state.integration_bugs:
+                print(f" - {bug}")
+    except KeyboardInterrupt:
+        print("\n\n🛑 Workflow interrupted by user (Ctrl+C).")
+        print(f"💡 You can resume this exact state later by running:")
+        print(f"   dev-team --resume {thread_id}")
 
-    async with aiosqlite.connect(db_path) as conn:
-        checkpointer = AsyncSqliteSaver(conn)
-        crew = build_crew(workspace, provider='groq', checkpointer=checkpointer, rpm=30)
-
-        print("🚀 Starting the AI Dev Team...")
-        final_state = await crew.execute(
-            thread_id="calc_run_01",
-            requirements=requirements
-        )
-
-    if final_state.abort_requested:
-        print("❌ Workflow aborted by user or validation failure.")
-    elif final_state.success:
-        print("🎉 Project completed successfully!")
-        print(f"Total Revisions: {final_state.total_revisions}")
-        if final_state.final_report:
-            print(final_state.final_report)
-    else:
-        print("🚨 Release failed: Integration bugs found!")
-        for bug in final_state.integration_bugs:
-            print(f" - {bug}")
+    finally:
+        telemetry.print_receipt()
 
 if __name__ == "__main__":
     asyncio.run(main())

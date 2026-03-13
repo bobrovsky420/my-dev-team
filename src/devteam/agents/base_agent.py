@@ -8,7 +8,6 @@ import sys
 import yaml
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
-from langchain_core.language_models.chat_models import BaseChatModel
 from pydantic import BaseModel, ValidationError
 from ..utils import LLMFactory, RateLimiter, sanitize_for_prompt
 

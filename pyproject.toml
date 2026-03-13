@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "my-dev-team"
-version = "0.1.0"
+version = "0.1.1"
 description = "An autonomous, LangGraph-powered AI development agency."
 authors = [
     { name="Alexander Bobrovsky", email="bobrovsky@seznam.cz" },
@@ -16,6 +16,7 @@ dependencies = [
     "langgraph>=1.0.9",
     "langgraph-checkpoint-sqlite>=3.0.3",
     "langchain>=1.2.10",
+    "litellm>="1.82.1,
     "aiosqlite>=0.22.1",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.1",

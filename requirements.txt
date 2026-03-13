@@ -4,6 +4,7 @@ langchain
 langchain-groq
 langchain-ollama
 langchain-openai
+litellm
 aiosqlite
 pydantic
 python-dotenv

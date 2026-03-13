@@ -11,22 +11,24 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from devteam import VirtualCrew, ProjectManager, LLMFactory
 from devteam.agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
 from devteam.extensions import HumanInTheLoop, WorkspaceSaver
-from devteam.utils import RateLimiter
+from devteam.utils import RateLimiter, TelemetryTracker
 
 WORKSPACES_DIR = 'workspaces'
 
-def setup_logging():
+def setup_logging(file_level = logging.DEBUG, console_level = logging.INFO):
     file_handler = logging.FileHandler('mycrew.log', encoding='utf-8')
-    file_handler.setLevel(logging.DEBUG)
+    file_handler.setLevel(file_level)
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO) # Keep terminal clean, send DEBUG to file
+    console_handler.setLevel(console_level)
     logging.basicConfig(
         level=logging.DEBUG,
         format='%(levelname)s [%(name)s]: %(message)s',
         handlers=[file_handler, console_handler]
     )
+    logging.getLogger('aiosqlite').setLevel(logging.WARNING)
     logging.getLogger('httpx').setLevel(logging.WARNING)
     logging.getLogger('httpcore').setLevel(logging.WARNING)
+    logging.getLogger('LiteLLM').setLevel(logging.WARNING)
 
 def load_project_spec(path: str) -> tuple[str, str]:
     """Read the project file and return (name, description)"""
@@ -86,28 +88,40 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
     project_folder = Path(f'{WORKSPACES_DIR}/{thread_id}')
     project_folder.mkdir(parents=True, exist_ok=True)
     db_path = project_folder / 'state.db'
-    llm_factory = LLMFactory(provider=provider)
-    async with aiosqlite.connect(db_path) as conn:
-        checkpointer = AsyncSqliteSaver(conn)
-        crew = build_crew(project_folder, llm_factory, checkpointer, rpm)
-        print(f"🚀 Starting AI Dev Team...")
-        print(f"📁 Workspace: {project_folder.absolute()}\n")
-        final_state = await crew.execute(
-            thread_id=thread_id,
-            requirements=project_requirements
-        )
-    if final_state.abort_requested:
-        print("\n❌ Workflow aborted by user or validation failure.")
-        return
-    if final_state.success:
-        print("\n🎉 PROJECT COMPLETED SUCCESSFULLY!")
-        print(f"Total Revisions: {final_state.total_revisions}\n")
-        print(final_state.final_report or "No report generated.")
-    else:
-        print("\n🚨 RELEASE FAILED: Integration bugs found!")
-        for bug in final_state.integration_bugs:
-            print(f" - {bug}")
-        print("\nNote: In a production system, these would be appended to the Phase 2 Backlog.")
+    telemetry = TelemetryTracker()
+    llm_factory = LLMFactory(provider=provider, callbacks=[telemetry])
+    try:
+        async with aiosqlite.connect(db_path) as conn:
+            checkpointer = AsyncSqliteSaver(conn)
+            crew = build_crew(project_folder, llm_factory, checkpointer, rpm)
+            print(f"🚀 Starting AI Dev Team...")
+            print(f"📁 Workspace: {project_folder.absolute()}\n")
+            final_state = await crew.execute(
+                thread_id=thread_id,
+                requirements=project_requirements
+            )
+        if final_state.abort_requested:
+            print("\n❌ Workflow aborted by user or validation failure.")
+            return
+        if final_state.success:
+            print("\n🎉 PROJECT COMPLETED SUCCESSFULLY!")
+            print(f"Total Revisions: {final_state.total_revisions}\n")
+            print(final_state.final_report or "No report generated.")
+        else:
+            print("\n🚨 RELEASE FAILED: Integration bugs found!")
+            for bug in final_state.integration_bugs:
+                print(f" - {bug}")
+            print("\nNote: In a production system, these would be appended to the Phase 2 Backlog.")
+    except KeyboardInterrupt:
+        print((
+            "\n\n🛑 Workflow interrupted by user (Ctrl+C)\n"
+            "💡 You can resume this exact state later by running:\n"
+            f"   devteam --resume {thread_id}"
+        ))
+    except asyncio.CancelledError:
+        print("\n\n🛑 Async execution cancelled")
+    finally:
+        telemetry.print_receipt()
 
 def main():
     load_dotenv()
