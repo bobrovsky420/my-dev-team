@@ -14,6 +14,13 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 * **Structured Outputs:** Powered by Pydantic and LangChain, ensuring zero "Markdown spillage" and robust state management.
 * **Extensible:** Easily add custom tools like `HumanInTheLoop` or `WorkspaceSaver`.
 
+### Centralized Configuration
+
+Code and configuration are strictly separated to make the framework maintainable and extensible.
+
+* **Model Routing (`config/llms.yaml`):** All provider definitions (Groq, OpenAI, Ollama) and model routing logic (reasoning, coding, fast-utility) are centralized in a single YAML file, making it trivial to update models as new ones are released.
+* **Agent Prompts (`config/agents/**`):** Every agent's persona, system instructions, and constraints are stored as clean Markdown files with YAML frontmatter. No massive, hardcoded prompt strings cluttering the Python logic!
+
 ## Installation
 
 You can install the package directly via pip:

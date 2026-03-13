@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "my-dev-team"
-version = "0.2.0"
+version = "0.2.1"
 description = "An autonomous, LangGraph-powered AI development agency."
 authors = [
     { name="Alexander Bobrovsky", email="bobrovsky@seznam.cz" },
@@ -34,7 +34,7 @@ devteam = "devteam.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"devteam.agents.prompts" = ["*.md"]
+"devteam.config" = ["*.yaml", "agents/*.md"]
 
 [tool.pylint.messages_control]
 disable = [

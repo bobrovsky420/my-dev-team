@@ -1,36 +1,26 @@
+from functools import cached_property
+import yaml
+from importlib import resources
 from langchain_core.language_models.chat_models import BaseChatModel
 
 class LLMFactory:
-    MODEL_MAP = {
-        'groq': {
-            'reasoning': 'groq/compound',
-            'code-generator': 'groq/compound',
-            'code-analyzer': 'groq/compound',
-            'fast-utility': 'groq/compound'
-        },
-        'ollama': {
-            'reasoning': 'qwen3:8b',
-            'code-generator': 'qwen2.5-coder:7b',
-            'code-analyzer': 'qwen2.5-coder:7b',
-            'fast-utility': 'gemma3:4b'
-        },
-        'openai': {
-            'reasoning': 'o1-preview',
-            'code-generator': 'gpt-4o',
-            'code-analyzer': 'gpt-4o',
-            'fast-utility': 'gpt-4o-mini'
-        }
-    }
-
     def __init__(self, provider: str, callbacks: list = None):
         self.provider = provider.lower()
         self.callbacks = callbacks or []
-        if self.provider not in self.MODEL_MAP:
+        if self.provider not in self.model_map:
             raise ValueError(f"Unsupported provider: {self.provider}")
+
+    @cached_property
+    def llm_config(self) -> dict:
+        return yaml.safe_load(resources.files('devteam.config').joinpath('llms.yaml').read_text(encoding='utf-8'))
+
+    @cached_property
+    def model_map(self) -> dict:
+        return self.llm_config.get('providers', {})
 
     def create(self, category: str, temperature: float) -> BaseChatModel:
         """Returns a configured LLM instance."""
-        model_name = self.MODEL_MAP[self.provider].get(category, self.MODEL_MAP[self.provider]['reasoning'])
+        model_name = self.model_map[self.provider].get(category, self.model_map[self.provider]['reasoning'])
         match self.provider:
             case 'ollama':
                 from langchain_ollama import ChatOllama
