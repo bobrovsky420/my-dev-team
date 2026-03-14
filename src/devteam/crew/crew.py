@@ -73,7 +73,8 @@ class VirtualCrew:
                 break
             if not update_provided:
                 break
-        final_state = await self.app.aget_state(config).values
+        final_state = await self.app.aget_state(config)
+        final_state = final_state.values
         if abort_requested:
             final_state['abort_requested'] = True
         for ext in self.extensions:
