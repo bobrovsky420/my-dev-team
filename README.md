@@ -14,12 +14,21 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 * **Structured Outputs:** Powered by Pydantic and LangChain, ensuring zero "Markdown spillage" and robust state management.
 * **Extensible:** Easily add custom tools like `HumanInTheLoop` or `WorkspaceSaver`.
 
+### Sandboxed QA Execution
+
+The QA Engineer agent does not rely on LLM "guesswork" or mental simulation to test code. It executes the generated code in reality.
+
+* **Zero Hallucinations:** The QA node mounts the active workspace into a temporary directory and runs the actual test suite (e.g., `pytest`, `npm test`). It reads the exact `stdout`/`stderr` tracebacks to accurately report bugs back to the Developer.
+* **Ephemeral Isolation:** Code is executed securely using the Docker SDK. Containers are strictly isolated, resource-limited (CPU/RAM), and immediately destroyed after the test run, ensuring your host machine is never at risk.
+* **Universal Runtime Auto-Detection:** The sandbox dynamically inspects the workspace or takes explicit direction from the System Architect to pull the correct Docker image (Python, Node.js, etc.) on the fly.
+
 ### Centralized Configuration
 
 Code and configuration are strictly separated to make the framework maintainable and extensible.
 
 * **Model Routing (`config/llms.yaml`):** All provider definitions (Groq, OpenAI, Ollama) and model routing logic (reasoning, coding, fast-utility) are centralized in a single YAML file, making it trivial to update models as new ones are released.
 * **Agent Prompts (`config/agents/**`):** Every agent's persona, system instructions, and constraints are stored as clean Markdown files with YAML frontmatter. No massive, hardcoded prompt strings cluttering the Python logic!
+* **Sandbox Environments (`config/sandbox.yaml`):** Docker base images and test execution commands for various runtimes (Python, Node.js) are completely decoupled. You can easily add support for entirely new programming languages by simply defining the image and test command in YAML, without touching the core Python engine.
 
 ## Installation
 
