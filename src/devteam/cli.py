@@ -30,6 +30,7 @@ def setup_logging(file_level = logging.DEBUG, console_level = logging.INFO):
     logging.getLogger('httpx').setLevel(logging.WARNING)
     logging.getLogger('httpcore').setLevel(logging.WARNING)
     logging.getLogger('LiteLLM').setLevel(logging.WARNING)
+    logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
 
 def load_project_spec(path: str) -> tuple[str, str]:
     """Read the project file and return (name, description)"""

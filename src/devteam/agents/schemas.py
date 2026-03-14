@@ -33,6 +33,7 @@ class DevelopmentTask(BaseModel):
     )
 
 class SystemArchitectResponse(BaseModel):
+    runtime: str = Field(description="The primary runtime environment for this project (e.g., 'python', 'node', 'java', etc.)")
     pending_tasks: list[DevelopmentTask] = Field(
         min_length=1,
         description="A sequential backlog of development tasks required to build the project."

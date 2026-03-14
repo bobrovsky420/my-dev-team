@@ -10,6 +10,7 @@ class ProjectState(TypedDict):
     specs: str
     human_answer: str
     clarification_question: str
+    runtime: str
     pending_tasks: List[str]
     workspace_files: Dict[str, str]
     current_task_index: int

@@ -29,6 +29,7 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
 
     def _run_tests(self, state: dict) -> str:
         workspace_files = state['workspace_files']
+        target_runtime = state.get('runtime', 'auto')
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             for filepath, content in workspace_files.items():
@@ -36,7 +37,7 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
                 full_path.parent.mkdir(parents=True, exist_ok=True)
                 full_path.write_text(content, encoding='utf-8')
             self.logger.info("🐳 Running tests in Docker Sandbox...")
-            test_results = self.sandbox.run_tests(temp_path)
+            test_results = self.sandbox.run_tests(temp_path, runtime=target_runtime)
             self.logger.debug("Sandbox Output:\n%s", test_results)
             return test_results
 

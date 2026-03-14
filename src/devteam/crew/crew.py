@@ -54,7 +54,7 @@ class VirtualCrew:
                 break
             if initial_state:
                 initial_state = None
-            state_snapshot = self.app.get_state(config)
+            state_snapshot = await self.app.aget_state(config)
             if not state_snapshot.next:
                 break
             next_node = state_snapshot.next[0]
@@ -63,7 +63,7 @@ class VirtualCrew:
             for ext in self.extensions:
                 update = ext.on_pause(thread_id, state_snapshot.values, next_node)
                 if update:
-                    self.app.update_state(config, update)
+                    await self.app.aupdate_state(config, update)
                     update_provided = True
                     if update.get('abort_requested'):
                         abort_requested = True
@@ -73,7 +73,7 @@ class VirtualCrew:
                 break
             if not update_provided:
                 break
-        final_state = self.app.get_state(config).values
+        final_state = await self.app.aget_state(config).values
         if abort_requested:
             final_state['abort_requested'] = True
         for ext in self.extensions:

@@ -125,7 +125,7 @@ class BaseAgent(Generic[T]):
             await self.rate_limiter.wait_if_needed()
         response = await self.chain.ainvoke(kwargs)
         response = response.content
-        self.logger.debug("*"*50 + "\n%s\n" + "*"*50, response)
+        self.logger.debug("\n%s", response)
         return response
 
     def _clean_response(self, text: str) -> str:
