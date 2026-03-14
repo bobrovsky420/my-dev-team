@@ -1,35 +1,49 @@
+from functools import cached_property
+from importlib import resources
+from pathlib import Path
+import logging
 import docker
 from docker.errors import ContainerError, ImageNotFound
-from pathlib import Path
+import yaml
 
 class DockerSandbox:
-    def __init__(self, image: str = 'python:3.12-slim'):
-        self.image = image
+    def __init__(self):
+        self.logger = logging.getLogger('Docker Sandbox')
         try:
             self.client = docker.from_env()
-            self.client.images.get(self.image)
-        except ImageNotFound:
-            print(f"🐳 Pulling {self.image} (this only happens once)...")
-            self.client.images.pull(self.image)
         except Exception as e:
-            raise RuntimeError(f"Could not connect to Docker. Is Docker Desktop running? Error: {e}")
+            raise RuntimeError(f"Could not connect to Docker. Error: {e}")
 
-    def run_tests(self, workspace_dir: Path, timeout: int = 15) -> str:
+    @cached_property
+    def sandbox_config(self) -> dict:
+        return yaml.safe_load(resources.files('devteam.config').joinpath('sandbox.yaml').read_text(encoding='utf-8'))
+
+    @cached_property
+    def runtimes(self) -> dict:
+        return self.sandbox_config.get('runtimes', {})
+
+    def pull_image(self, image: str):
+        try:
+            self.client.images.get(image)
+        except ImageNotFound:
+            self.logger.info("Pulling %s (this only happens once)...", image)
+            self.client.images.pull(image)
+
+    def run_tests(self, workspace_dir: Path, runtime: str = 'python', timeout: int = 15) -> str:
         absolute_workspace = workspace_dir.resolve()
-        command = "bash -c 'pip install pytest --quiet --disable-pip-version-check --root-user-action=ignore && pytest -v'"
+        config = self.runtimes.get(runtime.lower())
+        if not config:
+            return f"⚠️ Sandbox Error: Unsupported runtime '{runtime}'. Supported runtimes: {list(self.runtimes.keys())}"
+        self.pull_image(config['image'])
         try:
             container = self.client.containers.run(
-                image=self.image,
-                command=command,
+                image=config['image'],
+                command=config['command'],
                 volumes={str(absolute_workspace): {'bind': '/workspace', 'mode': 'rw'}},
                 working_dir='/workspace',
                 network_disabled=False,
-                mem_limit="256m",
+                mem_limit=config.get('mem_limit', '256m'),
                 nano_cpus=1_000_000_000,
-                environment={
-                    "PYTHONUNBUFFERED": "1",
-                    "PYTHONPATH": "/workspace"
-                },
                 detach=True
             )
             result = container.wait(timeout=timeout)
