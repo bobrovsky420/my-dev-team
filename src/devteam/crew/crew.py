@@ -23,10 +23,29 @@ class VirtualCrew:
     def memory(self):
         return MemorySaver()
 
-    async def execute(self, thread_id: str, *, requirements: str = None) -> FinalResult:
+    async def execute(self, thread_id: str, *, requirements: str = None, feedback: str = None, feedback_source: str = 'reviewer') -> FinalResult:
         config = {'configurable': {'thread_id': thread_id}}
         abort_requested = False
-        if requirements:
+        if feedback:
+            node_mapping = {
+                'pm': 'planning',
+                'architect': 'planning',
+                'reviewer': 'development',
+                'qa': 'development'
+            }
+            self.logger.info("Injecting Human Feedback as '%s'...", feedback_source)
+            state_update = {}
+            if feedback_source == 'reviewer':
+                state_update['review_feedback'] = f"CRITICAL HUMAN FEEDBACK: {feedback}"
+            elif feedback_source == 'qa':
+                state_update['test_results'] = f"CRITICAL HUMAN FEEDBACK: {feedback}"
+            elif feedback_source == 'pm':
+                state_update['specs'] = f"CRITICAL HUMAN FEEDBACK: {feedback}"
+            else:
+                state_update['communication_log'] = [f"**[Human]**: {feedback}"]
+            await self.app.aupdate_state(config, state_update, as_node=node_mapping.get(feedback_source, 'development'))
+            initial_state = None
+        elif requirements:
             initial_state = {
                 'requirements': requirements
             }

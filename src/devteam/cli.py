@@ -27,6 +27,7 @@ def setup_logging(file_level = logging.DEBUG, console_level = logging.INFO):
         handlers=[file_handler, console_handler]
     )
     logging.getLogger('aiosqlite').setLevel(logging.WARNING)
+    logging.getLogger('asyncio').setLevel(logging.WARNING)
     logging.getLogger('httpx').setLevel(logging.WARNING)
     logging.getLogger('httpcore').setLevel(logging.WARNING)
     logging.getLogger('LiteLLM').setLevel(logging.WARNING)
@@ -79,7 +80,7 @@ def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: Asyn
         rate_limiter=RateLimiter(requests_per_minute=rpm) if rpm > 0 else None
     )
 
-async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume_thread: str = None):
+async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume_thread: str = None, feedback: str = None, feedback_source: str = 'reviewer'):
     if resume_thread:
         thread_id = resume_thread
         project_requirements = None
@@ -101,7 +102,9 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
             print(f"📁 Workspace: {project_folder.absolute()}\n")
             final_state = await crew.execute(
                 thread_id=thread_id,
-                requirements=project_requirements
+                requirements=project_requirements,
+                feedback=feedback,
+                feedback_source=feedback_source
             )
         if final_state.abort_requested:
             print("\n❌ Workflow aborted by user or validation failure.")
@@ -135,6 +138,8 @@ def main():
     parser.add_argument('--resume', type=str, help="resume a specific thread ID")
     parser.add_argument('--provider', type=str, default='ollama', choices=['groq', 'ollama', 'openai'], help="LLM provider to use (default: ollama)")
     parser.add_argument('--rpm', type=int, default=0, help="API requests per minute (default: 0 = none)")
+    parser.add_argument('--feedback', type=str, help="human feedback to inject into the state when resuming")
+    parser.add_argument('--as-node', type=str, default='reviewer', choices=['pm', 'architect', 'reviewer', 'qa'], help="which agent should deliver this feedback (forces graph routing)")
 
     args = parser.parse_args()
 
@@ -149,7 +154,14 @@ def main():
     else:
         parser.error("You must provide either a project_file OR the --resume flag.")
 
-    asyncio.run(async_main(args.project_file, args.provider, args.rpm, resume_thread=args.resume))
+    asyncio.run(async_main(
+        args.project_file,
+        args.provider,
+        args.rpm,
+        resume_thread=args.resume,
+        feedback=args.feedback,
+        feedback_source=args.as_node
+    ))
 
 if __name__ == '__main__':
     main()

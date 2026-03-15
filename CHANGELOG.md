@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.0] - TBD
+
+### 🚀 Added
+
+* **Time Travel & State Injection (Human-in-the-Loop):** Added `--feedback` and `--as-node` arguments to the CLI. The framework can now intercept graph execution, inject human feedback directly into the SQLite state, and force LangGraph to route backward (e.g., impersonating the `reviewer` to send tasks back to the `developer`).
+
 ## [0.3.0] - 2026-03-14
 
 ### 🚀 Added
