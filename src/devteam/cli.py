@@ -15,7 +15,7 @@ from devteam.extensions import HumanInTheLoop, WorkspaceSaver
 from devteam.tools import DockerSandbox
 from devteam.utils import RateLimiter, TelemetryTracker
 
-WORKSPACES_DIR = 'workspaces'
+WORKSPACES_DIR = Path('workspaces')
 
 def setup_logging(file_level = logging.DEBUG, console_level = logging.INFO):
     file_handler = logging.FileHandler('mycrew.log', encoding='utf-8')
@@ -34,20 +34,20 @@ def setup_logging(file_level = logging.DEBUG, console_level = logging.INFO):
     logging.getLogger('LiteLLM').setLevel(logging.WARNING)
     logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
 
-def load_project_spec(path: str) -> tuple[str, str]:
-    """Read the project file and return (name, description)"""
-    name = 'unknown_project'
-    with open(path, encoding='utf-8') as fp:
-        for line in fp:
-            if not line.strip():
-                break
-            if line.startswith('Subject:') and 'NEW PROJECT:' in line:
-                if extracted_name := line.split('NEW PROJECT:', 1)[-1].strip():
-                    name = extracted_name
+def parse_spec_from_string(content: str) -> tuple[str, str]:
+    name = 'New Project'
+    lines = content.split('\n')
+    for line in lines:
+        if not line.strip():
+            break
+        if line.startswith('Subject:') and 'NEW PROJECT:' in line:
+            extracted_name = line.split('NEW PROJECT:', 1)[-1].strip()
+            if extracted_name:
+                name = extracted_name
+    return name, content.strip()
 
-        fp.seek(0) # Reset pointer to read the full file as requirements
-        description = fp.read().strip()
-        return name, description
+def load_project_spec(path: str) -> tuple[str, str]:
+    return parse_spec_from_string(Path(path).read_text(encoding='utf-8'))
 
 def generate_thread_id(project_name: str) -> str:
     """Creates a unique, folder-safe thread ID"""
@@ -90,7 +90,7 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
         project_name, project_requirements = load_project_spec(project_file_path)
         thread_id = generate_thread_id(project_name)
         print(f"🚀 Starting NEW project: {project_name}")
-    project_folder = Path(f'{WORKSPACES_DIR}/{thread_id}')
+    project_folder = WORKSPACES_DIR / thread_id
     project_folder.mkdir(parents=True, exist_ok=True)
     db_path = project_folder / 'state.db'
     telemetry = TelemetryTracker()
@@ -156,7 +156,8 @@ def main():
     args = parser.parse_args()
 
     if args.resume:
-        if not Path(f'{WORKSPACES_DIR}/{args.resume}').exists():
+        path = WORKSPACES_DIR / args.resume
+        if not path.exists():
             print(f"❌ Error: Could not find workspace for thread '{args.resume}'")
             sys.exit(1)
     elif args.project_file:

@@ -3,12 +3,10 @@ import asyncio
 import yaml
 from pathlib import Path
 
-from devteam.cli import build_crew, load_project_spec, generate_thread_id
+from devteam.cli import WORKSPACES_DIR, build_crew, parse_spec_from_string, generate_thread_id
 from devteam.utils import LLMFactory
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 import aiosqlite
-
-WORKSPACES_DIR = Path('workspaces')
 
 def get_providers_from_config():
     config_path = Path('config/llms.yaml')
@@ -20,6 +18,21 @@ def get_providers_from_config():
     except Exception as e: # pylint: disable=broad-exception-caught
         st.error(f"Error reading llms.yaml: {e}")
         return ['ollama', 'groq', 'openai'] # Safe fallback
+
+async def run_new_project_async(project_name: str, requirements: str, provider: str, rpm: int = 0):
+    thread_id = generate_thread_id(project_name)
+    project_folder = WORKSPACES_DIR / thread_id
+    project_folder.mkdir(parents=True, exist_ok=True)
+    db_path = project_folder / 'state.db'
+    llm_factory = LLMFactory(provider=provider)
+    async with aiosqlite.connect(db_path) as conn:
+        checkpointer = AsyncSqliteSaver(conn)
+        crew = build_crew(project_folder, llm_factory, checkpointer, rpm)
+        final_state = await crew.execute(
+            thread_id=thread_id,
+            requirements=requirements
+        )
+        return final_state, thread_id
 
 def get_existing_threads():
     if not WORKSPACES_DIR.exists():
@@ -49,12 +62,40 @@ mode = st.sidebar.radio(
 if mode == "🚀 Start New Project":
     st.header("Start a New Project")
     uploaded_file = st.file_uploader("Upload your project requirements (.txt)", type=['txt'])
-    available_providers = get_providers_from_config()
-    provider = st.selectbox("LLM Provider", available_providers)
+    col1, col2 = st.columns(2)
+    with col1:
+        available_providers = get_providers_from_config()
+        provider = st.selectbox("LLM Provider", available_providers)
+    with col2:
+        rpm = st.number_input("Rate Limit (RPM, 0 = unlimited)", min_value=0, value=0, step=10)
     if uploaded_file and st.button("🚀 Launch AI Team", type='primary'):
         content = uploaded_file.read().decode('utf-8')
-        st.success(f"File uploaded successfully! Ready to process ({len(content)} bytes).")
-        st.info("💡 In a full integration, this button would trigger `asyncio.run(crew.execute(...))` and stream the LangGraph state updates to the UI.")
+        project_name, requirements = parse_spec_from_string(content)
+        with st.status(f"🧠 AI Team is building '{project_name}'...", expanded=True) as status:
+            st.write(f"**Provider:** {provider.upper()}")
+            st.write("Initializing workspace, agents, and sandboxes...")
+            st.write("*(Note: This process may take several minutes depending on the complexity of your requirements)*")
+            try:
+                final_state, thread_id = asyncio.run(run_new_project_async(project_name, requirements, provider, rpm))
+                if getattr(final_state, 'abort_requested', False) or (isinstance(final_state, dict) and final_state.get('abort_requested')):
+                    status.update(label="❌ Workflow Aborted", state='error')
+                    st.error("Workflow was aborted by user or validation failure.")
+                elif getattr(final_state, 'success', False) or (isinstance(final_state, dict) and final_state.get('success')):
+                    status.update(label="🎉 Project Completed Successfully!", state='complete')
+                    st.balloons()
+                    st.success(f"Files saved to workspace: `{thread_id}`")
+                    report = getattr(final_state, 'final_report', None) or (isinstance(final_state, dict) and final_state.get('final_report'))
+                    if report:
+                        st.subheader("Final Report")
+                        st.markdown(report)
+                else:
+                    status.update(label="🚨 Release Failed: Integration Bugs", state='warning')
+                    bugs = getattr(final_state, 'integration_bugs', []) or (isinstance(final_state, dict) and final_state.get('integration_bugs', []))
+                    for bug in bugs:
+                        st.warning(f"- {bug}")
+            except Exception as e: # pylint: disable=broad-exception-caught
+                status.update(label="💥 Fatal Error", state='error')
+                st.error(f"An unexpected error occurred: {str(e)}")
 
 elif mode == "🔄 Resume Project":
     st.header("Resume or Inject Feedback")
