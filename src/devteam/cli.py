@@ -100,7 +100,11 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
             crew = build_crew(project_folder, llm_factory, checkpointer, rpm)
             if show_history:
                 print("🕰️ Fetching timeline history...")
-                await crew.show_history(thread_id)
+                history_data = await crew.get_history(thread_id)
+                for cp in history_data:
+                    ns_display = cp['ns'].split(':')[0]
+                    print(ns_display)
+                    print(f"[{cp['time']}] [{ns_display[:12].center(12)}] Checkpoint: {cp['c_id']} | Next: {cp['node']}")
                 return
             print(f"🚀 Starting AI Dev Team...")
             print(f"📁 Workspace: {project_folder.absolute()}\n")

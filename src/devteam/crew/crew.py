@@ -1,6 +1,6 @@
 import logging
-from functools import cached_property
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END
 from ..utils import LLMFactory, RateLimiter
 from .final_result import FinalResult
 
@@ -17,18 +17,45 @@ class VirtualCrew:
             agent.llm_factory = llm_factory
             if rate_limiter:
                 agent.rate_limiter = rate_limiter
-        self.app = self.manager.build_graph(agents=self.agents, memory=checkpointer or self.memory)
+        self.app = self.manager.build_graph(agents=self.agents, memory=checkpointer or MemorySaver())
 
-    @cached_property
-    def memory(self):
-        return MemorySaver()
-
-    async def show_history(self, thread_id: str):
+    async def get_history(self, thread_id: str) -> list[dict]:
         config = {'configurable': {'thread_id': thread_id}}
+        all_checkpoints = []
+        seen_c_ids = set()
         async for state_snapshot in self.app.aget_state_history(config):
             c_id = state_snapshot.config['configurable']['checkpoint_id']
-            node = state_snapshot.next[0] if state_snapshot.next else 'END'
-            print(f"[{state_snapshot.created_at}] Checkpoint: {c_id} | Next Node: {node}")
+            if c_id not in seen_c_ids:
+                all_checkpoints.append({
+                    'time': state_snapshot.created_at,
+                    'ns': 'root',
+                    'c_id': c_id,
+                    'node': state_snapshot.next[0] if state_snapshot.next else END
+                })
+                seen_c_ids.add(c_id)
+            full_state = await self.app.aget_state(state_snapshot.config, subgraphs=True)
+            for task in full_state.tasks:
+                if task.state and hasattr(task.state, 'config'):
+                    sub_ns = task.state.config['configurable'].get('checkpoint_ns')
+                    if sub_ns:
+                        sub_config = {
+                            'configurable': {
+                                'thread_id': thread_id,
+                                'checkpoint_ns': sub_ns
+                            }
+                        }
+                        async for sub_snapshot in self.app.aget_state_history(sub_config):
+                            sub_c_id = sub_snapshot.config['configurable']['checkpoint_id']
+                            if sub_c_id not in seen_c_ids:
+                                all_checkpoints.append({
+                                    'time': sub_snapshot.created_at,
+                                    'ns': sub_ns,
+                                    'c_id': sub_c_id,
+                                    'node': sub_snapshot.next[0] if sub_snapshot.next else END
+                                })
+                                seen_c_ids.add(sub_c_id)
+        all_checkpoints.sort(key=lambda x: x['time'], reverse=True)
+        return all_checkpoints
 
     async def execute(self, thread_id: str, *, requirements: str = None, feedback: str = None, feedback_source: str = 'reviewer', checkpoint_id: str = None) -> FinalResult:
         config = {'configurable': {'thread_id': thread_id}}
