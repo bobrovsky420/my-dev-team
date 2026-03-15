@@ -4,6 +4,8 @@
 
 ### 🚀 Added
 
+* **Streamlit Web Dashboard (`app.py`):** Introduced a fully interactive graphical user interface. Users can now start new projects via file upload, view the granular execution timeline in a sortable data table, and use a visual form to inject time-travel feedback.
+
 * **Time Travel & State Injection (Human-in-the-Loop):** Added `--feedback` and `--as-node` arguments to the CLI. The framework can now intercept graph execution, inject human feedback directly into the SQLite state, and force LangGraph to route backward (e.g., impersonating the `reviewer` to send tasks back to the `developer`).
 
 * **True Time Travel (`--checkpoint`):** Upgraded the state injection feature to support true timeline rewinding. Users can now pass a specific checkpoint ID to fork the graph from a past state, preventing race conditions where the graph had already moved on to the next task before feedback was injected.

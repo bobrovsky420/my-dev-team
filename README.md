@@ -90,7 +90,23 @@ devteam --resume web_scraper_cli_20260312_083500
 
 Note: Ensure you have the corresponding API keys (e.g., `GROQ_API_KEY`, `OPENAI_API_KEY`) set in your `.env` file, or ensure your local Ollama instance is running.
 
-## 3. Intelligent Model Routing (LLM Factory)
+## 3. Web Interface (Dashboard)
+
+In addition to the CLI, **My Dev Team** includes a fully interactive web dashboard powered by Streamlit. This is perfect for users who want visual control over the autonomous agents.
+
+To launch the web interface, make sure you have Streamlit installed (`pip install streamlit`), then run:
+
+```sh
+streamlit run app.py
+```
+
+### Dashboard Features
+
+- **Launch Projects:** Upload your project requirements text file directly through your browser and select your LLM provider.
+- **Granular Timeline:** View a deeply nested, chronological history of your AI crew's execution, cleanly displaying subgraph agent handoffs.
+- **Visual Time Travel:** Easily resume paused workflows, or inject human-in-the-loop feedback by targeting specific graph checkpoints directly from the UI dropdowns.
+
+## 4. Intelligent Model Routing (LLM Factory)
 
 **My Dev Team** doesn't just use one model for everything. It uses an advanced **Semantic Routing** architecture via `LLMFactory`.
 
@@ -103,7 +119,7 @@ Instead of hardcoding a specific model (like `gpt-5.3-codex`), each agent reques
 * `code-analyzer`: For the QA and Reviewer agents. Maps to deep-context evaluation models.
 * `fast-utility`: For the Reporter. Maps to blazing-fast, ultra-cheap models for simple text summarization.
 
-## 4. Usage (Python API)
+## 5. Usage (Python API)
 
 If you want to integrate the crew into your own application, customize the LLM Factory's routing table, or override specific agent behaviors, use the clean Python API:
 
