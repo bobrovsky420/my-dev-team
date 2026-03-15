@@ -30,8 +30,11 @@ class VirtualCrew:
             node = state_snapshot.next[0] if state_snapshot.next else 'END'
             print(f"[{state_snapshot.created_at}] Checkpoint: {c_id} | Next Node: {node}")
 
-    async def execute(self, thread_id: str, *, requirements: str = None, feedback: str = None, feedback_source: str = 'reviewer') -> FinalResult:
+    async def execute(self, thread_id: str, *, requirements: str = None, feedback: str = None, feedback_source: str = 'reviewer', checkpoint_id: str = None) -> FinalResult:
         config = {'configurable': {'thread_id': thread_id}}
+        if checkpoint_id:
+            config['configurable']['checkpoint_id'] = checkpoint_id
+            self.logger.info("Rewinding time to checkpoint: %s", checkpoint_id)
         abort_requested = False
         if feedback:
             node_mapping = {
@@ -50,7 +53,18 @@ class VirtualCrew:
                 state_update['specs'] = f"CRITICAL HUMAN FEEDBACK: {feedback}"
             else:
                 state_update['communication_log'] = [f"**[Human]**: {feedback}"]
-            await self.app.aupdate_state(config, state_update, as_node=node_mapping.get(feedback_source, 'development'))
+            target_state = await self.app.aget_state(config)
+            safe_config = target_state.config.copy()
+            if 'configurable' not in safe_config:
+                safe_config['configurable'] = {}
+            if 'checkpoint_ns' not in safe_config['configurable']:
+                safe_config['configurable']['checkpoint_ns'] = ""
+            await self.app.aupdate_state(
+                safe_config,
+                state_update,
+                as_node=node_mapping.get(feedback_source, 'development')
+            )
+            config = {'configurable': {'thread_id': thread_id}}
             initial_state = None
         elif requirements:
             initial_state = {

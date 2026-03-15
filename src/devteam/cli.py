@@ -109,8 +109,7 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
                 requirements=project_requirements,
                 feedback=feedback,
                 feedback_source=feedback_source,
-                checkpoint_id=checkpoint_id, # 🌟
-                show_history=show_history
+                checkpoint_id=checkpoint_id
             )
         if final_state.abort_requested:
             print("\n❌ Workflow aborted by user or validation failure.")
