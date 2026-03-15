@@ -80,7 +80,7 @@ def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: Asyn
         rate_limiter=RateLimiter(requests_per_minute=rpm) if rpm > 0 else None
     )
 
-async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume_thread: str = None, feedback: str = None, feedback_source: str = 'reviewer'):
+async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume_thread: str = None, feedback: str = None, feedback_source: str = 'reviewer', checkpoint_id: str = None, show_history: bool = False):
     if resume_thread:
         thread_id = resume_thread
         project_requirements = None
@@ -98,13 +98,19 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
         async with aiosqlite.connect(db_path) as conn:
             checkpointer = AsyncSqliteSaver(conn)
             crew = build_crew(project_folder, llm_factory, checkpointer, rpm)
+            if show_history:
+                print("🕰️ Fetching timeline history...")
+                await crew.show_history(thread_id)
+                return
             print(f"🚀 Starting AI Dev Team...")
             print(f"📁 Workspace: {project_folder.absolute()}\n")
             final_state = await crew.execute(
                 thread_id=thread_id,
                 requirements=project_requirements,
                 feedback=feedback,
-                feedback_source=feedback_source
+                feedback_source=feedback_source,
+                checkpoint_id=checkpoint_id, # 🌟
+                show_history=show_history
             )
         if final_state.abort_requested:
             print("\n❌ Workflow aborted by user or validation failure.")
@@ -140,6 +146,8 @@ def main():
     parser.add_argument('--rpm', type=int, default=0, help="API requests per minute (default: 0 = none)")
     parser.add_argument('--feedback', type=str, help="human feedback to inject into the state when resuming")
     parser.add_argument('--as-node', type=str, default='reviewer', choices=['pm', 'architect', 'reviewer', 'qa'], help="which agent should deliver this feedback (forces graph routing)")
+    parser.add_argument('--history', action='store_true', help="print the timeline of checkpoints for this thread and exit")
+    parser.add_argument('--checkpoint', type=str, help="specific checkpoint ID to rewind to before injecting feedback")
 
     args = parser.parse_args()
 
@@ -160,7 +168,9 @@ def main():
         args.rpm,
         resume_thread=args.resume,
         feedback=args.feedback,
-        feedback_source=args.as_node
+        feedback_source=args.as_node,
+        checkpoint_id=args.checkpoint, # 🌟 Pass checkpoint
+        show_history=args.history
     ))
 
 if __name__ == '__main__':

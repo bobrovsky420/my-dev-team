@@ -23,6 +23,13 @@ class VirtualCrew:
     def memory(self):
         return MemorySaver()
 
+    async def show_history(self, thread_id: str):
+        config = {'configurable': {'thread_id': thread_id}}
+        async for state_snapshot in self.app.aget_state_history(config):
+            c_id = state_snapshot.config['configurable']['checkpoint_id']
+            node = state_snapshot.next[0] if state_snapshot.next else 'END'
+            print(f"[{state_snapshot.created_at}] Checkpoint: {c_id} | Next Node: {node}")
+
     async def execute(self, thread_id: str, *, requirements: str = None, feedback: str = None, feedback_source: str = 'reviewer') -> FinalResult:
         config = {'configurable': {'thread_id': thread_id}}
         abort_requested = False
