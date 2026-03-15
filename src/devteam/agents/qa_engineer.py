@@ -9,9 +9,6 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
     output_schema = QAEngineerResponse
     sandbox: DockerSandbox = None
 
-    def __init__(self, config: dict, prompt_template: str):
-        super().__init__(config, prompt_template)
-
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
         workspace_str = ''

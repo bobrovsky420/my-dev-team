@@ -6,6 +6,10 @@
 
 * **Time Travel & State Injection (Human-in-the-Loop):** Added `--feedback` and `--as-node` arguments to the CLI. The framework can now intercept graph execution, inject human feedback directly into the SQLite state, and force LangGraph to route backward (e.g., impersonating the `reviewer` to send tasks back to the `developer`).
 
+* **True Time Travel (`--checkpoint`):** Upgraded the state injection feature to support true timeline rewinding. Users can now pass a specific checkpoint ID to fork the graph from a past state, preventing race conditions where the graph had already moved on to the next task before feedback was injected.
+
+* **Granular Timeline History (`--history`):** Added a CLI flag to print a formatted, chronological timeline of the crew's execution.
+
 ## [0.3.0] - 2026-03-14
 
 ### 🚀 Added

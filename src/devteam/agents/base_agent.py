@@ -94,7 +94,7 @@ class BaseAgent(Generic[T]):
             concise_error = "Schema mismatch: " + "; ".join(error_details)
         else:
             error_str = str(last_error)
-            concise_error = error_str.split('\n')[0][:150]
+            concise_error = error_str.split('\n', maxsplit=1)[0][:150]
             if "Invalid json output" in concise_error:
                 concise_error = "Invalid JSON syntax. You likely included Markdown formatting or text outside the JSON brackets."
         error_msg = concise_error.replace('{', '{{').replace('}', '}}')
@@ -139,9 +139,9 @@ class BaseAgent(Generic[T]):
             clean_json = clean_json.replace('```json', '').replace('```', '').strip()
             return self.parser.invoke(clean_json)
         except ValidationError as e:
-            raise ValidationError(f"Schema mismatch: {e}")
+            raise ValidationError(f"Schema mismatch: {e}") from e
         except Exception as e:
-            raise ValueError(f"Failed to parse JSON. Error: {e}")
+            raise ValueError(f"Failed to parse JSON. Error: {e}") from e
 
     @classmethod
     def from_config(cls, config_path: str, *, model_category: str = None, temperature: float = None):
@@ -149,8 +149,8 @@ class BaseAgent(Generic[T]):
         try:
             prompt_file = resources.files(package_path).joinpath(config_path)
             content = prompt_file.read_text(encoding='utf-8')
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Could not find '{config_path}' in the package '{package_path}'")
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"Could not find '{config_path}' in the package '{package_path}'") from e
         parts = content.split('---', 2)
         if len(parts) < 3:
             raise ValueError(f"Invalid format in {config_path}. Missing YAML frontmatter")

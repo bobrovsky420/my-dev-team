@@ -2,9 +2,10 @@ import argparse
 import asyncio
 import logging
 import re
-import aiosqlite
+import sys
 from datetime import datetime
 from pathlib import Path
+import aiosqlite
 from dotenv import load_dotenv
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
@@ -106,7 +107,7 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
                     print(ns_display)
                     print(f"[{cp['time']}] [{ns_display[:12].center(12)}] Checkpoint: {cp['c_id']} | Next: {cp['node']}")
                 return
-            print(f"🚀 Starting AI Dev Team...")
+            print("🚀 Starting AI Dev Team...")
             print(f"📁 Workspace: {project_folder.absolute()}\n")
             final_state = await crew.execute(
                 thread_id=thread_id,
@@ -157,11 +158,11 @@ def main():
     if args.resume:
         if not Path(f'{WORKSPACES_DIR}/{args.resume}').exists():
             print(f"❌ Error: Could not find workspace for thread '{args.resume}'")
-            exit(1)
+            sys.exit(1)
     elif args.project_file:
         if not Path(args.project_file).exists():
             print(f"❌ Error: Could not find project file '{args.project_file}'")
-            exit(1)
+            sys.exit(1)
     else:
         parser.error("You must provide either a project_file OR the --resume flag.")
 

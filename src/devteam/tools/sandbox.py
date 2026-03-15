@@ -3,7 +3,7 @@ from importlib import resources
 from pathlib import Path
 import logging
 import docker
-from docker.errors import ContainerError, ImageNotFound
+from docker.errors import ImageNotFound
 import yaml
 
 class DockerSandbox:
@@ -11,8 +11,8 @@ class DockerSandbox:
         self.logger = logging.getLogger('Docker Sandbox')
         try:
             self.client = docker.from_env()
-        except Exception as e:
-            raise RuntimeError(f"Could not connect to Docker. Error: {e}")
+        except Exception as e: # pylint: disable=broad-exception-caught
+            raise RuntimeError(f"Could not connect to Docker. Error: {e}") from e
 
     @cached_property
     def sandbox_config(self) -> dict:
@@ -54,5 +54,5 @@ class DockerSandbox:
                 return f"✅ Tests Passed:\n{logs}"
             else:
                 return f"❌ Tests Failed (Exit Code {exit_code}):\n{logs}"
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-exception-caught
             return f"⚠️ Sandbox Execution Error: {str(e)}"
