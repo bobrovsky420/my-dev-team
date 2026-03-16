@@ -100,7 +100,7 @@ devteam project.txt --provider openai --rpm 15
 devteam --resume web_scraper_cli_20260312_083500
 ```
 
-#### Available Arguments:
+**Available Arguments:**
 
 * `project_file`: (Optional if resuming) Path to your project requirements text file.
 * `--provider`: Choose the LLM backend. Options: groq, ollama (default), openai.
@@ -119,13 +119,45 @@ Note: Ensure you have the corresponding API keys (e.g., `GROQ_API_KEY`, `OPENAI_
 
 ## Architecture
 
+### Multi-Agent Workflow
+
+**My Dev Team** operates as a cyclic, self-healing state machine. Instead of a simple linear pipeline, agents pass context back and forth, iterating on code until it meets strict quality standards.
+
+```mermaid
+stateDiagram-v2
+    [*] --> pm
+    pm --> human
+    human --> pm
+    pm --> architect
+    architect --> officer
+    officer --> dev
+    dev --> reviewer
+    reviewer --> dev
+    reviewer --> qa
+    qa --> dev
+    qa --> officer
+    officer --> final_qa
+    final_qa --> reporter
+    reporter --> [*]
+```
+
+**How the routing works:**
+
+* **Requirements Gathering:** The Product Manager (`pm`) loops with a `human` to refine requirements before development begins.
+
+* **Task Orchestration:** The Architect designs the system, and the `officer` orchestrates the task backlog, routing individual tickets to the Developer.
+
+* **The Refinement Loop:** The Developer (`dev`), `reviewer`, and `qa` agents operate in a strict self-healing loop. Code is repeatedly analyzed and tested; if bugs or style issues are found, the state routes directly back to the Developer for revisions.
+
+* **Final Delivery:** Once the `officer` confirms all tasks are complete, the final `qa` runs full-repository integration tests before the `reporter` generates the final documentation.
+
 ### Intelligent Model Routing (LLM Factory)
 
 **My Dev Team** doesn't just use one model for everything. It uses an advanced **Semantic Routing** architecture via `LLMFactory`.
 
 Instead of hardcoding a specific model (like `gpt-5.3-codex`), each agent requests a specific capability category and temperature. The Factory evaluates your chosen `--provider` and dynamically spins up the most cost-effective, capable model for that exact task.
 
-#### The Categories
+**The Categories:**
 
 * `reasoning`: For the System Architect and Product Manager. Maps to deep-thinking models.
 * `code-generator`: For the Senior Developer. Maps to strict, syntax-heavy models.
@@ -264,7 +296,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Customizing the Crew
+## Customizing Crew
 
 **My Dev Team** is completely configuration-driven. You don't need to write Python code to change how the agents are built or which prompts they use.
 
