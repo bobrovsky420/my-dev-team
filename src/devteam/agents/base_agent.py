@@ -16,7 +16,7 @@ T = TypeVar('T', bound=BaseModel)
 class BaseAgent(Generic[T]):
     llm_factory: LLMFactory
     model_category: str = 'reasoning'
-    base_temp: float = 0.2
+    temperature: float = 0.2
     max_retries: int = 2
     rate_limiter: RateLimiter = None
     output_schema: type[T]
@@ -28,14 +28,8 @@ class BaseAgent(Generic[T]):
         self.role = config.get('role', 'Agent')
         self.name = config.get('name', None)
         self.model_category = config.get('model', self.model_category)
-        self.base_temp = config.get('temperature', self.base_temp)
+        self.temperature = config.get('temperature', self.temperature)
         self.logger = logging.getLogger(self.name or self.role)
-
-    def _build_chain(self, temperature: float, retry_prompt: str = None):
-        """Builds the LangChain pipeline"""
-        llm = self.llm_factory.create(category=self.model_category, temperature=temperature, node_name=self.node_name)
-        prompt = self._build_prompt(retry_prompt)
-        self.chain = prompt | llm
 
     @cached_property
     def required_inputs(self) -> list[str]:
@@ -51,17 +45,10 @@ class BaseAgent(Generic[T]):
     def _update_state(self, parsed_data: T, current_state: dict) -> dict:
         return parsed_data.model_dump()
 
-    def _reset_run_state(self):
-        if hasattr(self, '_bumped'):
-            del self._bumped
-            self._build_chain(temperature=self.base_temp)
-        elif not hasattr(self, 'chain'):
-            self._build_chain(temperature=self.base_temp)
-
     async def process(self, state: dict) -> dict:
         self.logger.info("Executing...")
-        self._reset_run_state()
         inputs = self._build_inputs(state)
+        self._build_chain(self.temperature) # Start with base temperature and prompt
         last_error = None
         for attempt in range(1, self.max_retries + 1):
             response = await self._invoke_llm(**inputs)
@@ -87,7 +74,6 @@ class BaseAgent(Generic[T]):
         new_temp = min(self.base_temp + (attempt * 0.1), 1.0)
         self.logger.info("Bumping temperature to %.1f for retry", new_temp)
         retry_prompt = self._bump_prompt(last_error)
-        self._bumped = True
         self._build_chain(temperature=new_temp, retry_prompt=retry_prompt)
 
     def _bump_prompt(self, last_error: Exception) -> str:
@@ -108,6 +94,12 @@ class BaseAgent(Generic[T]):
             f"You must return ONLY raw, valid JSON that strictly conforms to the requested schema. "
             f"Do NOT wrap the output in markdown code blocks."
         )
+
+    def _build_chain(self, temperature: float, retry_prompt: str = None):
+        """Builds the LangChain pipeline"""
+        llm = self.llm_factory.create(category=self.model_category, temperature=temperature, node_name=self.node_name)
+        prompt = self._build_prompt(retry_prompt)
+        self.chain = prompt | llm
 
     def _build_prompt(self, retry_prompt: str = None) -> PromptTemplate:
         base_template = self.prompt_template + "\n\n# Output Format\n{format_instructions}"
