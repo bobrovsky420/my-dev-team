@@ -18,17 +18,34 @@ class LLMFactory:
     def model_map(self) -> dict:
         return self.llm_config.get('providers', {})
 
-    def create(self, category: str, temperature: float) -> BaseChatModel:
+    def create(self, category: str, temperature: float, *, role_name: str = None) -> BaseChatModel:
         """Returns a configured LLM instance."""
         model_name = self.model_map[self.provider].get(category, self.model_map[self.provider]['reasoning'])
         match self.provider:
             case 'ollama':
                 from langchain_ollama import ChatOllama
-                return ChatOllama(model=model_name, temperature=temperature, callbacks=self.callbacks, format='json')
+                return ChatOllama(
+                    model=model_name,
+                    temperature=temperature,
+                    callbacks=self.callbacks,
+                    tags=[f'role:{role_name}'],
+                    format='json'
+                )
             case 'groq':
                 from langchain_groq import ChatGroq
-                llm = ChatGroq(model=model_name, temperature=temperature, callbacks=self.callbacks, max_retries=2)
+                llm = ChatGroq(
+                    model=model_name,
+                    temperature=temperature,
+                    callbacks=self.callbacks,
+                    tags=[f'role:{role_name}'],
+                    max_retries=2
+                )
                 return llm.bind(response_format={'type': 'json_object'})
             case 'openai':
                 from langchain_openai import ChatOpenAI
-                return ChatOpenAI(model=model_name, temperature=temperature, callbacks=self.callbacks)
+                return ChatOpenAI(
+                    model=model_name,
+                    temperature=temperature,
+                    callbacks=self.callbacks,
+                    tags=[f'role:{role_name}']
+                )

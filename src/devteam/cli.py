@@ -144,6 +144,7 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
         print("\n\n🛑 Async execution cancelled")
     finally:
         telemetry.print_receipt()
+        telemetry.generate_optimization_report()
 
 def main():
     load_dotenv()

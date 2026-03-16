@@ -13,6 +13,15 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 * **Self-Healing Code:** The Developer, Reviewer, and QA Engineer agents continuously loop until unit tests pass and code meets specifications.
 * **Structured Outputs:** Powered by Pydantic and LangChain, ensuring zero "Markdown spillage" and robust state management.
 * **Extensible:** Easily add custom tools like `HumanInTheLoop` or `WorkspaceSaver`.
+* **Cost & Token Optimization Analyzer:** Built-in telemetry tracks API costs down to the fraction of a cent and generates a diagnostic report at the end of every run, actively warning you if agents are stuck in loops or suffering from context bloat.
+
+### Centralized Configuration
+
+Code and configuration are strictly separated to make the framework maintainable and extensible.
+
+* **Model Routing (`config/llms.yaml`):** All provider definitions (Groq, OpenAI, Ollama) and model routing logic (reasoning, coding, fast-utility) are centralized in a single YAML file, making it trivial to update models as new ones are released.
+* **Agent Prompts (`config/agents/**`):** Every agent's persona, system instructions, and constraints are stored as clean Markdown files with YAML frontmatter. No massive, hardcoded prompt strings cluttering the Python logic!
+* **Sandbox Environments (`config/sandbox.yaml`):** Docker base images and test execution commands for various runtimes (Python, Node.js) are completely decoupled. You can easily add support for entirely new programming languages by simply defining the image and test command in YAML, without touching the core Python engine.
 
 ### Sandboxed QA Execution
 
@@ -22,13 +31,30 @@ The QA Engineer agent does not rely on LLM "guesswork" or mental simulation to t
 * **Ephemeral Isolation:** Code is executed securely using the Docker SDK. Containers are strictly isolated, resource-limited (CPU/RAM), and immediately destroyed after the test run, ensuring your host machine is never at risk.
 * **Universal Runtime Auto-Detection:** The sandbox dynamically inspects the workspace or takes explicit direction from the System Architect to pull the correct Docker image (Python, Node.js, etc.) on the fly.
 
-### Centralized Configuration
+### Telemetry & Optimization
 
-Code and configuration are strictly separated to make the framework maintainable and extensible.
+Running multi-agent systems can get expensive quickly if models get stuck in loops or context windows grow out of control. **My Dev Team** includes a built-in `TelemetryTracker` that monitors every single LLM call.
 
-* **Model Routing (`config/llms.yaml`):** All provider definitions (Groq, OpenAI, Ollama) and model routing logic (reasoning, coding, fast-utility) are centralized in a single YAML file, making it trivial to update models as new ones are released.
-* **Agent Prompts (`config/agents/**`):** Every agent's persona, system instructions, and constraints are stored as clean Markdown files with YAML frontmatter. No massive, hardcoded prompt strings cluttering the Python logic!
-* **Sandbox Environments (`config/sandbox.yaml`):** Docker base images and test execution commands for various runtimes (Python, Node.js) are completely decoupled. You can easily add support for entirely new programming languages by simply defining the image and test command in YAML, without touching the core Python engine.
+At the end of every workflow, the framework prints a granular receipt and an optimization diagnostic report:
+
+```text
+========================================
+📊 TELEMETRY & COST REPORT
+========================================
+Total API Requests:  12
+Prompt Tokens:       45,200
+Completion Tokens:   3,100
+Total Tokens:        48,300
+----------------------------------------
+Estimated Cost:      $0.0145
+========================================
+
+========================================
+🔍 TOKEN OPTIMIZATION DIAGNOSTICS
+========================================
+⚠️ Thrashing Detected: `qa` was called 8 times. The agent might be stuck in a failure loop.
+📈 Context Bloat: `reviewer` input grew by 3.2x (Started: 1200, Ended: 3840).
+========================================
 
 ## AI Agents
 

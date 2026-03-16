@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1] - TBD
+
+### 🚀 Added
+
+* **Optimization & Token Leak Analyzer:** Upgraded the `TelemetryTracker` to not only count tokens and calculate costs but to actively analyze the AI crew's execution trajectory for inefficiencies.
+
+* **Agent-Level Diagnostics:** The framework now uses LangChain `role:` tags to track exactly which agent is consuming tokens. At the end of a run, it generates a diagnostic report flagging "Context Bloat" (exponentially growing prompts), "Thrashing" (agents stuck in failure loops), and "High Waste Ratios" (sending massive context for tiny outputs).
+
 ## [0.4.0] - 2026-03-15
 
 ### 🚀 Added

@@ -31,7 +31,7 @@ class BaseAgent(Generic[T]):
 
     def _build_chain(self, temperature: float, retry_prompt: str = None):
         """Builds the LangChain pipeline"""
-        llm = self.llm_factory.create(category=self.model_category, temperature=temperature)
+        llm = self.llm_factory.create(category=self.model_category, temperature=temperature, role_name=self.name or self.role)
         prompt = self._build_prompt(retry_prompt)
         self.chain = prompt | llm
 
