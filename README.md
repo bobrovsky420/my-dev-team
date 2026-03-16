@@ -1,8 +1,12 @@
 # My Dev Team 🚀
 
+[![PyPI version](https://badge.fury.io/py/my-dev-team.svg)](https://badge.fury.io/py/my-dev-team)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes raw project requirements and processes them through a multi-agent workflow (Product Manager, System Architect, Developers, and QA) to incrementally build, test, and deliver production-ready code.
 
-## Features
+## Core Features
 
 * **Multi-Agent Architecture:** Specialized AI agents handle distinct phases of the software development lifecycle.
 * **Semantic Model Routing:** Automatically routes tasks to the most cost-effective or capable LLMs based on the task type (reasoning, coding, or fast-utility).
@@ -14,6 +18,119 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 * **Structured Outputs:** Powered by Pydantic and LangChain, ensuring zero "Markdown spillage" and robust state management.
 * **Extensible:** Easily add custom tools like `HumanInTheLoop` or `WorkspaceSaver`.
 * **Cost & Token Optimization Analyzer:** Built-in telemetry tracks API costs down to the fraction of a cent and generates a diagnostic report at the end of every run, actively warning you if agents are stuck in loops or suffering from context bloat.
+
+### AI Agents
+
+1) **Product Manager:** Analyzes requirements, asks clarifying questions, and writes detailed Technical Specifications.
+2) **System Architect:** Breaks specifications down into a cohesive backlog of developer tasks.
+3) **Senior Developer:** Incrementally writes code and unit tests for the current task.
+4) **Code Reviewer:** Analyzes the generated code for security, style, and logic issues.
+5) **QA Engineer:** Mentally simulates execution and evaluates the code against the task requirements.
+6) **Final QA Engineer:** Performs a full-repository integration test once all tasks are complete.
+7) **Reporter:** Generates a comprehensive final Markdown report for stakeholders.
+
+## Getting Started
+
+### Prerequisites
+
+* **Python 3.10+**
+* **Docker Engine** must be installed and running if you intend to use the Sandboxed QA features.
+* **API Keys** set in your environment (e.g., `OPENAI_API_KEY`, `GROQ_API_KEY`), OR a local instance of **Ollama** running for free local models.
+
+### Installation
+
+You can install the package directly via pip:
+
+```sh
+pip install my-dev-team
+```
+
+(For local development, clone the repository and run `pip install -e .`)
+
+## Usage Guide
+
+### Preparing Your Project File
+
+The crew requires a text file outlining your project requirements. By default, it looks for a specific header format to extract the project name and thread ID.
+
+Create a file named `project.txt`:
+
+```
+Subject: NEW PROJECT: Web Scraper CLI
+
+I need a Python command-line tool that scrapes articles from a given URL.
+It should extract the title, author, and main body text, and save the output as a JSON file.
+
+Requirements:
+- Use BeautifulSoup4 for parsing.
+- Include a `--url` argument and an `--output` argument.
+- Write unit tests for the parsing logic.
+```
+
+### Command Line Interface
+
+The fastest way to use the framework is via the terminal command included in the package.
+
+```sh
+devteam project.txt
+```
+
+### Web Interface (Dashboard)
+
+In addition to the CLI, **My Dev Team** includes a fully interactive web dashboard powered by Streamlit. This is perfect for users who want visual control over the autonomous agents.
+
+To launch the web interface, make sure you have Streamlit installed (`pip install streamlit`), then run:
+
+```sh
+streamlit run app.py
+```
+
+### Advanced CLI Options
+
+You can easily switch between cloud providers and local models, and adjust rate limits based on your API tier:
+
+```sh
+# Run entirely locally for free using Ollama, with no rate limit!
+devteam project.txt --provider ollama
+
+# Run using OpenAI's flagship models, limited to 15 requests per minute
+devteam project.txt --provider openai --rpm 15
+
+# Resume an interrupted run exactly where it left off
+devteam --resume web_scraper_cli_20260312_083500
+```
+
+#### Available Arguments:
+
+* `project_file`: (Optional if resuming) Path to your project requirements text file.
+* `--provider`: Choose the LLM backend. Options: groq, ollama (default), openai.
+* `--rpm`: API requests per minute. Set to 0 to disable rate limiting (default: 0).
+* `--resume`: Resume a specific thread ID (e.g., my_app_20260312_083500).
+* `--history`: Print the timeline of checkpoints for the thread and exit.
+* `--checkpoint`: Specific checkpoint ID to rewind to
+
+Note: Ensure you have the corresponding API keys (e.g., `GROQ_API_KEY`, `OPENAI_API_KEY`) set in your `.env` file, or ensure your local Ollama instance is running.
+
+### Dashboard Features
+
+- **Launch Projects:** Upload your project requirements text file directly through your browser and select your LLM provider.
+- **Granular Timeline:** View a deeply nested, chronological history of your AI crew's execution, cleanly displaying subgraph agent handoffs.
+- **Visual Time Travel:** Easily resume paused workflows, or inject human-in-the-loop feedback by targeting specific graph checkpoints directly from the UI dropdowns.
+
+## Architecture
+
+### Intelligent Model Routing (LLM Factory)
+
+**My Dev Team** doesn't just use one model for everything. It uses an advanced **Semantic Routing** architecture via `LLMFactory`.
+
+Instead of hardcoding a specific model (like `gpt-5.3-codex`), each agent requests a specific capability category and temperature. The Factory evaluates your chosen `--provider` and dynamically spins up the most cost-effective, capable model for that exact task.
+
+#### The Categories
+
+* `reasoning`: For the System Architect and Product Manager. Maps to deep-thinking models.
+* `code-generator`: For the Senior Developer. Maps to strict, syntax-heavy models.
+* `code-analyzer`: For the QA and Reviewer agents. Maps to deep-context evaluation models.
+* `fast-utility`: For the Reporter. Maps to blazing-fast, ultra-cheap models for simple text summarization.
 
 ### Centralized Configuration
 
@@ -55,109 +172,11 @@ Estimated Cost:      $0.0145
 ⚠️ Thrashing Detected: `qa` was called 8 times. The agent might be stuck in a failure loop.
 📈 Context Bloat: `reviewer` input grew by 3.2x (Started: 1200, Ended: 3840).
 ========================================
+```
 
 This allows you to easily identify architectural token leaks, pinpoint which specific agent is struggling, and adjust your `llms.yaml` or prompt templates accordingly!
 
-## AI Agents
-
-1) **Product Manager:** Analyzes requirements, asks clarifying questions, and writes detailed Technical Specifications.
-2) **System Architect:** Breaks specifications down into a cohesive backlog of developer tasks.
-3) **Senior Developer:** Incrementally writes code and unit tests for the current task.
-4) **Code Reviewer:** Analyzes the generated code for security, style, and logic issues.
-5) **QA Engineer:** Mentally simulates execution and evaluates the code against the task requirements.
-6) **Final QA Engineer:** Performs a full-repository integration test once all tasks are complete.
-7) **Reporter:** Generates a comprehensive final Markdown report for stakeholders.
-
-## Installation
-
-You can install the package directly via pip:
-
-```sh
-pip install my-dev-team
-```
-
-(For local development, clone the repository and run `pip install -e .`)
-
-## 1. Preparing Your Project File
-
-The crew requires a text file outlining your project requirements. By default, it looks for a specific header format to extract the project name and thread ID.
-
-Create a file named `project.txt`:
-
-```
-Subject: NEW PROJECT: Web Scraper CLI
-
-I need a Python command-line tool that scrapes articles from a given URL.
-It should extract the title, author, and main body text, and save the output as a JSON file.
-
-Requirements:
-- Use BeautifulSoup4 for parsing.
-- Include a `--url` argument and an `--output` argument.
-- Write unit tests for the parsing logic.
-```
-
-## 2. Usage (CLI)
-
-The fastest way to use the framework is via the terminal command included in the package.
-
-```sh
-devteam project.txt
-```
-
-### Advanced CLI Options
-
-You can easily switch between cloud providers and local models, and adjust rate limits based on your API tier:
-
-```sh
-# Run entirely locally for free using Ollama, with no rate limit!
-devteam project.txt --provider ollama
-
-# Run using OpenAI's flagship models, limited to 15 requests per minute
-devteam project.txt --provider openai --rpm 15
-
-# Resume an interrupted run exactly where it left off
-devteam --resume web_scraper_cli_20260312_083500
-```
-
-#### Available Arguments:
-
-* `project_file`: (Optional if resuming) Path to your project requirements text file.
-* `--resume`: Resume a specific thread ID (e.g., my_app_20260312_083500).
-* `--provider`: Choose the LLM backend. Options: groq, ollama (default), openai.
-* `--rpm`: API requests per minute. Set to 0 to disable rate limiting (default: 0).
-
-Note: Ensure you have the corresponding API keys (e.g., `GROQ_API_KEY`, `OPENAI_API_KEY`) set in your `.env` file, or ensure your local Ollama instance is running.
-
-## 3. Web Interface (Dashboard)
-
-In addition to the CLI, **My Dev Team** includes a fully interactive web dashboard powered by Streamlit. This is perfect for users who want visual control over the autonomous agents.
-
-To launch the web interface, make sure you have Streamlit installed (`pip install streamlit`), then run:
-
-```sh
-streamlit run app.py
-```
-
-### Dashboard Features
-
-- **Launch Projects:** Upload your project requirements text file directly through your browser and select your LLM provider.
-- **Granular Timeline:** View a deeply nested, chronological history of your AI crew's execution, cleanly displaying subgraph agent handoffs.
-- **Visual Time Travel:** Easily resume paused workflows, or inject human-in-the-loop feedback by targeting specific graph checkpoints directly from the UI dropdowns.
-
-## 4. Intelligent Model Routing (LLM Factory)
-
-**My Dev Team** doesn't just use one model for everything. It uses an advanced **Semantic Routing** architecture via `LLMFactory`.
-
-Instead of hardcoding a specific model (like `gpt-5.3-codex`), each agent requests a specific capability category and temperature. The Factory evaluates your chosen `--provider` and dynamically spins up the most cost-effective, capable model for that exact task.
-
-#### The Categories
-
-* `reasoning`: For the System Architect and Product Manager. Maps to deep-thinking models.
-* `code-generator`: For the Senior Developer. Maps to strict, syntax-heavy models.
-* `code-analyzer`: For the QA and Reviewer agents. Maps to deep-context evaluation models.
-* `fast-utility`: For the Reporter. Maps to blazing-fast, ultra-cheap models for simple text summarization.
-
-## 5. Usage (Python API)
+## Usage (Python API)
 
 If you want to integrate the crew into your own application, customize the LLM Factory's routing table, or override specific agent behaviors, use the clean Python API:
 
@@ -171,6 +190,7 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from devteam import VirtualCrew, ProjectManager, LLMFactory
 from devteam.agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
 from devteam.extensions import HumanInTheLoop, WorkspaceSaver
+from devteam.tools import DockerSandbox
 from devteam.utils import RateLimiter, TelemetryTracker
 
 load_dotenv()
@@ -191,7 +211,7 @@ def my_agents() -> dict:
 def my_extensions(project_folder: Path) -> list:
     """Add extensions like saving files to disk or requiring human approval."""
     return [
-        WorkspaceSaver(workspace_dir=workspace_dir),
+        WorkspaceSaver(workspace_dir=project_folder),
         HumanInTheLoop()
     ]
 
@@ -199,25 +219,27 @@ def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: Asyn
     return VirtualCrew(
         manager=ProjectManager(),
         agents=my_agents(),
-        extensions=my_extensions(projct_folder),
+        llm_factory=llm_factory,
+        extensions=my_extensions(project_folder),
         checkpointer=checkpointer,
         rate_limiter=RateLimiter(requests_per_minute=rpm) if rpm > 0 else None
     )
 
 async def main():
     requirements = "Build a simple Python calculator CLI with basic arithmetic."
+    thread_id = 'calc_run_01'
     workspace = Path('./workspaces/calculator_app')
     workspace.mkdir(parents=True, exist_ok=True)
     db_path = workspace / 'state.db'
     telemetry = TelemetryTracker()
-    factory = LLMFactory(provider='groq', callbacks=[telemetry])
+    llm_factory = LLMFactory(provider='groq', callbacks=[telemetry])
     try:
         async with aiosqlite.connect(db_path) as conn:
             checkpointer = AsyncSqliteSaver(conn)
-            crew = build_crew(workspace, provider='groq', checkpointer=checkpointer, rpm=30)
+            crew = build_crew(workspace, llm_factory, checkpointer, rpm=30)
             print("🚀 Starting the AI Dev Team...")
             final_state = await crew.execute(
-                thread_id="calc_run_01",
+                thread_id=thread_id,
                 requirements=requirements
             )
         if final_state.abort_requested:
@@ -234,7 +256,7 @@ async def main():
     except KeyboardInterrupt:
         print("\n\n🛑 Workflow interrupted by user (Ctrl+C).")
         print(f"💡 You can resume this exact state later by running:")
-        print(f"   dev-team --resume {thread_id}")
+        print(f"   devteam --resume {thread_id}")
     finally:
         telemetry.print_receipt()
 
@@ -281,3 +303,11 @@ def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: Asyn
         rate_limiter=RateLimiter(requests_per_minute=rpm) if rpm > 0 else None
     )
 ```
+
+## Contributing
+
+Pull requests are welcome. For major changes, please open an issue first...
+
+## License
+
+Distributed under the Apache 2.0 license. See `LICENSE` for more information.
