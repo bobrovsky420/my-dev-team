@@ -27,8 +27,8 @@ class TelemetryTracker(BaseCallbackHandler, CostOptimization):
         self.logger.info("Accumulated: %i %i %.6f", self.input_tokens, self.output_tokens, self.total_cost)
         tags = kwargs.get('tags', [])
         agent_name = next(
-            (tag.split(':', maxsplit=1)[1] for tag in tags if isinstance(tag, str) and tag.startswith('role:')),
-            'Unknown Agent'
+            (tag.split(':', maxsplit=1)[1] for tag in tags if isinstance(tag, str) and tag.startswith('node:')),
+            'unknown'
         )
         self.agent_calls[agent_name] += 1
         self.call_history.append({

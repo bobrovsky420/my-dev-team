@@ -59,14 +59,14 @@ def generate_thread_id(project_name: str) -> str:
 def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver, rpm: int = 0) -> VirtualCrew:
     """Instantiates the agents and returns the crew instance"""
     agents = {
-        'pm': ProductManager.from_config('product-manager.md'),
-        'architect': SystemArchitect.from_config('system-architect.md'),
-        'developer': SeniorDeveloper.from_config('senior-developer.md'),
-        'reviewer': CodeReviewer.from_config('code-reviewer.md'),
-#        'qa': QAEngineer.from_config('qa-engineer.md'),
-        'qa': QAEngineer.from_config('qa-engineer-sandbox.md').with_sandbox(DockerSandbox()),
-        'final_qa': FinalQAEngineer.from_config('final-qa-engineer.md'),
-        'reporter': Reporter.from_config('reporter.md')
+        'pm': ProductManager.from_config('pm', 'product-manager.md'),
+        'architect': SystemArchitect.from_config('architect', 'system-architect.md'),
+        'developer': SeniorDeveloper.from_config('developer', 'senior-developer.md'),
+        'reviewer': CodeReviewer.from_config('reviewer', 'code-reviewer.md'),
+#        'qa': QAEngineer.from_config('qa', 'qa-engineer.md'),
+        'qa': QAEngineer.from_config('qa', 'qa-engineer-sandbox.md').with_sandbox(DockerSandbox()),
+        'final_qa': FinalQAEngineer.from_config('final_qa', 'final-qa-engineer.md'),
+        'reporter': Reporter.from_config('reporter', 'reporter.md')
     }
     extensions = [
         WorkspaceSaver(workspace_dir=project_folder),

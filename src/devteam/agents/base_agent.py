@@ -20,18 +20,19 @@ class BaseAgent(Generic[T]):
     rate_limiter: RateLimiter = None
     output_schema: type[T]
 
-    def __init__(self, config: dict, prompt_template: str):
+    def __init__(self, config: dict, prompt_template: str, node_name: str):
         self.config = config
+        self.prompt_template = prompt_template
+        self.node_name = node_name
         self.role = config.get('role', 'Agent')
         self.name = config.get('name', None)
         self.model_category = config.get('model', self.model_category)
         self.base_temp = config.get('temperature', self.base_temp)
-        self.prompt_template = prompt_template
         self.logger = logging.getLogger(self.name or self.role)
 
     def _build_chain(self, temperature: float, retry_prompt: str = None):
         """Builds the LangChain pipeline"""
-        llm = self.llm_factory.create(category=self.model_category, temperature=temperature, role_name=self.name or self.role)
+        llm = self.llm_factory.create(category=self.model_category, temperature=temperature, node_name=self.node_name)
         prompt = self._build_prompt(retry_prompt)
         self.chain = prompt | llm
 
@@ -144,7 +145,7 @@ class BaseAgent(Generic[T]):
             raise ValueError(f"Failed to parse JSON. Error: {e}") from e
 
     @classmethod
-    def from_config(cls, config_path: str, *, model_category: str = None, temperature: float = None):
+    def from_config(cls, node_name: str, config_path: str, *, model_category: str = None, temperature: float = None):
         package_path = 'devteam.config.agents'
         try:
             prompt_file = resources.files(package_path).joinpath(config_path)
@@ -160,4 +161,4 @@ class BaseAgent(Generic[T]):
             config['model'] = model_category
         if temperature is not None:
             config['temperature'] = temperature
-        return cls(config, prompt)
+        return cls(config, prompt, node_name)

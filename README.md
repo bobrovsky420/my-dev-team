@@ -56,6 +56,8 @@ Estimated Cost:      $0.0145
 📈 Context Bloat: `reviewer` input grew by 3.2x (Started: 1200, Ended: 3840).
 ========================================
 
+This allows you to easily identify architectural token leaks, pinpoint which specific agent is struggling, and adjust your `llms.yaml` or prompt templates accordingly!
+
 ## AI Agents
 
 1) **Product Manager:** Analyzes requirements, asks clarifying questions, and writes detailed Technical Specifications.
@@ -176,14 +178,14 @@ load_dotenv()
 def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver, rpm: int = 0) -> VirtualCrew:
     # Initialize agents using built-in prompt templates
     agents = {
-        'pm': ProductManager.from_config('product-manager.md'),
-        'architect': SystemArchitect.from_config('system-architect.md'),
-        'developer': SeniorDeveloper.from_config('senior-developer.md'),
-        'reviewer': CodeReviewer.from_config('code-reviewer.md'),
-        'qa': QAEngineer.from_config('qa-engineer.md'),
-        'final_qa': FinalQAEngineer.from_config('final-qa-engineer.md'),
+        'pm': ProductManager.from_config('pm', 'product-manager.md'),
+        'architect': SystemArchitect.from_config('architect', 'system-architect.md'),
+        'developer': SeniorDeveloper.from_config('developer', 'senior-developer.md'),
+        'reviewer': CodeReviewer.from_config('reviewer', 'code-reviewer.md'),
+        'qa': QAEngineer.from_config('qa', 'qa-engineer-sandbox.md').with_sandbox(DockerSandbox()),
+        'final_qa': FinalQAEngineer.from_config('final_qa', 'final-qa-engineer.md'),
         # Example: Forcing the reporter to use a more creative reasoning model
-        'reporter': Reporter.from_config('reporter.md', model_category='reasoning', temperature=0.7)
+        'reporter': Reporter.from_config('reporter', 'reporter.md', model_category='reasoning', temperature=0.7)
     }
     # Add extensions like saving files to disk or requiring human approval
     extensions = [
