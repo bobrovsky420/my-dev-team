@@ -2,7 +2,8 @@ from importlib import resources
 import yaml
 
 def build_agents_from_config(config_name: str) -> dict:
-    # pylint: disable=import-outside-toplevel
+    """Agents factory"""
+    # pylint: disable=import-outside-toplevel,cyclic-import
     import devteam.agents as agents_module
     import devteam.tools as tools_module
     config_path = resources.files('devteam.config.crews').joinpath(config_name)

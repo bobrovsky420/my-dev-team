@@ -59,14 +59,14 @@ class TelemetryTracker(BaseCallbackHandler, CostOptimization):
         if model_provider == 'ollama':
             return 0
         try:
-            if model_name == 'groq/compound': model_name = 'openai/gpt-oss-120b'
+            if model_name == 'groq/compound': model_name = 'openai/gpt-oss-120b' # pylint: disable=multiple-statements
             p_cost, c_cost = cost_per_token(
                 model=f'{model_provider}/{model_name}',
                 prompt_tokens=input_tokens,
                 completion_tokens=output_tokens
             )
             return p_cost + c_cost
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-exception-caught
             self.logger.error("%s", e)
             return 0
 

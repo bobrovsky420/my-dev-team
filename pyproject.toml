@@ -46,5 +46,9 @@ disable = [
     "unnecessary-pass"
 ]
 
+[tool.pylint.design]
+max-args = 8
+max-positional-arguments = 8
+
 [tool.pylint.format]
 max-line-length = 160
