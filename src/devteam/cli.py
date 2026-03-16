@@ -81,7 +81,21 @@ def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: Asyn
         rate_limiter=RateLimiter(requests_per_minute=rpm) if rpm > 0 else None
     )
 
-async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume_thread: str = None, feedback: str = None, feedback_source: str = 'reviewer', checkpoint_id: str = None, show_history: bool = False):
+async def show_history(thread_id: str = None):
+    project_folder = WORKSPACES_DIR / thread_id
+    db_path = project_folder / 'state.db'
+    llm_factory = LLMFactory(provider='ollama')
+    async with aiosqlite.connect(db_path) as conn:
+        checkpointer = AsyncSqliteSaver(conn)
+        crew = build_crew(project_folder, llm_factory, checkpointer)
+        print("🕰️ Fetching timeline history...")
+        history_data = await crew.get_history(thread_id)
+        for cp in history_data:
+            ns_display = cp['ns'].split(':')[0]
+            print(ns_display)
+            print(f"[{cp['time']}] [{ns_display[:12].center(12)}] Checkpoint: {cp['c_id']} | Next: {cp['node']}")
+
+async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume_thread: str = None, feedback: str = None, feedback_source: str = 'reviewer', checkpoint_id: str = None):
     if resume_thread:
         thread_id = resume_thread
         project_requirements = None
@@ -99,14 +113,6 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
         async with aiosqlite.connect(db_path) as conn:
             checkpointer = AsyncSqliteSaver(conn)
             crew = build_crew(project_folder, llm_factory, checkpointer, rpm)
-            if show_history:
-                print("🕰️ Fetching timeline history...")
-                history_data = await crew.get_history(thread_id)
-                for cp in history_data:
-                    ns_display = cp['ns'].split(':')[0]
-                    print(ns_display)
-                    print(f"[{cp['time']}] [{ns_display[:12].center(12)}] Checkpoint: {cp['c_id']} | Next: {cp['node']}")
-                return
             print("🚀 Starting AI Dev Team...")
             print(f"📁 Workspace: {project_folder.absolute()}\n")
             final_state = await crew.execute(
@@ -167,6 +173,12 @@ def main():
     else:
         parser.error("You must provide either a project_file OR the --resume flag.")
 
+    if args.history:
+        asyncio.run(show_history(
+            thread_id=args.resume,
+        ))
+        return
+
     asyncio.run(async_main(
         args.project_file,
         args.provider,
@@ -174,8 +186,7 @@ def main():
         resume_thread=args.resume,
         feedback=args.feedback,
         feedback_source=args.as_node,
-        checkpoint_id=args.checkpoint, # 🌟 Pass checkpoint
-        show_history=args.history
+        checkpoint_id=args.checkpoint
     ))
 
 if __name__ == '__main__':

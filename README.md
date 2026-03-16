@@ -203,7 +203,6 @@ async def main():
         print("\n\n🛑 Workflow interrupted by user (Ctrl+C).")
         print(f"💡 You can resume this exact state later by running:")
         print(f"   dev-team --resume {thread_id}")
-
     finally:
         telemetry.print_receipt()
 
