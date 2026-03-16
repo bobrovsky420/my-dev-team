@@ -56,26 +56,35 @@ def generate_thread_id(project_name: str) -> str:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     return f"{safe_name}_{timestamp}"
 
-def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver, rpm: int = 0) -> VirtualCrew:
-    """Instantiates the agents and returns the crew instance"""
-    agents = {
-        'pm': ProductManager.from_config('pm', 'product-manager.md'),
-        'architect': SystemArchitect.from_config('architect', 'system-architect.md'),
-        'developer': SeniorDeveloper.from_config('developer', 'senior-developer.md'),
-        'reviewer': CodeReviewer.from_config('reviewer', 'code-reviewer.md'),
-#        'qa': QAEngineer.from_config('qa', 'qa-engineer.md'),
-        'qa': QAEngineer.from_config('qa', 'qa-engineer-sandbox.md').with_sandbox(DockerSandbox()),
-        'final_qa': FinalQAEngineer.from_config('final_qa', 'final-qa-engineer.md'),
-        'reporter': Reporter.from_config('reporter', 'reporter.md')
+def my_agents() -> dict:
+    agent_blueprints = {
+        'pm': (ProductManager, 'product-manager.md'),
+        'architect': (SystemArchitect, 'system-architect.md'),
+        'developer': (SeniorDeveloper, 'senior-developer.md'),
+        'reviewer': (CodeReviewer, 'code-reviewer.md'),
+        'qa': (QAEngineer, 'qa-engineer-sandbox.md'),
+        'final_qa': (FinalQAEngineer, 'final-qa-engineer.md'),
+        'reporter': (Reporter, 'reporter.md')
     }
-    extensions = [
+    agents = {
+        node_name: cls.from_config(node_name, config_file)
+        for node_name, (cls, config_file) in agent_blueprints.items()
+    }
+    agents['qa'] = agents['qa'].with_sandbox(DockerSandbox())
+    return agents
+
+def my_extensions(project_folder: Path) -> list:
+    return [
         WorkspaceSaver(workspace_dir=project_folder),
         HumanInTheLoop()
     ]
+
+def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver, rpm: int = 0) -> VirtualCrew:
+    """Instantiates the agents and returns the crew instance"""
     return VirtualCrew(
         manager=ProjectManager(),
-        agents=agents,
-        extensions=extensions,
+        agents=my_agents(),
+        extensions=my_extensions(project_folder),
         llm_factory=llm_factory,
         checkpointer=checkpointer,
         rate_limiter=RateLimiter(requests_per_minute=rpm) if rpm > 0 else None
