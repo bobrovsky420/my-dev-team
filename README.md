@@ -175,9 +175,9 @@ from devteam.utils import RateLimiter, TelemetryTracker
 
 load_dotenv()
 
-def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver, rpm: int = 0) -> VirtualCrew:
-    # Initialize agents using built-in prompt templates
-    agents = {
+def my_agents() -> dict:
+    """Initialize agents using built-in prompt templates."""
+    return {
         'pm': ProductManager.from_config('pm', 'product-manager.md'),
         'architect': SystemArchitect.from_config('architect', 'system-architect.md'),
         'developer': SeniorDeveloper.from_config('developer', 'senior-developer.md'),
@@ -187,15 +187,19 @@ def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: Asyn
         # Example: Forcing the reporter to use a more creative reasoning model
         'reporter': Reporter.from_config('reporter', 'reporter.md', model_category='reasoning', temperature=0.7)
     }
-    # Add extensions like saving files to disk or requiring human approval
-    extensions = [
+
+def my_extensions(project_folder: Path) -> list:
+    """Add extensions like saving files to disk or requiring human approval."""
+    return [
         WorkspaceSaver(workspace_dir=workspace_dir),
         HumanInTheLoop()
     ]
+
+def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver, rpm: int = 0) -> VirtualCrew:
     return VirtualCrew(
         manager=ProjectManager(),
-        agents=agents,
-        extensions=extensions,
+        agents=my_agents(),
+        extensions=my_extensions(projct_folder),
         checkpointer=checkpointer,
         rate_limiter=RateLimiter(requests_per_minute=rpm) if rpm > 0 else None
     )
@@ -236,4 +240,44 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+```
+
+## Customizing the Crew
+
+**My Dev Team** is completely configuration-driven. You don't need to write Python code to change how the agents are built or which prompts they use.
+
+The entire agent roster is defined in `config/crew.yaml`. The framework uses dynamic module reflection to read this file and build the LangGraph workflow on the fly.
+
+**Example `config/small_crew.yaml`:**
+```yaml
+agents:
+    pm:
+        class: ProductManager
+        config: product-manager.md
+    developer:
+        class: SeniorDeveloper
+        config: senior-developer.md
+```
+
+You can rewrite the previous example as follows:
+
+```python
+from devteam.utils import build_agents_from_config
+
+def my_extensions(project_folder: Path) -> list:
+    return [
+        WorkspaceSaver(workspace_dir=project_folder),
+        HumanInTheLoop()
+    ]
+
+def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver, rpm: int = 0) -> VirtualCrew:
+    """Instantiates the agents and returns the crew instance"""
+    return VirtualCrew(
+        manager=ProjectManager(),
+        agents=build_agents_from_config('basic.yaml'),
+        extensions=my_extensions(project_folder),
+        llm_factory=llm_factory,
+        checkpointer=checkpointer,
+        rate_limiter=RateLimiter(requests_per_minute=rpm) if rpm > 0 else None
+    )
 ```

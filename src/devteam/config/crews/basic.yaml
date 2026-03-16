@@ -1,0 +1,23 @@
+agents:
+    pm:
+        class: ProductManager
+        config: product-manager.md
+    architect:
+        class: SystemArchitect
+        config: system-architect.md
+    developer:
+        class: SeniorDeveloper
+        config: senior-developer.md
+    reviewer:
+        class: CodeReviewer
+        config: code-reviewer.md
+    qa:
+        class: QAEngineer
+        config: qa-engineer-sandbox.md
+        sandbox: DockerSandbox
+    final_qa:
+        class: FinalQAEngineer
+        config: final-qa-engineer.md
+    reporter:
+        class: Reporter
+        config: reporter.md

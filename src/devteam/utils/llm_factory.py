@@ -20,6 +20,7 @@ class LLMFactory:
 
     def create(self, category: str, temperature: float, *, node_name: str = None) -> BaseChatModel:
         """Returns a configured LLM instance."""
+        # pylint: disable=import-error,import-outside-toplevel
         model_name = self.model_map[self.provider].get(category, self.model_map[self.provider]['reasoning'])
         match self.provider:
             case 'ollama':

@@ -10,10 +10,8 @@ from dotenv import load_dotenv
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from devteam import VirtualCrew, ProjectManager, LLMFactory
-from devteam.agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
 from devteam.extensions import HumanInTheLoop, WorkspaceSaver
-from devteam.tools import DockerSandbox
-from devteam.utils import RateLimiter, TelemetryTracker
+from devteam.utils import RateLimiter, TelemetryTracker, build_agents_from_config
 
 WORKSPACES_DIR = Path('workspaces')
 
@@ -56,23 +54,6 @@ def generate_thread_id(project_name: str) -> str:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     return f"{safe_name}_{timestamp}"
 
-def my_agents() -> dict:
-    agent_blueprints = {
-        'pm': (ProductManager, 'product-manager.md'),
-        'architect': (SystemArchitect, 'system-architect.md'),
-        'developer': (SeniorDeveloper, 'senior-developer.md'),
-        'reviewer': (CodeReviewer, 'code-reviewer.md'),
-        'qa': (QAEngineer, 'qa-engineer-sandbox.md'),
-        'final_qa': (FinalQAEngineer, 'final-qa-engineer.md'),
-        'reporter': (Reporter, 'reporter.md')
-    }
-    agents = {
-        node_name: cls.from_config(node_name, config_file)
-        for node_name, (cls, config_file) in agent_blueprints.items()
-    }
-    agents['qa'] = agents['qa'].with_sandbox(DockerSandbox())
-    return agents
-
 def my_extensions(project_folder: Path) -> list:
     return [
         WorkspaceSaver(workspace_dir=project_folder),
@@ -83,7 +64,7 @@ def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: Asyn
     """Instantiates the agents and returns the crew instance"""
     return VirtualCrew(
         manager=ProjectManager(),
-        agents=my_agents(),
+        agents=build_agents_from_config('basic.yaml'),
         extensions=my_extensions(project_folder),
         llm_factory=llm_factory,
         checkpointer=checkpointer,
