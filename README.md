@@ -30,6 +30,16 @@ Code and configuration are strictly separated to make the framework maintainable
 * **Agent Prompts (`config/agents/**`):** Every agent's persona, system instructions, and constraints are stored as clean Markdown files with YAML frontmatter. No massive, hardcoded prompt strings cluttering the Python logic!
 * **Sandbox Environments (`config/sandbox.yaml`):** Docker base images and test execution commands for various runtimes (Python, Node.js) are completely decoupled. You can easily add support for entirely new programming languages by simply defining the image and test command in YAML, without touching the core Python engine.
 
+## AI Agents
+
+1) **Product Manager:** Analyzes requirements, asks clarifying questions, and writes detailed Technical Specifications.
+2) **System Architect:** Breaks specifications down into a cohesive backlog of developer tasks.
+3) **Senior Developer:** Incrementally writes code and unit tests for the current task.
+4) **Code Reviewer:** Analyzes the generated code for security, style, and logic issues.
+5) **QA Engineer:** Mentally simulates execution and evaluates the code against the task requirements.
+6) **Final QA Engineer:** Performs a full-repository integration test once all tasks are complete.
+7) **Reporter:** Generates a comprehensive final Markdown report for stakeholders.
+
 ## Installation
 
 You can install the package directly via pip:
@@ -200,13 +210,3 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
-
-## AI Agents
-
-1) **Product Manager:** Analyzes requirements, asks clarifying questions, and writes detailed Technical Specifications.
-2) **System Architect:** Breaks specifications down into a cohesive backlog of developer tasks.
-3) **Senior Developer:** Incrementally writes code and unit tests for the current task.
-4) **Code Reviewer:** Analyzes the generated code for security, style, and logic issues.
-5) **QA Engineer:** Mentally simulates execution and evaluates the code against the task requirements.
-6) **Final QA Engineer:** Performs a full-repository integration test once all tasks are complete.
-7) **Reporter:** Generates a comprehensive final Markdown report for stakeholders.
