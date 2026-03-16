@@ -14,15 +14,36 @@ from devteam.extensions import HumanInTheLoop, WorkspaceSaver
 from devteam.utils import RateLimiter, TelemetryTracker, build_agents_from_config
 
 WORKSPACES_DIR = Path('workspaces')
+LOG_FILE_NAME = 'mycrew.log'
 
-def setup_logging(file_level = logging.DEBUG, console_level = logging.INFO):
-    file_handler = logging.FileHandler('mycrew.log', encoding='utf-8')
+class ConsoleDispatchFormatter(logging.Formatter):
+    """Custom formatter for console output."""
+    def __init__(self):
+        super().__init__()
+        self.root_formatter = logging.Formatter(fmt='%(message)s')
+        self.default_formatter = logging.Formatter(fmt='%(name)s: %(message)s')
+
+    def format(self, record):
+        if record.name == 'root':
+            return self.root_formatter.format(record)
+        else:
+            return self.default_formatter.format(record)
+
+def setup_logging(verbose = False, *, file_level = logging.DEBUG, console_level = logging.INFO):
+    file_handler = logging.FileHandler(LOG_FILE_NAME, encoding='utf-8')
     file_handler.setLevel(file_level)
-    console_handler = logging.StreamHandler()
+    if verbose:
+        console_level = logging.DEBUG
+    console_handler = logging.StreamHandler(sys.stderr)
     console_handler.setLevel(console_level)
+    file_formatter = logging.Formatter(
+        fmt='%(asctime)s | %(levelname)-8s | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    file_handler.setFormatter(file_formatter)
+    console_handler.setFormatter(ConsoleDispatchFormatter())
     logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(levelname)s [%(name)s]: %(message)s',
+        level=logging.DEBUG, # This is the root level
         handlers=[file_handler, console_handler]
     )
     logging.getLogger('aiosqlite').setLevel(logging.WARNING)
@@ -78,7 +99,7 @@ async def show_history(thread_id: str = None):
     async with aiosqlite.connect(db_path) as conn:
         checkpointer = AsyncSqliteSaver(conn)
         crew = build_crew(project_folder, llm_factory, checkpointer)
-        print("🕰️ Fetching timeline history...")
+        logging.info("🕰️ Fetching timeline history...")
         history_data = await crew.get_history(thread_id)
         for cp in history_data:
             ns_display = cp['ns'].split(':')[0]
@@ -89,11 +110,11 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
     if resume_thread:
         thread_id = resume_thread
         project_requirements = None
-        print(f"🔄 Resuming existing project thread: {thread_id}")
+        logging.info("🔄 Resuming existing project thread: %s", thread_id)
     else:
         project_name, project_requirements = load_project_spec(project_file_path)
         thread_id = generate_thread_id(project_name)
-        print(f"🚀 Starting NEW project: {project_name}")
+        logging.info("🚀 Starting NEW project: %s", project_name)
     project_folder = WORKSPACES_DIR / thread_id
     project_folder.mkdir(parents=True, exist_ok=True)
     db_path = project_folder / 'state.db'
@@ -103,8 +124,8 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
         async with aiosqlite.connect(db_path) as conn:
             checkpointer = AsyncSqliteSaver(conn)
             crew = build_crew(project_folder, llm_factory, checkpointer, rpm)
-            print("🚀 Starting AI Dev Team...")
-            print(f"📁 Workspace: {project_folder.absolute()}\n")
+            logging.info("🚀 Starting AI Dev Team...")
+            logging.info("📁 Workspace: %s", project_folder.absolute())
             final_state = await crew.execute(
                 thread_id=thread_id,
                 requirements=project_requirements,
@@ -113,14 +134,14 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
                 checkpoint_id=checkpoint_id
             )
         if final_state.abort_requested:
-            print("\n❌ Workflow aborted by user or validation failure.")
+            logging.error("❌ Workflow aborted by user or validation failure.")
             return
         if final_state.success:
             print("\n🎉 PROJECT COMPLETED SUCCESSFULLY!")
             print(f"Total Revisions: {final_state.total_revisions}\n")
             print(final_state.final_report or "No report generated.")
         else:
-            print("\n🚨 RELEASE FAILED: Integration bugs found!")
+            logging.error("🚨 RELEASE FAILED: Integration bugs found!")
             for bug in final_state.integration_bugs:
                 print(f" - {bug}")
             print("\nNote: In a production system, these would be appended to the Phase 2 Backlog.")
@@ -131,14 +152,13 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
             f"   devteam --resume {thread_id}"
         ))
     except asyncio.CancelledError:
-        print("\n\n🛑 Async execution cancelled")
+        logging.error("🛑 Async execution cancelled")
     finally:
         telemetry.print_receipt()
         telemetry.generate_optimization_report()
 
 def main():
     load_dotenv()
-    setup_logging()
 
     parser = argparse.ArgumentParser(description="Run the AI Dev Team autonomous framework.")
     parser.add_argument('project_file', nargs='?', help="path to the text file containing your project requirements")
@@ -149,17 +169,20 @@ def main():
     parser.add_argument('--as-node', type=str, default='reviewer', choices=['pm', 'architect', 'reviewer', 'qa'], help="which agent should deliver this feedback (forces graph routing)")
     parser.add_argument('--history', action='store_true', help="print the timeline of checkpoints for this thread and exit")
     parser.add_argument('--checkpoint', type=str, help="specific checkpoint ID to rewind to before injecting feedback")
+    parser.add_argument("--verbose", action='store_true', help="enable debug logging")
 
     args = parser.parse_args()
+
+    setup_logging(args.verbose)
 
     if args.resume:
         path = WORKSPACES_DIR / args.resume
         if not path.exists():
-            print(f"❌ Error: Could not find workspace for thread '{args.resume}'")
+            logging.error("❌ Error: Could not find workspace for thread '%s'", args.resume)
             sys.exit(1)
     elif args.project_file:
         if not Path(args.project_file).exists():
-            print(f"❌ Error: Could not find project file '{args.project_file}'")
+            logging.error("❌ Error: Could not find project file '%s'", args.project_file)
             sys.exit(1)
     else:
         parser.error("You must provide either a project_file OR the --resume flag.")

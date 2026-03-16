@@ -132,7 +132,7 @@ stateDiagram-v2
     dev : Senior Developer
     reviewer : Code Reviewer
     qa : QA Engineer
-    final_qa : Final QA
+    final_qa : Final QA Engineer
     reporter : Reporter
     [*] --> pm
     pm --> human
