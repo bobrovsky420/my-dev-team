@@ -35,6 +35,7 @@ class DockerSandbox:
         if not config:
             return f"⚠️ Sandbox Error: Unsupported runtime '{runtime}'. Supported runtimes: {list(self.runtimes.keys())}"
         self.pull_image(config['image'])
+        container = None
         try:
             container = self.client.containers.run(
                 image=config['image'],
@@ -49,10 +50,15 @@ class DockerSandbox:
             result = container.wait(timeout=timeout)
             exit_code = result['StatusCode']
             logs = container.logs(stdout=True, stderr=True).decode('utf-8')
-            container.remove()
             if exit_code == 0:
                 return f"✅ Tests Passed:\n{logs}"
             else:
                 return f"❌ Tests Failed (Exit Code {exit_code}):\n{logs}"
         except Exception as e: # pylint: disable=broad-exception-caught
             return f"⚠️ Sandbox Execution Error: {str(e)}"
+        finally:
+            if container:
+                try:
+                    container.remove(force=True)
+                except Exception: # pylint: disable=broad-exception-caught
+                    self.logger.warning("Failed to remove container %s", container.id)
