@@ -125,6 +125,15 @@ Note: Ensure you have the corresponding API keys (e.g., `GROQ_API_KEY`, `OPENAI_
 
 ```mermaid
 stateDiagram-v2
+    pm : Product Manager
+    human : Human in the Loop
+    architect : System Architect
+    officer : Project Officer
+    dev : Senior Developer
+    reviewer : Code Reviewer
+    qa : QA Engineer
+    final_qa : Final QA
+    reporter : Reporter
     [*] --> pm
     pm --> human
     human --> pm
