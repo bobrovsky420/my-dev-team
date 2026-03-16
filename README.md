@@ -152,13 +152,13 @@ stateDiagram-v2
 
 **How the routing works:**
 
-* **Requirements Gathering:** The Product Manager (`pm`) loops with a `human` to refine requirements before development begins.
+* **Requirements Gathering:** The **Product Manager** loops with a **Human** to refine requirements before development begins.
 
-* **Task Orchestration:** The Architect designs the system, and the `officer` orchestrates the task backlog, routing individual tickets to the Developer.
+* **Task Orchestration:** The **System Architect** designs the system, and the **Project Officer** orchestrates the task backlog, routing individual tickets to the **Senior Developer**.
 
-* **The Refinement Loop:** The Developer (`dev`), `reviewer`, and `qa` agents operate in a strict self-healing loop. Code is repeatedly analyzed and tested; if bugs or style issues are found, the state routes directly back to the Developer for revisions.
+* **The Refinement Loop:** The **Senior Developer**, **Code Reviewer**, and **QA Engineer** agents operate in a strict self-healing loop. Code is repeatedly analyzed and tested; if bugs or style issues are found, the state routes directly back to the **Senior Developer** for revisions.
 
-* **Final Delivery:** Once the `officer` confirms all tasks are complete, the final `qa` runs full-repository integration tests before the `reporter` generates the final documentation.
+* **Final Delivery:** Once the **Project Officer** confirms all tasks are complete, the **Final QA Engineer** runs full-repository integration tests before the **Reporter** generates the final documentation.
 
 ### Intelligent Model Routing (LLM Factory)
 
