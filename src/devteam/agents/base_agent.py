@@ -1,3 +1,4 @@
+import asyncio
 from functools import cached_property
 from importlib import resources
 from typing import Generic, TypeVar
@@ -121,10 +122,15 @@ class BaseAgent(Generic[T]):
     def parser(self) -> PydanticOutputParser:
         return PydanticOutputParser(pydantic_object=self.output_schema)
 
+    llm_timeout: int = 120
+
     async def _invoke_llm(self, **kwargs) -> str:
         if self.rate_limiter:
             await self.rate_limiter.wait_if_needed()
-        response = await self.chain.ainvoke(kwargs)
+        try:
+            response = await asyncio.wait_for(self.chain.ainvoke(kwargs), timeout=self.llm_timeout)
+        except asyncio.TimeoutError:
+            raise TimeoutError(f"LLM call timed out after {self.llm_timeout}s") from None
         response = response.content
         self.logger.debug("\n%s", response)
         return response

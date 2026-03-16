@@ -1,5 +1,5 @@
 import operator
-from typing import Dict, TypedDict, Annotated, List, NotRequired
+from typing import Any, Dict, TypedDict, Annotated, List, NotRequired
 
 def add_ints(a: int, b: int) -> int:
     """Safe reducer for accumulating integers across tasks."""
@@ -11,7 +11,7 @@ class ProjectState(TypedDict):
     human_answer: str
     clarification_question: str
     runtime: str
-    pending_tasks: List[str]
+    pending_tasks: List[Dict[str, Any]]
     workspace_files: Dict[str, str]
     current_task_index: int
     current_task: str

@@ -1,5 +1,8 @@
 from importlib import resources
+import logging
 import yaml
+
+logger = logging.getLogger("Crew Factory")
 
 def build_agents_from_config(config_name: str) -> dict:
     """Agents factory"""
@@ -15,12 +18,12 @@ def build_agents_from_config(config_name: str) -> dict:
         AgentClass = getattr(agents_module, class_name, None)
         if not AgentClass:
             raise ValueError(f"Configuration Error: '{class_name}' is not a valid class in devteam.agents")
-        print(f"Instantiating '{node_name}' as {class_name} with configuration file '{config_file}'...")
+        logger.debug("Instantiating '%s' as %s with configuration file '%s'...", node_name, class_name, config_file)
         agents[node_name] = AgentClass.from_config(node_name, config_file)
         if sandbox_class := details.get('sandbox', None):
             ToolsClass = getattr(tools_module, sandbox_class, None)
             if not ToolsClass:
                 raise ValueError(f"Configuration Error: '{class_name}' is not a valid class in devteam.tools")
-            print(f"    Adding {sandbox_class} tool to '{node_name}'...")
+            logger.debug("Adding %s tool to '%s'...", sandbox_class, node_name)
             agents[node_name] = agents[node_name].with_sandbox(ToolsClass())
     return agents

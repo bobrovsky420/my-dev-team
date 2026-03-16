@@ -1,6 +1,9 @@
 import logging
 from collections import defaultdict
+from functools import cached_property
+from importlib import resources
 from typing import Any, Dict, List
+import yaml
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
 from litellm import cost_per_token
@@ -56,12 +59,20 @@ class TelemetryTracker(BaseCallbackHandler, CostOptimization):
             'output_tokens': output_tokens
         }
 
+    @cached_property
+    def llm_aliases(self) -> dict:
+        try:
+            config = yaml.safe_load(resources.files('defteam.config').joinpath('llms.yaml').read_text(encoding='utf-8'))
+            return config.get('aliases', {})
+        except Exception: # pylint: disable=broad-exception-caught
+            return {}
+
     def _calculate_cost(self, model_provider: str, model_name: str, input_tokens: int, output_tokens: int):
         """Calculates the cost based on the specific model used"""
         if model_provider == 'ollama':
             return 0
         try:
-            if model_name == 'groq/compound': model_name = 'openai/gpt-oss-120b' # pylint: disable=multiple-statements
+            model_name = self.aliases.get(model_name, model_name)
             p_cost, c_cost = cost_per_token(
                 model=f'{model_provider}/{model_name}',
                 prompt_tokens=input_tokens,
@@ -69,7 +80,7 @@ class TelemetryTracker(BaseCallbackHandler, CostOptimization):
             )
             return p_cost + c_cost
         except Exception as e: # pylint: disable=broad-exception-caught
-            self.logger.error("%s", e)
+            self.logger.error("Cost calculation failed for %s/%s: %s", model_provider, model_name, e)
             return 0
 
     def print_receipt(self):

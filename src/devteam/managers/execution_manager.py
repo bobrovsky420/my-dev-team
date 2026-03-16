@@ -4,7 +4,9 @@ from ..utils import is_approved_status
 from .base_manager import BaseManager
 
 class StandardExecutionManager(BaseManager):
-    max_revision_count = 3
+    def __init__(self, max_revision_count: int = 3):
+        super().__init__()
+        self.max_revision_count = max_revision_count
 
     def build_graph(self, agents: dict, **kwargs) -> StateGraph:
         workflow = StateGraph(ProjectState)

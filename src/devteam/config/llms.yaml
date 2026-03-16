@@ -14,3 +14,6 @@ providers:
         code-generator: 'gpt-4o'
         code-analyzer: 'gpt-4o'
         fast-utility: 'gpt-4o-mini'
+
+aliases:
+    'groq/compound': 'openai/gpt-oss-120b'

@@ -16,7 +16,7 @@ class CostOptimization:
                 warnings.append(f"⚠️  Thrashing Detected: `{agent}` was called {count} times. The agent might be stuck in a failure loop.")
 
         # 2. Detect Context Bloat (Input tokens growing exponentially)
-        for agent in set([c['agent'] for c in self.call_history]):
+        for agent in {[c['agent'] for c in self.call_history]}:
             agent_calls = [c for c in self.call_history if c['agent'] == agent]
             if len(agent_calls) > 2:
                 first_input = agent_calls[0]['input_tokens']
