@@ -165,6 +165,8 @@ def main():
         parser.error("You must provide either a project_file OR the --resume flag.")
 
     if args.history:
+        if not args.resume:
+            parser.error("--history requires --resume <thread_id> to specify which project to inspect.")
         asyncio.run(show_history(
             thread_id=args.resume,
         ))

@@ -28,7 +28,7 @@ class CostOptimization:
         waste_flagged = False
         for call in self.call_history:
             if call['input_tokens'] > 5000 and call['output_tokens'] < 50 and not waste_flagged:
-                warnings.append(f"🗑️  High Waste Ratio: `{call['agent']}` received {call['input']} tokens but only generated {call['output']} tokens.")
+                warnings.append(f"🗑️  High Waste Ratio: `{call['agent']}` received {call['input_tokens']} tokens but only generated {call['output_tokens']} tokens.")
                 waste_flagged = True
 
         if warnings:

@@ -50,3 +50,5 @@ class LLMFactory:
                     callbacks=self.callbacks,
                     tags=[f'node:{node_name}']
                 )
+            case _:
+                raise ValueError(f"Unsupported provider: {self.provider}")

@@ -139,8 +139,8 @@ class BaseAgent(Generic[T]):
             clean_json = self._clean_response(response)
             clean_json = clean_json.replace('```json', '').replace('```', '').strip()
             return self.parser.invoke(clean_json)
-        except ValidationError as e:
-            raise ValidationError(f"Schema mismatch: {e}") from e
+        except ValidationError:
+            raise
         except Exception as e:
             raise ValueError(f"Failed to parse JSON. Error: {e}") from e
 

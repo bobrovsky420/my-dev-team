@@ -41,6 +41,8 @@ class TelemetryTracker(BaseCallbackHandler, CostOptimization):
     def _extract_metadata(self, response) -> dict:
         input_tokens = 0
         output_tokens = 0
+        model_provider = 'unknown'
+        model_name = 'unknown'
         for generation in (x for row in response.generations for x in row):
             model_provider = generation.message.response_metadata.get('model_provider', 'unknown')
             model_name = generation.message.response_metadata.get('model_name', 'unknown')
