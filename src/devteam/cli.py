@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import logging
 import re
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -157,11 +158,17 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
         telemetry.print_receipt()
         telemetry.generate_optimization_report()
 
+def launch_ui():
+    app_path = Path(__file__).parent / 'app.py'
+    logging.info("🚀 Launching My Dev Team Dashboard...")
+    subprocess.run([sys.executable, '-m', 'streamlit', 'run', str(app_path)])
+
 def main():
     load_dotenv()
 
     parser = argparse.ArgumentParser(description="Run the AI Dev Team autonomous framework.")
     parser.add_argument('project_file', nargs='?', help="path to the text file containing your project requirements")
+    parser.add_argument('--ui', action='store_true', help="launch the local web dashboard")
     parser.add_argument('--resume', type=str, help="resume a specific thread ID")
     parser.add_argument('--provider', type=str, default='ollama', choices=['groq', 'ollama', 'openai'], help="LLM provider to use (default: ollama)")
     parser.add_argument('--rpm', type=int, default=0, help="API requests per minute (default: 0 = none)")
@@ -174,6 +181,10 @@ def main():
     args = parser.parse_args()
 
     setup_logging(args.verbose)
+
+    if args.ui:
+        launch_ui()
+        return
 
     if args.resume:
         path = WORKSPACES_DIR / args.resume

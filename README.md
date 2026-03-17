@@ -84,12 +84,12 @@ devteam project.txt
 
 ### Web Interface (Dashboard)
 
-In addition to the CLI, **My Dev Team** includes a fully interactive web dashboard powered by Streamlit. This is perfect for users who want visual control over the autonomous agents.
+In addition to the terminal CLI, **My Dev Team** includes a fully interactive web dashboard powered by Streamlit. This is perfect for users who want visual control over the autonomous agents.
 
-To launch the web interface, make sure you have Streamlit installed (`pip install streamlit`), then run:
+Make sure you have Streamlit installed (`pip install streamlit`), and simply run:
 
 ```sh
-streamlit run app.py
+devteam --ui
 ```
 
 ### Advanced CLI Options
