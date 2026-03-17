@@ -45,6 +45,9 @@ dependencies = [
     "docker>=7.1.0"
 ]
 
+[project.optional-dependencies]
+ui = ["streamlit>=1.55.0"]
+
 [project.urls]
 "Homepage" = "https://github.com/bobrovsky420/my-dev-team"
 "Bug Tracker" = "https://github.com/bobrovsky420/my-dev-team/issues"

@@ -6,9 +6,12 @@
 
 An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes raw project requirements and processes them through a multi-agent workflow (Product Manager, System Architect, Developers, and QA) to incrementally build, test, and deliver production-ready code.
 
+**Unlike third-party SaaS platforms, My Dev Team is a local-first orchestrator.** Your workspace, SQLite state database, and review trails live 100% on your machine. You can run the entire crew locally for free using Ollama for zero data egress, or connect to cloud APIs (OpenAI, Groq) knowing your proprietary codebase is never stored on an external platform's servers.
+
 ## Core Features
 
 * **Multi-Agent Architecture:** Specialized AI agents handle distinct phases of the software development lifecycle.
+* **Local-First & Privacy-Focused:** You own your data. The orchestrator, memory checkpointer, and file system execute strictly on your local hardware. Your code and requirements never sit on a third-party dashboard.
 * **Semantic Model Routing:** Automatically routes tasks to the most cost-effective or capable LLMs based on the task type (reasoning, coding, or fast-utility).
 * **Strict Test-Driven Development (TDD):** Testing is never an afterthought. Tasks are generated with embedded testing criteria, and the Developer writes unit tests alongside implementation code for immediate QA validation.
 * **State Recovery & Resiliency:** Powered by asynchronous SQLite checkpointing. If an API rate limit is hit or a workflow is interrupted, you can resume the exact thread without losing a single token of progress.
@@ -39,7 +42,7 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 **Optional Dependencies:**
 
 * **Docker Engine** required only if you intend to use the Sandboxed QA code execution features.
-* **Streamlit** required only to launch the web dashboard (`pip install streamlit`).
+* **Streamlit** required only to launch the web dashboard. You can install it separately or run `pip install my-dev-team[ui]`.
 
 ### Installation
 
