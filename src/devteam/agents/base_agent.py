@@ -79,7 +79,7 @@ class BaseAgent(Generic[T]):
 
     def _bump_temperature(self, attempt: int, last_error: Exception):
         new_temp = min(self.temperature + (attempt * 0.1), 1.0)
-        self.logger.info("Bumping temperature to %.1f for retry", new_temp)
+        self.logger.debug("Bumping temperature to %.1f for retry", new_temp)
         retry_prompt = self._bump_prompt(last_error)
         self._build_chain(temperature=new_temp, retry_prompt=retry_prompt)
 
@@ -133,7 +133,7 @@ class BaseAgent(Generic[T]):
         except asyncio.TimeoutError:
             raise TimeoutError(f"LLM call timed out after {self.llm_timeout} seconds") from None
         response = response.content
-        self.logger.debug("\n%s", response)
+        self.logger.debug("Raw Response:\n%s", response)
         return response
 
     def _clean_response(self, text: str) -> str:

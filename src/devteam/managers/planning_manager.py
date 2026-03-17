@@ -17,7 +17,7 @@ class PlanningManager(BaseManager):
         return workflow.compile(interrupt_before=['human'])
 
     def dummy_human_node(self, state: dict) -> dict:
-        self.logger.info("Human input received. Resuming workflow...")
+        self.logger.debug("Human input received. Resuming workflow...")
         return {'clarification_question': ''}
 
     def route_start(self, state: dict) -> str:

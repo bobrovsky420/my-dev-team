@@ -29,7 +29,7 @@ class TelemetryTracker(BaseCallbackHandler, CostOptimization):
         self.input_tokens += metadata['input_tokens']
         self.output_tokens += metadata['output_tokens']
         self.total_cost += self._calculate_cost(metadata['model_provider'], metadata['model_name'], metadata['input_tokens'], metadata['output_tokens'])
-        self.logger.info("Accumulated: %i %i %.6f", self.input_tokens, self.output_tokens, self.total_cost)
+        self.logger.debug("Accumulated: %i %i %.6f", self.input_tokens, self.output_tokens, self.total_cost)
         tags = kwargs.get('tags', [])
         agent_name = next(
             (tag.split(':', maxsplit=1)[1] for tag in tags if isinstance(tag, str) and tag.startswith('node:')),
@@ -53,7 +53,7 @@ class TelemetryTracker(BaseCallbackHandler, CostOptimization):
             model_name = generation.message.response_metadata.get('model_name', 'unknown')
             input_tokens += generation.message.usage_metadata.get('input_tokens', 0)
             output_tokens += generation.message.usage_metadata.get('output_tokens', 0)
-        self.logger.info("Generation: %s/%s %i %i", model_provider, model_name, input_tokens, output_tokens)
+        self.logger.debug("Generation: %s/%s %i %i", model_provider, model_name, input_tokens, output_tokens)
         return {
             'model_provider': model_provider,
             'model_name': model_name,

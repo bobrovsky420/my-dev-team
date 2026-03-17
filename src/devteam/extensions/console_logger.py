@@ -31,7 +31,12 @@ class ConsoleLogger(CrewExtension):
         elif 'code' in state and 'final_report' in state:
             print("[dim]Phase: 📦 Release & Integration[/dim]")
 
-    def on_step(self, thread_id: str, *, state_update: dict, full_state: dict):
+    def on_resume(self, thread_id: str, state_update: dict):
+        print(f"[bold cyan] 🔄 RESUMING THREAD: {thread_id}[/bold cyan]")
+        if state_update and len(state_update) > 0:
+            print(f"[dim]Injecting human feedback[/dim]")
+
+    def on_step(self, thread_id: str, state_update: dict, full_state: dict):
         for node_name, node_output in state_update.items():
             if not isinstance(node_output, dict):
                 continue

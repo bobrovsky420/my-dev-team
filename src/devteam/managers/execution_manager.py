@@ -31,7 +31,7 @@ class StandardExecutionManager(BaseManager):
     def route_qa(self, state: dict) -> str:
         results = state.get('test_results', '')
         if is_approved_status(results):
-            self.logger.info("Task '%s' passed all checks!", state.get('current_task'))
+            self.logger.debug("Task '%s' passed all checks!", state.get('current_task'))
             return END
         if state.get('revision_count', 0) >= self.max_revision_count:
             self.logger.warning("Max revisions reached. Forcing completion.")

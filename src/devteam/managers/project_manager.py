@@ -28,10 +28,10 @@ class ProjectManager(BaseManager):
 
     def route_after_planning(self, state: dict) -> str:
         if state.get('abort_requested'):
-            self.logger.info("Stopping lifecycle graph after planning abort.")
+            self.logger.debug("Stopping lifecycle graph after planning abort.")
             return END
         if not state.get('pending_tasks'):
-            self.logger.info("No backlog pending, stopping lifecycle graph")
+            self.logger.debug("No backlog pending, stopping lifecycle graph")
             return END
         return 'task_router'
 

@@ -61,7 +61,7 @@ class VirtualCrew:
         config = {'configurable': {'thread_id': thread_id}}
         if checkpoint_id:
             config['configurable']['checkpoint_id'] = checkpoint_id
-            self.logger.info("Rewinding time to checkpoint: %s", checkpoint_id)
+            self.logger.debug("Rewinding time to checkpoint: %s", checkpoint_id)
         abort_requested = False
         if feedback:
             node_mapping = {
@@ -70,7 +70,6 @@ class VirtualCrew:
                 'reviewer': 'development',
                 'qa': 'development'
             }
-            self.logger.info("Injecting Human Feedback as '%s'...", feedback_source)
             state_update = {}
             if feedback_source == 'reviewer':
                 state_update['review_feedback'] = f"CRITICAL HUMAN FEEDBACK: {feedback}"
@@ -80,6 +79,8 @@ class VirtualCrew:
                 state_update['specs'] = f"CRITICAL HUMAN FEEDBACK: {feedback}"
             else:
                 state_update['communication_log'] = [f"**[Human]**: {feedback}"]
+            for ext in self.extensions:
+                ext.on_resume(thread_id, state_update)
             target_state = await self.app.aget_state(config)
             safe_config = target_state.config.copy()
             if 'configurable' not in safe_config:
@@ -97,12 +98,12 @@ class VirtualCrew:
             initial_state = {
                 'requirements': requirements
             }
-            self.logger.info("Starting new workflow...")
             for ext in self.extensions:
                 ext.on_start(thread_id, initial_state)
         else:
             initial_state = None
-            self.logger.info("Resuming workflow from memory...")
+            for ext in self.extensions:
+                ext.on_resume(thread_id, initial_state)
         while True:
             async for event in self.app.astream(initial_state, config, stream_mode='updates', subgraphs=True):
                 if isinstance(event, tuple) and len(event) == 2:
@@ -120,7 +121,7 @@ class VirtualCrew:
                     break
                 if full_state.get('abort_requested'):
                     abort_requested = True
-                    self.logger.info("Abort requested during execution. Ending workflow.")
+                    self.logger.debug("Abort requested during execution. Ending workflow.")
                     break
             if abort_requested:
                 break
@@ -130,7 +131,7 @@ class VirtualCrew:
             if not state_snapshot.next:
                 break
             next_node = state_snapshot.next[0]
-            self.logger.info("Workflow paused. Waiting on: %s", next_node)
+            self.logger.debug("Workflow paused. Waiting on: %s", next_node)
             update_provided = False
             for ext in self.extensions:
                 update = ext.on_pause(thread_id, state_snapshot.values, next_node)
@@ -141,7 +142,7 @@ class VirtualCrew:
                         abort_requested = True
                         break
             if abort_requested:
-                self.logger.info("Abort requested. Ending workflow.")
+                self.logger.debug("Abort requested. Ending workflow.")
                 break
             if not update_provided:
                 break

@@ -62,7 +62,7 @@ class WorkspaceSaver(CrewExtension):
         report_file = self.base_dir / 'final_report.md'
         report_file.write_text(report, encoding='utf-8')
 
-    def on_step(self, thread_id: str, *, state_update: dict, full_state: dict):
+    def on_step(self, thread_id: str, state_update: dict, full_state: dict):
         for node_name, node_update in state_update.items():
             self.base_dir = self._get_target_dir(node_name, full_state)
             self.base_dir.mkdir(parents=True, exist_ok=True)

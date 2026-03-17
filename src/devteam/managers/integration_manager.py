@@ -18,7 +18,7 @@ class IntegrationManager(BaseManager):
     def route_qa(self, state: dict) -> str:
         results = state.get('test_results', '')
         if is_approved_status(results):
-            self.logger.info("Integration tests passed. Proceeding to DevOps.")
+            self.logger.debug("Integration tests passed. Proceeding to DevOps.")
             return 'reporter'
         self.logger.error("Integration bugs found! Halting release.")
         return END
