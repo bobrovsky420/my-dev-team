@@ -5,7 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.1] - 2026-03-17
+## [0.4.2] - 2026-03-17
+
+### 🚀 Added
+
+* **Live Execution Dashboard Enhancements:** The Streamlit UI now visualizes crew execution in real time with phase tracking, agent activity timeline, task progress, communication log, and generated workspace file previews.
+
+* **Dedicated UI Launcher Command:** Added `devteam-ui` as a separate entry point to launch the Streamlit dashboard directly.
+
+### ⚙️ Changed
+
+* **Verbose Logging Cleanup:** Reduced runtime log noise by moving multiple internal messages from `INFO` to `DEBUG` (crew lifecycle checkpoints and telemetry accumulation/generation traces).
+
+* **Resume Lifecycle Hook Flow:** Resume paths now consistently trigger extension resume hooks, enabling extensions to react to both plain resume and feedback-injection resume flows.
+
+* **GUI Runtime Controls & Logging:** Added LLM timeout input to the UI (default `120s`) and applied the selected value to settings before run start. UI process logging now uses the same file logger pipeline as CLI.
+
+### 🔧 Internal
+
+* **Crew Config Loading Refactor:** Extracted crew YAML parsing into a dedicated helper (`load_crew_config`) to simplify the agent factory flow.
+
+## [0.4.1] - 2026-03-16
 
 ### 🚀 Added
 
@@ -17,17 +37,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * **Agent-Level Diagnostics:** The framework now uses LangChain `role:` tags to track exactly which agent is consuming tokens. At the end of a run, it generates a diagnostic report flagging "Context Bloat" (exponentially growing prompts), "Thrashing" (agents stuck in failure loops), and "High Waste Ratios" (sending massive context for tiny outputs).
 
-### ⚙️ Changed
-
-* **Configuration-Driven Agent Factory:** Migrated the crew instantiation logic out of the Python codebase and into a centralized `config/crew.yaml` file. The `build_crew` factory now utilizes Python module reflection (`getattr`) to dynamically instantiate agent classes based on the YAML blueprint.
-
-* **Explicit Agent Tagging:** Refactored `BaseAgent.from_config` initialization to explicitly accept a `node_name` parameter. This string is injected as a LangChain tag (`node:{node_name}`) during LLM creation, ensuring telemetry and cost tracking remain perfectly stable even if underlying class names are refactored.
-
 ### 🐛 Fixed
 
 * **Optimization Diagnostics Bug:** Fixed an `unhashable type: 'list'` runtime error in the telemetry tracker by replacing a faulty set initialization with a proper set comprehension.
 
 * **State Evaluation Crash:** Fixed a bug in the async stream loop of the `execute` method where it attempted to read `final_state` before the loop completed. Now safely evaluates `full_state` during active iteration.
+
+### 🔧 Internal
+
+* **Configuration-Driven Agent Factory:** Migrated the crew instantiation logic out of the Python codebase and into a centralized `config/crew.yaml` file. The `build_crew` factory now utilizes Python module reflection (`getattr`) to dynamically instantiate agent classes based on the YAML blueprint.
+
+* **Explicit Agent Tagging:** Refactored `BaseAgent.from_config` initialization to explicitly accept a `node_name` parameter. This string is injected as a LangChain tag (`node:{node_name}`) during LLM creation, ensuring telemetry and cost tracking remain perfectly stable even if underlying class names are refactored.
 
 ## [0.4.0] - 2026-03-15
 

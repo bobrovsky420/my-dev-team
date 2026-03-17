@@ -55,6 +55,7 @@ ui = ["streamlit>=1.55.0"]
 
 [project.scripts]
 devteam = "devteam.cli:main"
+devteam-ui = "devteam.cli:main_ui"
 
 [tool.setuptools.packages.find]
 where = ["src"]

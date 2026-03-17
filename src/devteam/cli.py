@@ -32,22 +32,23 @@ class ConsoleDispatchFormatter(logging.Formatter):
         else:
             return self.default_formatter.format(record)
 
-def setup_logging(verbose = False, *, file_level = logging.DEBUG, console_level = logging.INFO):
+def setup_logging(*, file_level = logging.DEBUG, console_level = logging.INFO):
     file_handler = logging.FileHandler(LOG_FILE_NAME, encoding='utf-8')
     file_handler.setLevel(file_level)
-    if verbose:
-        console_level = logging.DEBUG
-    console_handler = logging.StreamHandler(sys.stderr)
-    console_handler.setLevel(console_level)
     file_formatter = logging.Formatter(
         fmt='%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     file_handler.setFormatter(file_formatter)
-    console_handler.setFormatter(ConsoleDispatchFormatter())
+    handlers = [file_handler]
+    if console_level is not None:
+        console_handler = logging.StreamHandler(sys.stderr)
+        console_handler.setLevel(console_level)
+        console_handler.setFormatter(ConsoleDispatchFormatter())
+        handlers.append(console_handler)
     logging.basicConfig(
         level=logging.DEBUG, # This is the root level
-        handlers=[file_handler, console_handler]
+        handlers=handlers
     )
     logging.getLogger('aiosqlite').setLevel(logging.WARNING)
     logging.getLogger('asyncio').setLevel(logging.WARNING)
@@ -85,12 +86,12 @@ def my_extensions(project_folder: Path) -> list:
         HumanInTheLoop()
     ]
 
-def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver, rpm: int = 0) -> VirtualCrew:
+def build_crew(llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver, rpm: int = 0, extensions: list = None) -> VirtualCrew:
     """Instantiates the agents and returns the crew instance"""
     return VirtualCrew(
         manager=ProjectManager(),
         agents=build_agents_from_config('basic.yaml'),
-        extensions=my_extensions(project_folder),
+        extensions=extensions or [],
         llm_factory=llm_factory,
         checkpointer=checkpointer,
         rate_limiter=RateLimiter(requests_per_minute=rpm) if rpm > 0 else None
@@ -102,7 +103,7 @@ async def show_history(thread_id: str = None):
     llm_factory = LLMFactory(provider='ollama')
     async with aiosqlite.connect(db_path) as conn:
         checkpointer = AsyncSqliteSaver(conn)
-        crew = build_crew(project_folder, llm_factory, checkpointer)
+        crew = build_crew(llm_factory, checkpointer)
         logging.info("🕰️ Fetching timeline history...")
         history_data = await crew.get_history(thread_id)
         for cp in history_data:
@@ -127,7 +128,7 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
     try:
         async with aiosqlite.connect(db_path) as conn:
             checkpointer = AsyncSqliteSaver(conn)
-            crew = build_crew(project_folder, llm_factory, checkpointer, rpm)
+            crew = build_crew(llm_factory, checkpointer, rpm, extensions=my_extensions(project_folder))
             logging.info("🚀 Starting AI Dev Team...")
             logging.info("📁 Workspace: %s", project_folder.absolute())
             final_state = await crew.execute(
@@ -166,9 +167,10 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
         print(telemetry.get_optimization_panel())
         print()
 
-def launch_ui():
+def main_ui():
+    """Entry point for the devteam-ui command."""
+    load_dotenv()
     app_path = Path(__file__).parent / 'app.py'
-    logging.info("🚀 Launching My Dev Team Dashboard...")
     subprocess.run([sys.executable, '-m', 'streamlit', 'run', str(app_path)])
 
 def main():
@@ -178,7 +180,6 @@ def main():
     parser.add_argument('project_file', nargs='?', help="path to the text file containing your project requirements")
     parser.add_argument('--config', type=str,  help="path to a custom configuration folder (overrides default one)")
     parser.add_argument('--verbose', action='store_true', help="enable debug logging")
-    parser.add_argument('--ui', action='store_true', help="launch the local web dashboard")
     parser.add_argument('--resume', type=str, help="resume a specific thread ID")
     parser.add_argument('--provider', type=str, default='ollama', choices=['groq', 'ollama', 'openai'], help="LLM provider to use (default: ollama)")
     parser.add_argument('--rpm', type=int, default=0, help="API requests per minute (default: 0 = none)")
@@ -190,7 +191,7 @@ def main():
 
     args = parser.parse_args()
 
-    setup_logging(args.verbose)
+    setup_logging(console_level=logging.DEBUG if args.verbose else logging.INFO)
 
     if args.config:
         custom_path = Path(args.config)
@@ -200,10 +201,6 @@ def main():
         settings.set_config_dir(custom_path)
 
     settings.set_llm_timeout(args.timeout)
-
-    if args.ui:
-        launch_ui()
-        return
 
     if args.resume:
         path = WORKSPACES_DIR / args.resume

@@ -91,7 +91,7 @@ In addition to the terminal CLI, **My Dev Team** includes a fully interactive we
 Make sure you have Streamlit installed (`pip install streamlit`), and simply run:
 
 ```sh
-devteam --ui
+devteam-ui
 ```
 
 ### Advanced CLI Options
