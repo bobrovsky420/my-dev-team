@@ -1,33 +1,60 @@
+from rich import print as print
+from rich.panel import Panel
+from rich.text import Text
 from .base_extension import CrewExtension
+
+_TRUNCATE_FIELDS = {'specs', 'workspace_files', 'final_report', 'current_task', 'requirements'}
+_MAX_VALUE_LENGTH = 200
+
+def _format_value(key: str, value) -> str:
+    """Format a state value for console display, truncating large content."""
+    if key == 'workspace_files' and isinstance(value, dict):
+        paths = list(value.keys())
+        return f"[{len(paths)} file(s): {', '.join(paths)}]"
+    if key == 'pending_tasks' and isinstance(value, list):
+        names = [t.get('task_name', '?') for t in value]
+        return f"[{len(names)} task(s): {', '.join(names)}]"
+    if key == 'communication_log' and isinstance(value, list):
+        return f"[{len(value)} entry(s)]"
+    text = str(value)
+    if key in _TRUNCATE_FIELDS and len(text) > _MAX_VALUE_LENGTH:
+        return text[:_MAX_VALUE_LENGTH] + f'... ({len(text)} chars)'
+    return text
 
 class ConsoleLogger(CrewExtension):
     def on_start(self, thread_id: str, state: dict):
-        print(f"\n🚀 [STARTING THREAD: {thread_id}]")
+        print(f"\n[bold green]🚀 STARTING THREAD: {thread_id}[/bold green]")
         if 'requirements' in state and 'pending_tasks' not in state:
-            print("Phase: 📋 Planning (Backlog Creation)")
+            print("[dim]Phase: 📋 Planning (Backlog Creation)[/dim]")
         elif 'current_task' in state:
-            print(f"Phase: 💻 Execution (Task: {state.get('current_task')})")
+            print(f"[dim]Phase: 💻 Execution (Task: {state.get('current_task')})[/dim]")
         elif 'code' in state and 'final_report' in state:
-            print("Phase: 📦 Release & Integration")
+            print("[dim]Phase: 📦 Release & Integration[/dim]")
 
     def on_step(self, thread_id: str, *, state_update: dict, full_state: dict):
+        for node_name, node_output in state_update.items():
+            if not isinstance(node_output, dict):
+                continue
+            lines = Text()
+            for key, value in node_output.items():
+                if value is None or value == '' or value == [] or value == {}:
+                    continue
+                formatted = _format_value(key, value)
+                lines.append(key, style='bold cyan')
+                lines.append(f": {formatted}\n")
+            if lines:
+                print(Panel(lines, title=f"[bold yellow]📍 {node_name}[/bold yellow]", border_style="dim"))
+
         logs = full_state.get('communication_log', [])
         if logs:
             latest_log = logs[-1]
-            print(f"  ➜ {latest_log.splitlines()[0]}")
-
-    def on_pause(self, thread_id: str, state: dict, next_node: str) -> dict | None:
-        print(f"\n⏸️  [PAUSED] Waiting on: {next_node}")
-        if next_node == 'human':
-            user_input = input("Enter your feedback (or press Enter to approve): ")
-            return {'clarification_question': '', 'human_answer': user_input}
-        return None
+            print(f"  [bold]➜[/bold] {latest_log.splitlines()[0]}")
 
     def on_finish(self, thread_id: str, final_state: dict):
-        print(f"✅ [FINISHED THREAD: {thread_id}]\n")
+        print(f"\n[bold green]✅ FINISHED THREAD: {thread_id}[/bold green]")
         if tasks := final_state.get('pending_tasks'):
-            print(f"Generated {len(tasks)} tasks for the backlog.")
+            print(f"[dim]Generated {len(tasks)} tasks for the backlog.[/dim]")
         elif code := final_state.get('code'):
-            print(f"Code updated. Revisions took: {final_state.get('revision_count', 0)}")
+            print(f"[dim]Code updated. Revisions took: {final_state.get('revision_count', 0)}[/dim]")
         elif report := final_state.get('final_report'):
-            print("Release report generated successfully.")
+            print("[dim]Release report generated successfully.[/dim]")

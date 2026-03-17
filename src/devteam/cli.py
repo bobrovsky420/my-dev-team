@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from devteam import VirtualCrew, ProjectManager, LLMFactory
-from devteam.extensions import HumanInTheLoop, WorkspaceSaver
+from devteam.extensions import ConsoleLogger, HumanInTheLoop, WorkspaceSaver
 from devteam.utils import RateLimiter, TelemetryTracker, build_agents_from_config
 from devteam import settings
 
@@ -80,6 +80,7 @@ def generate_thread_id(project_name: str) -> str:
 
 def my_extensions(project_folder: Path) -> list:
     return [
+        ConsoleLogger(),
         WorkspaceSaver(workspace_dir=project_folder),
         HumanInTheLoop()
     ]
