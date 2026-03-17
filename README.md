@@ -25,7 +25,7 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 2) **System Architect:** Breaks specifications down into a cohesive backlog of developer tasks.
 3) **Senior Developer:** Incrementally writes code and unit tests for the current task.
 4) **Code Reviewer:** Analyzes the generated code for security, style, and logic issues.
-5) **QA Engineer:** Mentally simulates execution and evaluates the code against the task requirements.
+5) **QA Engineer:** Evaluates code against task requirements using either LLM-based mental simulation or execution via a secure Docker sandbox.
 6) **Final QA Engineer:** Performs a full-repository integration test once all tasks are complete.
 7) **Reporter:** Generates a comprehensive final Markdown report for stakeholders.
 
@@ -34,8 +34,12 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 ### Prerequisites
 
 * **Python 3.10+**
-* **Docker Engine** must be installed and running if you intend to use the Sandboxed QA features.
 * **API Keys** set in your environment (e.g., `OPENAI_API_KEY`, `GROQ_API_KEY`), OR a local instance of **Ollama** running for free local models.
+
+**Optional Dependencies:**
+
+* **Docker Engine** required only if you intend to use the Sandboxed QA code execution features.
+* **Streamlit** required only to launch the web dashboard (`pip install streamlit`).
 
 ### Installation
 
