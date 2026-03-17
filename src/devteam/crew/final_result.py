@@ -10,6 +10,8 @@ class FinalResult(BaseModel):
     integration_bugs: list[str] = Field(default_factory=list)
     total_revisions: int = 0
     abort_requested: bool = False
+    error: bool = False
+    error_message: str | None = None
 
     @computed_field
     def success(self) -> bool:

@@ -113,6 +113,7 @@ devteam --resume web_scraper_cli_20260312_083500
 
 * `project_file`: (Optional if resuming) Path to your project requirements text file.
 * `--provider`: Choose the LLM backend. Options: groq, ollama (default), openai.
+* `--timeout`: Maximum wait time for LLM responses, allowing users to easily adjust for slower local models.
 * `--rpm`: API requests per minute. Set to 0 to disable rate limiting (default: 0).
 * `--resume`: Resume a specific thread ID (e.g., my_app_20260312_083500).
 * `--history`: Print the timeline of checkpoints for the thread and exit.

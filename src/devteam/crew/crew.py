@@ -113,8 +113,8 @@ class VirtualCrew:
                 full_state = state_object.values
                 for ext in self.extensions:
                     ext.on_step(thread_id, state_update=state_update, full_state=full_state)
-                if final_state.get('error') is True:
-                    traceback_str = final_state.get('error_message', 'Unknown Error')
+                if full_state.get('error') is True:
+                    traceback_str = full_state.get('error_message', 'Unknown Error')
                     self.logger.error("Workflow halted due to error:\n%s\n\nFix the issue and resume using: devteam --resume %s", traceback_str, thread_id)
                     abort_requested = True
                     break

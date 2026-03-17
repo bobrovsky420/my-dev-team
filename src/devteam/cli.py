@@ -14,7 +14,7 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from devteam import VirtualCrew, ProjectManager, LLMFactory
 from devteam.extensions import HumanInTheLoop, WorkspaceSaver
 from devteam.utils import RateLimiter, TelemetryTracker, build_agents_from_config
-from devteam.settings import set_config_dir
+from devteam import settings
 
 WORKSPACES_DIR = Path('workspaces')
 LOG_FILE_NAME = 'mycrew.log'
@@ -40,7 +40,7 @@ def setup_logging(verbose = False, *, file_level = logging.DEBUG, console_level 
     console_handler = logging.StreamHandler(sys.stderr)
     console_handler.setLevel(console_level)
     file_formatter = logging.Formatter(
-        fmt='%(asctime)s | %(levelname)-8s | %(message)s',
+        fmt='%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     file_handler.setFormatter(file_formatter)
@@ -176,6 +176,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run the AI Dev Team autonomous framework.")
     parser.add_argument('project_file', nargs='?', help="path to the text file containing your project requirements")
     parser.add_argument('--config', type=str,  help="path to a custom configuration folder (overrides default one)")
+    parser.add_argument('--verbose', action='store_true', help="enable debug logging")
     parser.add_argument('--ui', action='store_true', help="launch the local web dashboard")
     parser.add_argument('--resume', type=str, help="resume a specific thread ID")
     parser.add_argument('--provider', type=str, default='ollama', choices=['groq', 'ollama', 'openai'], help="LLM provider to use (default: ollama)")
@@ -184,7 +185,7 @@ def main():
     parser.add_argument('--as-node', type=str, default='reviewer', choices=['pm', 'architect', 'reviewer', 'qa'], help="which agent should deliver this feedback (forces graph routing)")
     parser.add_argument('--history', action='store_true', help="print the timeline of checkpoints for this thread and exit")
     parser.add_argument('--checkpoint', type=str, help="specific checkpoint ID to rewind to before injecting feedback")
-    parser.add_argument("--verbose", action='store_true', help="enable debug logging")
+    parser.add_argument('--timeout', type=int, default=120, help="maximum time (in seconds) to wait for an LLM response (default: 120)")
 
     args = parser.parse_args()
 
@@ -195,7 +196,9 @@ def main():
         if not custom_path.exists() or not custom_path.is_dir():
             print(f"❌ Error: Config directory '{custom_path}' not found.")
             return
-        set_config_dir(custom_path)
+        settings.set_config_dir(custom_path)
+
+    settings.set_llm_timeout(args.timeout)
 
     if args.ui:
         launch_ui()

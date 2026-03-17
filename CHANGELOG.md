@@ -1,8 +1,17 @@
 # Changelog
 
-## [0.4.1] - 2026-03-16
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.4.1] - TBD
 
 ### 🚀 Added
+
+* **Bring Your Own Config (BYOC):** Added `--config` CLI flag allowing users to pass custom directories for agent prompts and LLM routing without forking the repository.
+
+* **Customizable LLM Timeout:** Added `--timeout` CLI flag to globally control the maximum wait time for LLM responses, allowing users to easily adjust for slower local models (like Ollama) or incredibly fast cloud providers (like Groq).
 
 * **Optimization & Token Leak Analyzer:** Upgraded the `TelemetryTracker` to not only count tokens and calculate costs but to actively analyze the AI crew's execution trajectory for inefficiencies.
 
@@ -13,6 +22,12 @@
 * **Configuration-Driven Agent Factory:** Migrated the crew instantiation logic out of the Python codebase and into a centralized `config/crew.yaml` file. The `build_crew` factory now utilizes Python module reflection (`getattr`) to dynamically instantiate agent classes based on the YAML blueprint.
 
 * **Explicit Agent Tagging:** Refactored `BaseAgent.from_config` initialization to explicitly accept a `node_name` parameter. This string is injected as a LangChain tag (`node:{node_name}`) during LLM creation, ensuring telemetry and cost tracking remain perfectly stable even if underlying class names are refactored.
+
+### 🐛 Fixed
+
+* **Optimization Diagnostics Bug:** Fixed an `unhashable type: 'list'` runtime error in the telemetry tracker by replacing a faulty set initialization with a proper set comprehension.
+
+* **State Evaluation Crash:** Fixed a bug in the async stream loop of the `execute` method where it attempted to read `final_state` before the loop completed. Now safely evaluates `full_state` during active iteration.
 
 ## [0.4.0] - 2026-03-15
 

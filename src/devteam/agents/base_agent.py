@@ -9,7 +9,7 @@ import yaml
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, ValidationError
-from ..settings import get_config_dir
+from ..settings import get_config_dir, get_llm_timeout
 from ..utils import LLMFactory, RateLimiter, sanitize_for_prompt
 
 T = TypeVar('T', bound=BaseModel)
@@ -52,8 +52,8 @@ class BaseAgent(Generic[T]):
         self._build_chain(self.temperature) # Start with base temperature and prompt
         last_error = None
         for attempt in range(1, self.max_retries + 1):
-            response = await self._invoke_llm(**inputs)
             try:
+                response = await self._invoke_llm(**inputs)
                 parsed_data = self._parse_outputs(response)
             except (ValueError, ValidationError, json.JSONDecodeError) as e:
                 last_error = e
@@ -78,7 +78,7 @@ class BaseAgent(Generic[T]):
         }
 
     def _bump_temperature(self, attempt: int, last_error: Exception):
-        new_temp = min(self.base_temp + (attempt * 0.1), 1.0)
+        new_temp = min(self.temperature + (attempt * 0.1), 1.0)
         self.logger.info("Bumping temperature to %.1f for retry", new_temp)
         retry_prompt = self._bump_prompt(last_error)
         self._build_chain(temperature=new_temp, retry_prompt=retry_prompt)
@@ -121,7 +121,9 @@ class BaseAgent(Generic[T]):
     def parser(self) -> PydanticOutputParser:
         return PydanticOutputParser(pydantic_object=self.output_schema)
 
-    llm_timeout: int = 120
+    @cached_property
+    def llm_timeout(self) -> int:
+        return get_llm_timeout()
 
     async def _invoke_llm(self, **kwargs) -> str:
         if self.rate_limiter:
@@ -129,7 +131,7 @@ class BaseAgent(Generic[T]):
         try:
             response = await asyncio.wait_for(self.chain.ainvoke(kwargs), timeout=self.llm_timeout)
         except asyncio.TimeoutError:
-            raise TimeoutError(f"LLM call timed out after {self.llm_timeout}s") from None
+            raise TimeoutError(f"LLM call timed out after {self.llm_timeout} seconds") from None
         response = response.content
         self.logger.debug("\n%s", response)
         return response
@@ -152,7 +154,6 @@ class BaseAgent(Generic[T]):
     @classmethod
     def from_config(cls, node_name: str, config_path: str, *, model_category: str = None, temperature: float = None):
         prompt_file = get_config_dir() / 'agents' / config_path
-        print(prompt_file)
         try:
             content = prompt_file.read_text(encoding='utf-8')
         except FileNotFoundError as e:
