@@ -1,6 +1,6 @@
-from importlib import resources
 import logging
 import yaml
+from ..settings import get_config_dir
 
 logger = logging.getLogger("Crew Factory")
 
@@ -9,7 +9,7 @@ def build_agents_from_config(config_name: str) -> dict:
     # pylint: disable=import-outside-toplevel,cyclic-import
     import devteam.agents as agents_module
     import devteam.tools as tools_module
-    config_path = resources.files('devteam.config.crews').joinpath(config_name)
+    config_path = get_config_dir() / 'crews' / config_name
     crew_config = yaml.safe_load(config_path.read_text(encoding='utf-8'))
     agents = {}
     for node_name, details in crew_config.get('agents', {}).items():

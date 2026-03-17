@@ -1,7 +1,7 @@
 from functools import cached_property
 import yaml
-from importlib import resources
 from langchain_core.language_models.chat_models import BaseChatModel
+from ..settings import get_config_dir
 
 class LLMFactory:
     def __init__(self, provider: str, callbacks: list = None):
@@ -12,7 +12,8 @@ class LLMFactory:
 
     @cached_property
     def llm_config(self) -> dict:
-        return yaml.safe_load(resources.files('devteam.config').joinpath('llms.yaml').read_text(encoding='utf-8'))
+        config_path = get_config_dir() / 'llms.yaml'
+        return yaml.safe_load(config_path.read_text(encoding='utf-8'))
 
     @cached_property
     def model_map(self) -> dict:

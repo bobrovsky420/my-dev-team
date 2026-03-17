@@ -1,14 +1,15 @@
 import asyncio
 from functools import cached_property
-from importlib import resources
 from typing import Generic, TypeVar
 import json
 import logging
 import re
+import traceback
 import yaml
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, ValidationError
+from ..settings import get_config_dir
 from ..utils import LLMFactory, RateLimiter, sanitize_for_prompt
 
 T = TypeVar('T', bound=BaseModel)
@@ -60,6 +61,12 @@ class BaseAgent(Generic[T]):
                 if attempt < self.max_retries:
                     self._bump_temperature(attempt, last_error)
                 continue
+            except Exception as e: # pylint: disable=broad-exception-caught
+                full_traceback = traceback.format_exc()
+                return {
+                    'error': True,
+                    'error_message': full_traceback
+                }
             final_state = self._update_state(parsed_data, state)
             if 'communication_log' not in final_state:
                 final_state['communication_log'] = [f"**[{self.name or self.role}]**: Completed step with response:\n```\n{response}\n```"]
@@ -144,12 +151,12 @@ class BaseAgent(Generic[T]):
 
     @classmethod
     def from_config(cls, node_name: str, config_path: str, *, model_category: str = None, temperature: float = None):
-        package_path = 'devteam.config.agents'
+        prompt_file = get_config_dir() / 'agents' / config_path
+        print(prompt_file)
         try:
-            prompt_file = resources.files(package_path).joinpath(config_path)
             content = prompt_file.read_text(encoding='utf-8')
         except FileNotFoundError as e:
-            raise FileNotFoundError(f"Could not find '{config_path}' in the package '{package_path}'") from e
+            raise FileNotFoundError(f"Could not find agent prompt '{config_path}' in {prompt_file.parent}") from e
         parts = content.split('---', 2)
         if len(parts) < 3:
             raise ValueError(f"Invalid format in {config_path}. Missing YAML frontmatter")

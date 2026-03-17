@@ -14,6 +14,7 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from devteam import VirtualCrew, ProjectManager, LLMFactory
 from devteam.extensions import HumanInTheLoop, WorkspaceSaver
 from devteam.utils import RateLimiter, TelemetryTracker, build_agents_from_config
+from devteam.settings import set_config_dir
 
 WORKSPACES_DIR = Path('workspaces')
 LOG_FILE_NAME = 'mycrew.log'
@@ -135,6 +136,9 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
                 feedback_source=feedback_source,
                 checkpoint_id=checkpoint_id
             )
+        if final_state.error:
+            logging.error("🛑 Agent framework halted due to an internal error.")
+            return
         if final_state.abort_requested:
             logging.error("❌ Workflow aborted by user or validation failure.")
             return
@@ -171,6 +175,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Run the AI Dev Team autonomous framework.")
     parser.add_argument('project_file', nargs='?', help="path to the text file containing your project requirements")
+    parser.add_argument('--config', type=str,  help="path to a custom configuration folder (overrides default one)")
     parser.add_argument('--ui', action='store_true', help="launch the local web dashboard")
     parser.add_argument('--resume', type=str, help="resume a specific thread ID")
     parser.add_argument('--provider', type=str, default='ollama', choices=['groq', 'ollama', 'openai'], help="LLM provider to use (default: ollama)")
@@ -184,6 +189,13 @@ def main():
     args = parser.parse_args()
 
     setup_logging(args.verbose)
+
+    if args.config:
+        custom_path = Path(args.config)
+        if not custom_path.exists() or not custom_path.is_dir():
+            print(f"❌ Error: Config directory '{custom_path}' not found.")
+            return
+        set_config_dir(custom_path)
 
     if args.ui:
         launch_ui()

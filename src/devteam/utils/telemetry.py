@@ -1,7 +1,6 @@
 import logging
 from collections import defaultdict
 from functools import cached_property
-from importlib import resources
 from typing import Any, Dict, List
 import yaml
 from rich.panel import Panel
@@ -9,6 +8,7 @@ from rich.table import Table
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
 from litellm import cost_per_token
+from ..settings import get_config_dir
 from .cost_optimization import CostOptimization
 
 class TelemetryTracker(BaseCallbackHandler, CostOptimization):
@@ -64,7 +64,8 @@ class TelemetryTracker(BaseCallbackHandler, CostOptimization):
     @cached_property
     def llm_aliases(self) -> dict:
         try:
-            config = yaml.safe_load(resources.files('defteam.config').joinpath('llms.yaml').read_text(encoding='utf-8'))
+            config_path = get_config_dir() / 'llms.yaml'
+            config = yaml.safe_load(config_path.read_text(encoding='utf-8'))
             return config.get('aliases', {})
         except Exception: # pylint: disable=broad-exception-caught
             return {}

@@ -1,10 +1,10 @@
 from functools import cached_property
-from importlib import resources
 from pathlib import Path
 import logging
 import docker
 from docker.errors import ImageNotFound
 import yaml
+from ..settings import get_config_dir
 
 class DockerSandbox:
     def __init__(self):
@@ -16,7 +16,8 @@ class DockerSandbox:
 
     @cached_property
     def sandbox_config(self) -> dict:
-        return yaml.safe_load(resources.files('devteam.config').joinpath('sandbox.yaml').read_text(encoding='utf-8'))
+        config_path = get_config_dir() / 'sandbox.yaml'
+        return yaml.safe_load(config_path.read_text(encoding='utf-8'))
 
     @cached_property
     def runtimes(self) -> dict:

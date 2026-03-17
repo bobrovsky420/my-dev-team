@@ -23,3 +23,5 @@ class ProjectState(TypedDict):
     integration_bugs: List[str]
     communication_log: Annotated[List[str], operator.add]
     abort_requested: NotRequired[bool]
+    error: NotRequired[bool]
+    error_message: NotRequired[str]
