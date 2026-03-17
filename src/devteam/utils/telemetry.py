@@ -4,7 +4,6 @@ from functools import cached_property
 from importlib import resources
 from typing import Any, Dict, List
 import yaml
-from rich import print
 from rich.panel import Panel
 from rich.table import Table
 from langchain_core.callbacks import BaseCallbackHandler
@@ -86,8 +85,8 @@ class TelemetryTracker(BaseCallbackHandler, CostOptimization):
             self.logger.error("Cost calculation failed for %s/%s: %s", model_provider, model_name, e)
             return 0
 
-    def print_receipt(self):
-        table = Table(show_header=False, box=None)
+    def get_receipt_panel(self, panel_width: int = 75) -> Panel:
+        table = Table(show_header=False, box=None, expand=True)
         table.add_column("Metric", style='cyan', no_wrap=True)
         table.add_column("Value", justify='right', style='yellow')
         table.add_row("Total API Requests:", str(self.total_requests))
@@ -96,13 +95,10 @@ class TelemetryTracker(BaseCallbackHandler, CostOptimization):
         table.add_row("Total Tokens:", f"{self.input_tokens + self.output_tokens:,}")
         table.add_row("", "")
         table.add_row("[bold white]Estimated Cost:[/bold white]", f"[bold green]${self.total_cost:.4f}[/bold green]")
-        receipt_panel = Panel(
+        return Panel(
             table,
             title="[bold white]📊 TELEMETRY & COST REPORT[/bold white]",
-            border_style="blue",
-            expand=False,
+            border_style='blue',
+            width=panel_width,
             padding=(1, 3)
         )
-        print()
-        print(receipt_panel)
-        print()

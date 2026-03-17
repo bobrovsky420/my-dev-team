@@ -7,6 +7,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 import aiosqlite
+from rich import print
 from dotenv import load_dotenv
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
@@ -155,8 +156,10 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
     except asyncio.CancelledError:
         logging.error("🛑 Async execution cancelled")
     finally:
-        telemetry.print_receipt()
-        telemetry.generate_optimization_report()
+        print()
+        print(telemetry.get_receipt_panel())
+        print(telemetry.get_optimization_panel())
+        print()
 
 def launch_ui():
     app_path = Path(__file__).parent / 'app.py'
