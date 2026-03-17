@@ -4,6 +4,9 @@ from functools import cached_property
 from importlib import resources
 from typing import Any, Dict, List
 import yaml
+from rich import print
+from rich.panel import Panel
+from rich.table import Table
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
 from litellm import cost_per_token
@@ -84,13 +87,22 @@ class TelemetryTracker(BaseCallbackHandler, CostOptimization):
             return 0
 
     def print_receipt(self):
-        print("\n" + "="*40)
-        print("📊 TELEMETRY & COST REPORT")
-        print("="*40)
-        print(f"Total API Requests:  {self.total_requests}")
-        print(f"Prompt Tokens:       {self.input_tokens:,}")
-        print(f"Completion Tokens:   {self.output_tokens:,}")
-        print(f"Total Tokens:        {self.input_tokens + self.output_tokens:,}")
-        print("-" * 40)
-        print(f"Estimated Cost:      ${self.total_cost:.4f}")
-        print("="*40 + "\n")
+        table = Table(show_header=False, box=None)
+        table.add_column("Metric", style='cyan', no_wrap=True)
+        table.add_column("Value", justify='right', style='yellow')
+        table.add_row("Total API Requests:", str(self.total_requests))
+        table.add_row("Prompt Tokens:", f"{self.input_tokens:,}")
+        table.add_row("Completion Tokens:", f"{self.output_tokens:,}")
+        table.add_row("Total Tokens:", f"{self.input_tokens + self.output_tokens:,}")
+        table.add_row("", "")
+        table.add_row("[bold white]Estimated Cost:[/bold white]", f"[bold green]${self.total_cost:.4f}[/bold green]")
+        receipt_panel = Panel(
+            table,
+            title="[bold white]📊 TELEMETRY & COST REPORT[/bold white]",
+            border_style="blue",
+            expand=False,
+            padding=(1, 3)
+        )
+        print()
+        print(receipt_panel)
+        print()

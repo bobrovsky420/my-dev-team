@@ -46,13 +46,15 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 
 ### Installation
 
+**Installing into a virtual environment is highly recommended.**
+
 You can install the package directly via pip:
 
 ```sh
 pip install my-dev-team
 ```
 
-(For local development, clone the repository and run `pip install -e .`)
+For local development, clone the repository and run `pip install -e .`
 
 ## Usage Guide
 
