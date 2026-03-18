@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 def sample_state():
     """A minimal ProjectState-like dictionary for testing."""
     return {
+        'current_phase': 'planning',
         'requirements': 'Build a REST API',
         'specs': '',
         'human_answer': '',

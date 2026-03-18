@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3] - TBD
+
+### ⚙️ Changed
+
+* **Phase-Driven Lifecycle State:** Introduced `current_phase` field (`planning`, `development`, `integration`, `complete`) in project state.
+
+### 🐛 Fixed
+
+* **Escaped Newline File Corruption:** Normalized malformed LLM file payloads containing literal `\\n` sequences before workspace merge, preventing invalid source files from being written and breaking test collection.
+
+### 🔧 Internal
+
+* **WorkspaceSaver Directory Routing by Phase:** Refactored target directory resolution to rely on `current_phase` instead of node-name heuristics, keeping planning/development/integration outputs aligned with the outer lifecycle graph.
+
+* **Sanitization Helper Centralization:** Moved workspace content normalization into `utils.sanitizer` and reused it from schema validation for a single sanitization source of truth.
+
 ## [0.4.2] - 2026-03-17
 
 ### 🚀 Added

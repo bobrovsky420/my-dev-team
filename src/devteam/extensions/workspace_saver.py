@@ -10,20 +10,18 @@ class WorkspaceSaver(CrewExtension):
         self.workspace_dir.mkdir(parents=True, exist_ok=True)
 
     def on_start(self, thread_id: str, initial_state: dict):
-        self.base_dir = self._get_target_dir('pm', initial_state)
+        self.base_dir = self._get_target_dir(initial_state)
         self.base_dir.mkdir(parents=True, exist_ok=True)
         if requirements := initial_state.get('requirements'):
             self._save_requirements(requirements)
 
-    def _get_target_dir(self, node_name: str, full_state: dict) -> Path:
-        if node_name in ['pm', 'architect']:
-            return self.workspace_dir / '00_planning'
-        if node_name in ['reporter', 'final_qa']:
-            return self.workspace_dir / '90_integration'
-        if node_name == 'qa' and full_state.get('current_task') == 'ALL_DONE':
-            return self.workspace_dir / '90_integration'
-        if task_idx := full_state.get('current_task_index', 0):
-            return self.workspace_dir / f'{task_idx:02d}_task'
+    def _get_target_dir(self, full_state: dict) -> Path:
+        match full_state.get('current_phase', 'planning'):
+            case 'integration' | 'complete':
+                return self.workspace_dir / '90_integration'
+            case 'development':
+                task_idx = full_state.get('current_task_index', 0)
+                return self.workspace_dir / f'{task_idx:02d}_task'
         return self.workspace_dir / '00_planning'
 
     def _save_requirements(self, requirements: str):
@@ -64,7 +62,7 @@ class WorkspaceSaver(CrewExtension):
 
     def on_step(self, thread_id: str, state_update: dict, full_state: dict):
         for node_name, node_update in state_update.items():
-            self.base_dir = self._get_target_dir(node_name, full_state)
+            self.base_dir = self._get_target_dir(full_state)
             self.base_dir.mkdir(parents=True, exist_ok=True)
             match node_name:
                 case 'pm':

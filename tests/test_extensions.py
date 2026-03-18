@@ -42,13 +42,12 @@ def test_console_logger_on_step_skips_empty_values(monkeypatch):
 def test_workspace_saver_target_dir_rules(tmp_path: Path):
     saver = WorkspaceSaver(tmp_path)
 
-    assert saver._get_target_dir("pm", {}) == tmp_path / "00_planning"
-    assert saver._get_target_dir("architect", {}) == tmp_path / "00_planning"
-    assert saver._get_target_dir("reporter", {}) == tmp_path / "90_integration"
-    assert saver._get_target_dir("final_qa", {}) == tmp_path / "90_integration"
-    assert saver._get_target_dir("qa", {"current_task": "ALL_DONE"}) == tmp_path / "90_integration"
-    assert saver._get_target_dir("developer", {"current_task_index": 3}) == tmp_path / "03_task"
-    assert saver._get_target_dir("developer", {}) == tmp_path / "00_planning"
+    assert saver._get_target_dir({'current_phase': 'planning'}) == tmp_path / "00_planning"
+    assert saver._get_target_dir({'current_phase': 'integration'}) == tmp_path / "90_integration"
+    assert saver._get_target_dir({'current_phase': 'complete'}) == tmp_path / "90_integration"
+    assert saver._get_target_dir({'current_phase': 'development', 'current_task_index': 3}) == tmp_path / "03_task"
+    assert saver._get_target_dir({'current_phase': 'development'}) == tmp_path / "00_task"
+    assert saver._get_target_dir({}) == tmp_path / "00_planning"
 
 
 def test_workspace_saver_on_start_saves_requirements(tmp_path: Path):
@@ -79,7 +78,7 @@ def test_workspace_saver_on_step_saves_all_outputs(tmp_path: Path):
                 ]
             },
         },
-        {"current_task_index": 0, "current_task": ""},
+        {"current_phase": "planning", "current_task_index": 0, "current_task": ""},
     )
 
     saver.on_step(
@@ -92,13 +91,13 @@ def test_workspace_saver_on_step_saves_all_outputs(tmp_path: Path):
             "reviewer": {"review_feedback": "Looks good", "revision_count": 2},
             "qa": {"test_results": "PASSED", "revision_count": 2},
         },
-        {"current_task_index": 1, "current_task": "Task 1"},
+        {"current_phase": "development", "current_task_index": 1, "current_task": "Task 1"},
     )
 
     saver.on_step(
         "thread-1",
         {"reporter": {"final_report": "Final summary"}},
-        {"current_task": "ALL_DONE", "current_task_index": 1},
+        {"current_phase": "integration", "current_task_index": 1},
     )
 
     assert (tmp_path / "00_planning" / "specs.md").read_text(encoding="utf-8") == "Spec content"

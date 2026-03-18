@@ -10,7 +10,7 @@ AGENT_META = {
     'developer': {'icon': '💻', 'label': 'Senior Developer', 'phase': 'Development'},
     'reviewer': {'icon': '🔍', 'label': 'Code Reviewer', 'phase': 'Development'},
     'qa': {'icon': '🧪', 'label': 'QA Engineer', 'phase': 'Development'},
-    'task_router': {'icon': '🔀', 'label': 'Task Router', 'phase': 'Development'},
+    'officer': {'icon': '🔀', 'label': 'Task Router', 'phase': 'Development'},
     'reporter': {'icon': '📝', 'label': 'Reporter', 'phase': 'Integration'},
     'final_qa': {'icon': '✅', 'label': 'Final QA', 'phase': 'Integration'},
 }
@@ -109,7 +109,7 @@ def _process_step_event(event: dict):
                 st.session_state['revision_count'] = node_output['revision_count']
     pending = full_state.get('pending_tasks', [])
     index = full_state.get('current_task_index', 0)
-    current_task = full_state.get('current_task', '')
+    current_phase = full_state.get('current_phase', '')
     if pending:
         task_name = ''
         if 0 < index <= len(pending):
@@ -119,6 +119,6 @@ def _process_step_event(event: dict):
             'total': len(pending),
             'name': task_name,
         }
-    if current_task == 'ALL_DONE':
+    if current_phase in ('integration', 'complete'):
         st.session_state['current_phase'] = 'Integration'
     st.session_state['communication_log'] = full_state.get('communication_log', [])

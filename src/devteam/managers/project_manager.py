@@ -16,13 +16,13 @@ class ProjectManager(BaseManager):
         development_graph = StandardExecutionManager().build_graph(agents)
         integration_graph = IntegrationManager().build_graph(agents)
         workflow.add_node('planning', planning_graph)
-        workflow.add_node('task_router', self.route_tasks_node)
+        workflow.add_node('officer', self.route_tasks_node)
         workflow.add_node('development', development_graph)
         workflow.add_node('integration', integration_graph)
         workflow.add_edge(START, 'planning')
         workflow.add_conditional_edges('planning', self.route_after_planning)
-        workflow.add_conditional_edges('task_router', self.edge_from_router)
-        workflow.add_edge('development', 'task_router')
+        workflow.add_conditional_edges('officer', self.edge_from_router)
+        workflow.add_edge('development', 'officer')
         workflow.add_edge('integration', END)
         return workflow.compile(checkpointer=memory)
 
@@ -33,7 +33,7 @@ class ProjectManager(BaseManager):
         if not state.get('pending_tasks'):
             self.logger.debug("No backlog pending, stopping lifecycle graph")
             return END
-        return 'task_router'
+        return 'officer'
 
     def route_tasks_node(self, state: dict) -> dict:
         pending = state.get('pending_tasks', [])
@@ -45,6 +45,7 @@ class ProjectManager(BaseManager):
             formatted_task = task_to_markdown(task, idx + 1)
             self.logger.info("Routing to Task %i/%i: %s", idx + 1, len(pending), t_name)
             return {
+                'current_phase': 'development',
                 'current_task': formatted_task,
                 'current_task_index': idx + 1,
                 'total_revisions': current_revisions, # Pass task revisions to total aggregator
@@ -55,13 +56,12 @@ class ProjectManager(BaseManager):
             }
         self.logger.info("Execution phase completed. Routing to integration.")
         return {
-            'current_task': 'ALL_DONE',
+            'current_phase': 'integration',
+            'current_task': '',
             'total_revisions': current_revisions,
         }
 
     def edge_from_router(self, state: dict) -> str:
         if state.get('abort_requested'):
             return END
-        if state.get('current_task') == 'ALL_DONE':
-            return 'integration'
-        return 'development'
+        return state.get('current_phase')

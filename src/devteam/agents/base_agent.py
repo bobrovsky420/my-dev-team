@@ -10,7 +10,8 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, ValidationError
 from devteam.settings import get_config_dir, get_llm_timeout
-from devteam.utils import LLMFactory, RateLimiter, sanitize_for_prompt
+from devteam.utils import LLMFactory, RateLimiter
+from devteam.utils.sanitizer import sanitize_for_prompt
 
 T = TypeVar('T', bound=BaseModel)
 

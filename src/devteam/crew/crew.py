@@ -4,6 +4,23 @@ from langgraph.graph import END
 from devteam.utils import LLMFactory, RateLimiter
 from .final_result import FinalResult
 
+_NODE_TO_PHASE = {
+    'planning': 'planning',
+    'pm': 'planning',
+    'architect': 'planning',
+    'human': 'planning',
+    'officer': 'development',
+    'development': 'development',
+    'developer': 'development',
+    'reviewer': 'development',
+    'qa': 'development',
+    'integration': 'integration',
+    'reporter': 'integration',
+    'final_qa': 'integration',
+}
+
+_VALID_PHASES = {'planning', 'development', 'integration', 'complete'}
+
 class VirtualCrew:
     role = 'Virtual Crew'
     name: str = None
@@ -18,6 +35,19 @@ class VirtualCrew:
             if rate_limiter:
                 agent.rate_limiter = rate_limiter
         self.app = self.manager.build_graph(agents=self.agents, memory=checkpointer or MemorySaver())
+
+    async def _ensure_current_phase(self, config: dict, state_object) -> str:
+        """Guarantee current_phase exists in state, inferring from next node when possible."""
+        state_values = state_object.values or {}
+        current_phase = state_values.get('current_phase')
+        if current_phase in _VALID_PHASES:
+            return current_phase
+        next_node = state_object.next[0] if state_object.next else END
+        inferred = 'complete' if next_node == END else _NODE_TO_PHASE.get(next_node)
+        if not inferred:
+            raise RuntimeError(f"Missing required 'current_phase' and could not infer from node '{next_node}'")
+        await self.app.aupdate_state(config, {'current_phase': inferred})
+        return inferred
 
     async def get_history(self, thread_id: str) -> list[dict]:
         config = {'configurable': {'thread_id': thread_id}}
@@ -73,10 +103,13 @@ class VirtualCrew:
             state_update = {}
             if feedback_source == 'reviewer':
                 state_update['review_feedback'] = f"CRITICAL HUMAN FEEDBACK: {feedback}"
+                state_update['current_phase'] = 'development'
             elif feedback_source == 'qa':
                 state_update['test_results'] = f"CRITICAL HUMAN FEEDBACK: {feedback}"
+                state_update['current_phase'] = 'development'
             elif feedback_source == 'pm':
                 state_update['specs'] = f"CRITICAL HUMAN FEEDBACK: {feedback}"
+                state_update['current_phase'] = 'planning'
             else:
                 state_update['communication_log'] = [f"**[Human]**: {feedback}"]
             for ext in self.extensions:
@@ -96,7 +129,8 @@ class VirtualCrew:
             initial_state = None
         elif requirements:
             initial_state = {
-                'requirements': requirements
+                'requirements': requirements,
+                'current_phase': 'planning',
             }
             for ext in self.extensions:
                 ext.on_start(thread_id, initial_state)
@@ -104,6 +138,10 @@ class VirtualCrew:
             initial_state = None
             for ext in self.extensions:
                 ext.on_resume(thread_id, initial_state)
+
+        state_object = await self.app.aget_state(config)
+        await self._ensure_current_phase(config, state_object)
+
         while True:
             async for event in self.app.astream(initial_state, config, stream_mode='updates', subgraphs=True):
                 if isinstance(event, tuple) and len(event) == 2:
@@ -111,6 +149,7 @@ class VirtualCrew:
                 else:
                     state_update = event
                 state_object = await self.app.aget_state(config)
+                await self._ensure_current_phase(config, state_object)
                 full_state = state_object.values
                 for ext in self.extensions:
                     ext.on_step(thread_id, state_update=state_update, full_state=full_state)
@@ -150,6 +189,8 @@ class VirtualCrew:
         final_state = final_state.values
         if abort_requested:
             final_state['abort_requested'] = True
+        else:
+            final_state['current_phase'] = 'complete'
         for ext in self.extensions:
             ext.on_finish(thread_id, final_state)
         final_state['thread_id'] = thread_id
