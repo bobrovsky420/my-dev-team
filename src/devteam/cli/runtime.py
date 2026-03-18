@@ -15,7 +15,7 @@ async def show_history(thread_id: str):
     llm_factory = LLMFactory(provider='ollama')
     async with aiosqlite.connect(db_path) as conn:
         checkpointer = AsyncSqliteSaver(conn)
-        crew = build_crew(llm_factory, checkpointer)
+        crew = build_crew(project_folder, llm_factory, checkpointer)
         logging.info("Fetching timeline history...")
         history_data = await crew.get_history(thread_id)
         for checkpoint in history_data:
@@ -44,7 +44,13 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
     try:
         async with aiosqlite.connect(db_path) as conn:
             checkpointer = AsyncSqliteSaver(conn)
-            crew = build_crew(llm_factory, checkpointer, rpm, extensions=my_extensions(project_folder))
+            crew = build_crew(
+                project_folder,
+                llm_factory,
+                checkpointer,
+                rpm=rpm,
+                extensions=my_extensions()
+            )
             logging.info('🚀 Starting AI Dev Team...')
             logging.info('📁 Workspace: %s', project_folder.absolute())
             final_state = await crew.execute(

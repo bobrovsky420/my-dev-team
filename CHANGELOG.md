@@ -5,9 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.3] - TBD
+## [0.4.3] - 2026-03-18
+
+### 🚀 Added
+
+* **GitCommitter Extension:** New `GitCommitter` extension that automatically initializes a local git repository inside the project's `workspace` subfolder and commits every developer update with a message of the form `Task {index} - revision {n}`.
 
 ### ⚙️ Changed
+
+* **VirtualCrew Constructor:** `project_folder: Path` is now the first positional argument. `WorkspaceSaver` and `GitCommitter` are wired in as dedicated keyword parameters (`workspace_saver`, `git_committer`) with sensible defaults, so callers no longer need to pass them via the generic `extensions` list.
+
+* **WorkspaceSaver Live Workspace:** In addition to writing versioned snapshots under `00_planning/`, `01_task/rev_N/`, etc., `WorkspaceSaver` now mirrors every developer-produced file to a flat `workspace` subfolder inside the project folder. This folder serves as the live working tree that `GitCommitter` tracks.
 
 * **Phase-Driven Lifecycle State:** Introduced `current_phase` field (`planning`, `development`, `integration`, `complete`) in project state.
 

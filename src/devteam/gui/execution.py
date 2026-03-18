@@ -32,7 +32,7 @@ def run_crew_in_thread(project_name, requirements, provider, rpm, event_queue, r
                 WorkspaceSaver(workspace_dir=project_folder),
                 StreamlitLogger(event_queue),
             ]
-            crew = build_crew(llm_factory, checkpointer, rpm, extensions=extensions)
+            crew = build_crew(project_folder, llm_factory, checkpointer, rpm, extensions=extensions)
             final_state = await crew.execute(thread_id=thread_id, requirements=requirements)
             result_holder['final_state'] = final_state
             result_holder['thread_id'] = thread_id
@@ -52,6 +52,7 @@ def get_existing_threads() -> list[str]:
 async def fetch_history_async(thread_id: str):
     db_path = settings.get_workspaces_dir() / thread_id / 'state.db'
     async with aiosqlite.connect(db_path) as conn:
+        project_folder = settings.get_workspaces_dir() / thread_id
         checkpointer = AsyncSqliteSaver(conn)
-        crew = build_crew(LLMFactory(provider='ollama'), checkpointer)
+        crew = build_crew(project_folder, LLMFactory(provider='ollama'), checkpointer)
         return await crew.get_history(thread_id)

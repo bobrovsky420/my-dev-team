@@ -19,7 +19,8 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 * **Incremental Development:** The System Architect breaks down requirements into a manageable backlog of strictly formatted JSON tasks.
 * **Self-Healing Code:** The Developer, Reviewer, and QA Engineer agents continuously loop until unit tests pass and code meets specifications.
 * **Structured Outputs:** Powered by Pydantic and LangChain, ensuring zero "Markdown spillage" and robust state management.
-* **Extensible:** Easily add custom tools like `HumanInTheLoop` or `WorkspaceSaver`.
+* **Extensible:** Easily add custom tools like `HumanInTheLoop` or `ConsoleLogger`.
+* **Local Git Versioning:** Every line of AI-generated code is automatically version-controlled.
 * **Cost & Token Optimization Analyzer:** Built-in telemetry tracks API costs down to the fraction of a cent and generates a diagnostic report at the end of every run, actively warning you if agents are stuck in loops or suffering from context bloat.
 
 ### AI Agents
@@ -43,6 +44,7 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 
 * **Docker Engine** required only if you intend to use the Sandboxed QA code execution features.
 * **Streamlit** required only to launch the web dashboard. You can install it separately or run `pip install my-dev-team[ui]`.
+* **Git** required only if you want to use the `GitCommitter` extension for automatic local version control of the generated workspace.
 
 ### Installation
 
@@ -240,7 +242,7 @@ from dotenv import load_dotenv
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from devteam import VirtualCrew, ProjectManager, LLMFactory
 from devteam.agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
-from devteam.extensions import HumanInTheLoop, WorkspaceSaver
+from devteam.extensions import ConsoleLogger, HumanInTheLoop
 from devteam.tools import DockerSandbox
 from devteam.utils import RateLimiter, TelemetryTracker
 
@@ -259,21 +261,20 @@ def my_agents() -> dict:
         'reporter': Reporter.from_config('reporter', 'reporter.md', model_category='reasoning', temperature=0.7)
     }
 
-def my_extensions(project_folder: Path) -> list:
-    """Add extensions like saving files to disk or requiring human approval."""
+def my_extensions() -> list:
     return [
-        WorkspaceSaver(workspace_dir=project_folder),
+        ConsoleLogger(),
         HumanInTheLoop()
     ]
 
-def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver, rpm: int = 0) -> VirtualCrew:
+def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver) -> VirtualCrew:
     return VirtualCrew(
+        project_folder,
         manager=ProjectManager(),
         agents=my_agents(),
         llm_factory=llm_factory,
-        extensions=my_extensions(project_folder),
-        checkpointer=checkpointer,
-        rate_limiter=RateLimiter(requests_per_minute=rpm) if rpm > 0 else None
+        extensions=my_extensions(),
+        checkpointer=checkpointer
     )
 
 async def main():
@@ -287,7 +288,7 @@ async def main():
     try:
         async with aiosqlite.connect(db_path) as conn:
             checkpointer = AsyncSqliteSaver(conn)
-            crew = build_crew(workspace, llm_factory, checkpointer, rpm=30)
+            crew = build_crew(workspace, llm_factory, checkpointer)
             print("🚀 Starting the AI Dev Team...")
             final_state = await crew.execute(
                 thread_id=thread_id,
@@ -337,21 +338,21 @@ You can rewrite the previous example as follows:
 ```python
 from devteam.utils import build_agents_from_config
 
-def my_extensions(project_folder: Path) -> list:
+def my_extensions() -> list:
     return [
-        WorkspaceSaver(workspace_dir=project_folder),
+        ConsoleLogger(),
         HumanInTheLoop()
     ]
 
-def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver, rpm: int = 0) -> VirtualCrew:
+def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver) -> VirtualCrew:
     """Instantiates the agents and returns the crew instance"""
     return VirtualCrew(
+        project_folder,
         manager=ProjectManager(),
         agents=build_agents_from_config('basic.yaml'),
         extensions=my_extensions(project_folder),
         llm_factory=llm_factory,
-        checkpointer=checkpointer,
-        rate_limiter=RateLimiter(requests_per_minute=rpm) if rpm > 0 else None
+        checkpointer=checkpointer
     )
 ```
 

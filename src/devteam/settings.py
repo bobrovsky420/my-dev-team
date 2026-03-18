@@ -1,5 +1,7 @@
 from pathlib import Path
 
+# pylint: disable=global-statement
+
 _WORKSPACES_DIR = Path('workspaces')
 _CONFIG_DIR: Path = Path(__file__).parent / 'config'
 _LLM_TIMEOUT: int = 120 # seconds

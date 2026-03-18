@@ -1,3 +1,4 @@
+from typing import Any
 from langgraph.graph import StateGraph, START, END
 from devteam.crew import ProjectState
 from devteam.utils import task_to_markdown
@@ -9,7 +10,7 @@ from .integration_manager import IntegrationManager
 class ProjectManager(BaseManager):
     role = 'Project Manager'
 
-    def build_graph(self, agents: dict, memory = None) -> StateGraph: # pylint: disable=arguments-differ
+    def build_graph(self, agents: dict, memory: Any = None) -> StateGraph: # pylint: disable=arguments-differ
         self.agents = agents
         workflow = StateGraph(ProjectState)
         planning_graph = PlanningManager().build_graph(agents)

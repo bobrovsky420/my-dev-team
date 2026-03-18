@@ -1,3 +1,4 @@
+from functools import cached_property
 from pathlib import Path
 from devteam.utils import task_to_markdown
 from .base_extension import CrewExtension
@@ -8,6 +9,10 @@ class WorkspaceSaver(CrewExtension):
     def __init__(self, workspace_dir: Path):
         self.workspace_dir = workspace_dir
         self.workspace_dir.mkdir(parents=True, exist_ok=True)
+
+    @cached_property
+    def live_dir(self) -> Path:
+        return self.workspace_dir / 'workspace'
 
     def on_start(self, thread_id: str, initial_state: dict):
         self.base_dir = self._get_target_dir(initial_state)
@@ -43,10 +48,14 @@ class WorkspaceSaver(CrewExtension):
         if not workspace_files:
             return
         revision_dir = f'rev_{current_rev}'
+        self.live_dir.mkdir(parents=True, exist_ok=True)
         for filepath, content in workspace_files.items():
             full_file_path = self.base_dir / revision_dir / filepath
             full_file_path.parent.mkdir(parents=True, exist_ok=True)
             full_file_path.write_text(content, encoding='utf-8')
+            live_file_path = self.live_dir / filepath
+            live_file_path.parent.mkdir(parents=True, exist_ok=True)
+            live_file_path.write_text(content, encoding='utf-8')
 
     def _save_code_review(self, review_feedback: str, current_rev: int):
         feedback_file = self.base_dir / f'feedback_v{current_rev}.md'

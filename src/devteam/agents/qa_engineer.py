@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 from devteam.tools import DockerSandbox
-from devteam.utils import is_approved_status
+from devteam.utils.status import is_approved_status
 from .base_agent import BaseAgent
 from .schemas import QAEngineerResponse
 

@@ -1,34 +1,33 @@
 import logging
+from functools import cached_property
+from pathlib import Path
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END
+from devteam.extensions import CrewExtension, WorkspaceSaver, GitCommitter
 from devteam.utils import LLMFactory, RateLimiter
 from .final_result import FinalResult
-
-_NODE_TO_PHASE = {
-    'planning': 'planning',
-    'pm': 'planning',
-    'architect': 'planning',
-    'human': 'planning',
-    'officer': 'development',
-    'development': 'development',
-    'developer': 'development',
-    'reviewer': 'development',
-    'qa': 'development',
-    'integration': 'integration',
-    'reporter': 'integration',
-    'final_qa': 'integration',
-}
-
-_VALID_PHASES = {'planning', 'development', 'integration', 'complete'}
 
 class VirtualCrew:
     role = 'Virtual Crew'
     name: str = None
 
-    def __init__(self, manager, agents: dict, llm_factory: LLMFactory, extensions: list = None, rate_limiter: RateLimiter = None, checkpointer = None):
+    def __init__(self,
+                 project_folder: Path,
+                 manager,
+                 agents: dict,
+                 llm_factory: LLMFactory,
+                 *,
+                 extensions: list[CrewExtension] = None,
+                 rate_limiter: RateLimiter = None,
+                 checkpointer = None,
+                 workspace_saver: CrewExtension = None,
+                 git_committer: CrewExtension = None):
         self.logger = logging.getLogger(self.name or self.role)
+        self.project_folder = project_folder
         self.manager = manager
         self.agents = agents or {}
+        self.workspace_saver = workspace_saver or WorkspaceSaver(workspace_dir=project_folder)
+        self.git_committer = git_committer or GitCommitter(workspace_dir=project_folder / 'workspace')
         self.extensions = extensions or []
         for agent in self.agents.values():
             agent.llm_factory = llm_factory
@@ -36,18 +35,16 @@ class VirtualCrew:
                 agent.rate_limiter = rate_limiter
         self.app = self.manager.build_graph(agents=self.agents, memory=checkpointer or MemorySaver())
 
-    async def _ensure_current_phase(self, config: dict, state_object) -> str:
-        """Guarantee current_phase exists in state, inferring from next node when possible."""
-        state_values = state_object.values or {}
-        current_phase = state_values.get('current_phase')
-        if current_phase in _VALID_PHASES:
-            return current_phase
-        next_node = state_object.next[0] if state_object.next else END
-        inferred = 'complete' if next_node == END else _NODE_TO_PHASE.get(next_node)
-        if not inferred:
-            raise RuntimeError(f"Missing required 'current_phase' and could not infer from node '{next_node}'")
-        await self.app.aupdate_state(config, {'current_phase': inferred})
-        return inferred
+    @cached_property
+    def system_hooks(self) -> list[CrewExtension]:
+        return [
+            self.workspace_saver,
+            self.git_committer
+        ]
+
+    @cached_property
+    def all_extensions(self) -> list[CrewExtension]:
+        return self.system_hooks + self.extensions
 
     async def get_history(self, thread_id: str) -> list[dict]:
         config = {'configurable': {'thread_id': thread_id}}
@@ -112,7 +109,7 @@ class VirtualCrew:
                 state_update['current_phase'] = 'planning'
             else:
                 state_update['communication_log'] = [f"**[Human]**: {feedback}"]
-            for ext in self.extensions:
+            for ext in self.all_extensions:
                 ext.on_resume(thread_id, state_update)
             target_state = await self.app.aget_state(config)
             safe_config = target_state.config.copy()
@@ -132,15 +129,12 @@ class VirtualCrew:
                 'requirements': requirements,
                 'current_phase': 'planning',
             }
-            for ext in self.extensions:
+            for ext in self.all_extensions:
                 ext.on_start(thread_id, initial_state)
         else:
             initial_state = None
-            for ext in self.extensions:
+            for ext in self.all_extensions:
                 ext.on_resume(thread_id, initial_state)
-
-        state_object = await self.app.aget_state(config)
-        await self._ensure_current_phase(config, state_object)
 
         while True:
             async for event in self.app.astream(initial_state, config, stream_mode='updates', subgraphs=True):
@@ -149,9 +143,8 @@ class VirtualCrew:
                 else:
                     state_update = event
                 state_object = await self.app.aget_state(config)
-                await self._ensure_current_phase(config, state_object)
                 full_state = state_object.values
-                for ext in self.extensions:
+                for ext in self.all_extensions:
                     ext.on_step(thread_id, state_update=state_update, full_state=full_state)
                 if full_state.get('error') is True:
                     traceback_str = full_state.get('error_message', 'Unknown Error')
@@ -172,7 +165,7 @@ class VirtualCrew:
             next_node = state_snapshot.next[0]
             self.logger.debug("Workflow paused. Waiting on: %s", next_node)
             update_provided = False
-            for ext in self.extensions:
+            for ext in self.all_extensions:
                 update = ext.on_pause(thread_id, state_snapshot.values, next_node)
                 if update:
                     await self.app.aupdate_state(config, update)
@@ -191,7 +184,7 @@ class VirtualCrew:
             final_state['abort_requested'] = True
         else:
             final_state['current_phase'] = 'complete'
-        for ext in self.extensions:
+        for ext in self.all_extensions:
             ext.on_finish(thread_id, final_state)
         final_state['thread_id'] = thread_id
         return FinalResult(**final_state)
