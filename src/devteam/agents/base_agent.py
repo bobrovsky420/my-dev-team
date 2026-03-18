@@ -9,8 +9,8 @@ import yaml
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, ValidationError
-from ..settings import get_config_dir, get_llm_timeout
-from ..utils import LLMFactory, RateLimiter, sanitize_for_prompt
+from devteam.settings import get_config_dir, get_llm_timeout
+from devteam.utils import LLMFactory, RateLimiter, sanitize_for_prompt
 
 T = TypeVar('T', bound=BaseModel)
 
@@ -32,6 +32,10 @@ class BaseAgent(Generic[T]):
         self.temperature = config.get('temperature', self.temperature)
         self.logger = logging.getLogger(self.name or self.role)
 
+    @staticmethod
+    def sanitize_for_prompt(content: str, tags: list[str]) -> str:
+        return sanitize_for_prompt(content, tags)
+
     @cached_property
     def required_inputs(self) -> list[str]:
         return self.config.get('required_inputs', [])
@@ -40,7 +44,7 @@ class BaseAgent(Generic[T]):
         inputs = {}
         for key in self.required_inputs:
             val = state.get(key, '')
-            inputs[key] = sanitize_for_prompt(str(val), [key]) if val else ''
+            inputs[key] = self.sanitize_for_prompt(str(val), [key]) if val else ''
         return inputs
 
     def _update_state(self, parsed_data: T, current_state: dict) -> dict:
@@ -61,7 +65,7 @@ class BaseAgent(Generic[T]):
                 if attempt < self.max_retries:
                     self._bump_temperature(attempt, last_error)
                 continue
-            except Exception as e: # pylint: disable=broad-exception-caught
+            except Exception: # pylint: disable=broad-exception-caught
                 full_traceback = traceback.format_exc()
                 return {
                     'error': True,

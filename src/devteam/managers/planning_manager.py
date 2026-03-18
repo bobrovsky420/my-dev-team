@@ -1,5 +1,5 @@
 from langgraph.graph import StateGraph, START, END
-from ..crew import ProjectState
+from devteam.crew import ProjectState
 from .base_manager import BaseManager
 
 class PlanningManager(BaseManager):

@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
-from ..tools import DockerSandbox
-from ..utils import sanitize_for_prompt, is_approved_status
+from devteam.tools import DockerSandbox
+from devteam.utils import is_approved_status
 from .base_agent import BaseAgent
 from .schemas import QAEngineerResponse
 
@@ -14,11 +14,11 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
         workspace_str = ''
         if workspace_files := state.get('workspace_files', {}):
             for filepath, content in workspace_files.items():
-                clean_content = sanitize_for_prompt(content, [filepath, 'workspace'])
+                clean_content = self.sanitize_for_prompt(content, [filepath, 'workspace'])
                 workspace_str += f"--- FILE: {filepath} ---\n{clean_content}\n\n"
             if self.sandbox:
                 test_results = self._run_tests(state)
-                inputs['test_results'] = sanitize_for_prompt(test_results, ['test_results'])
+                inputs['test_results'] = self.sanitize_for_prompt(test_results, ['test_results'])
         else:
             workspace_str = "No files exist in the workspace."
         inputs['workspace'] = workspace_str.strip()

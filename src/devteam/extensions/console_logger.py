@@ -1,4 +1,4 @@
-from rich import print as print
+from rich import print # pylint: disable=redefined-builtin
 from rich.panel import Panel
 from rich.text import Text
 from .base_extension import CrewExtension

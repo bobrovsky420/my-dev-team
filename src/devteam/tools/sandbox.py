@@ -4,7 +4,7 @@ import logging
 import docker
 from docker.errors import ImageNotFound
 import yaml
-from ..settings import get_config_dir
+from devteam.settings import get_config_dir
 
 class DockerSandbox:
     def __init__(self):

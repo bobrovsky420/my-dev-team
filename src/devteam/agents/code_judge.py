@@ -1,4 +1,3 @@
-from ..utils import sanitize_for_prompt
 from .base_agent import BaseAgent
 from .schemas import CodeJudgeResponse
 
@@ -11,7 +10,7 @@ class CodeJudge(BaseAgent[CodeJudgeResponse]):
         drafts_formatted = ""
         for idx, draft in enumerate(drafts):
             draft_idx = f"draft_{idx}"
-            safe_draft = sanitize_for_prompt(draft, [draft_idx, 'drafts'])
+            safe_draft = self.sanitize_for_prompt(draft, [draft_idx, 'drafts'])
             drafts_formatted += f"<{draft_idx}>\n{safe_draft}\n</{draft_idx}>\n\n"
         inputs['drafts'] = drafts_formatted
         return inputs

@@ -1,6 +1,6 @@
 import logging
 import yaml
-from ..settings import get_config_dir
+from devteam.settings import get_config_dir
 
 logger = logging.getLogger("Crew Factory")
 

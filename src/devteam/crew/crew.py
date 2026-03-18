@@ -1,7 +1,7 @@
 import logging
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END
-from ..utils import LLMFactory, RateLimiter
+from devteam.utils import LLMFactory, RateLimiter
 from .final_result import FinalResult
 
 class VirtualCrew:

@@ -1,5 +1,5 @@
 from pathlib import Path
-from ..utils import task_to_markdown
+from devteam.utils import task_to_markdown
 from .base_extension import CrewExtension
 
 class WorkspaceSaver(CrewExtension):

@@ -8,7 +8,7 @@ from rich.table import Table
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
 from litellm import cost_per_token
-from ..settings import get_config_dir
+from devteam.settings import get_config_dir
 from .cost_optimization import CostOptimization
 
 class TelemetryTracker(BaseCallbackHandler, CostOptimization):
@@ -75,7 +75,7 @@ class TelemetryTracker(BaseCallbackHandler, CostOptimization):
         if model_provider == 'ollama':
             return 0
         try:
-            model_name = self.aliases.get(model_name, model_name)
+            model_name = self.llm_aliases.get(model_name, model_name)
             p_cost, c_cost = cost_per_token(
                 model=f'{model_provider}/{model_name}',
                 prompt_tokens=input_tokens,

@@ -1,4 +1,4 @@
-from ..utils import sanitize_for_prompt, workspace_str_from_files
+from devteam.utils import workspace_str_from_files
 from .base_agent import BaseAgent
 from .schemas import DeveloperResponse
 
@@ -13,9 +13,9 @@ class SeniorDeveloper(BaseAgent[DeveloperResponse]):
             workspace_str = "No files exist yet. This is the first task. Please create the initial file structure."
         feedback_str = ''
         if review := state.get('review_feedback'):
-            feedback_str += f"<review_feedback>\n{sanitize_for_prompt(review, ['review_feedback'])}\n</review_feedback>\n\n"
+            feedback_str += f"<review_feedback>\n{self.sanitize_for_prompt(review, ['review_feedback'])}\n</review_feedback>\n\n"
         if test_res := state.get('test_results'):
-            feedback_str += f"<test_results>\n{sanitize_for_prompt(test_res, ['test_results'])}\n</test_results>\n\n"
+            feedback_str += f"<test_results>\n{self.sanitize_for_prompt(test_res, ['test_results'])}\n</test_results>\n\n"
         if feedback_str:
             workspace_str += f"\n\n### ACTIVE BUG REPORTS TO FIX ###\n{feedback_str}"
         inputs['workspace'] = workspace_str

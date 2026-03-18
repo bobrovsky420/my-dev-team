@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, START, END
-from ..crew import ProjectState
-from ..utils import task_to_markdown
+from devteam.crew import ProjectState
+from devteam.utils import task_to_markdown
 from .base_manager import BaseManager
 from .planning_manager import PlanningManager
 from .execution_manager import StandardExecutionManager

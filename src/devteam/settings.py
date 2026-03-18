@@ -1,7 +1,15 @@
 from pathlib import Path
 
+_WORKSPACES_DIR = Path('workspaces')
 _CONFIG_DIR: Path = Path(__file__).parent / 'config'
 _LLM_TIMEOUT: int = 120 # seconds
+
+def set_workspaces_dir(path: Path) -> None:
+    global _WORKSPACES_DIR
+    _WORKSPACES_DIR = path.resolve()
+
+def get_workspaces_dir() -> Path:
+    return _WORKSPACES_DIR
 
 def set_config_dir(path: Path) -> None:
     global _CONFIG_DIR

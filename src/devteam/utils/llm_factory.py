@@ -1,7 +1,7 @@
 from functools import cached_property
 import yaml
 from langchain_core.language_models.chat_models import BaseChatModel
-from ..settings import get_config_dir
+from devteam.settings import get_config_dir
 
 class LLMFactory:
     def __init__(self, provider: str, callbacks: list = None):

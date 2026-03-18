@@ -1,0 +1,124 @@
+import logging
+from queue import Empty
+import streamlit as st
+from devteam.extensions import StreamlitLogger
+
+AGENT_META = {
+    'pm': {'icon': '📋', 'label': 'Product Manager', 'phase': 'Planning'},
+    'architect': {'icon': '🏗️', 'label': 'System Architect', 'phase': 'Planning'},
+    'human': {'icon': '👤', 'label': 'Human Input', 'phase': 'Planning'},
+    'developer': {'icon': '💻', 'label': 'Senior Developer', 'phase': 'Development'},
+    'reviewer': {'icon': '🔍', 'label': 'Code Reviewer', 'phase': 'Development'},
+    'qa': {'icon': '🧪', 'label': 'QA Engineer', 'phase': 'Development'},
+    'task_router': {'icon': '🔀', 'label': 'Task Router', 'phase': 'Development'},
+    'reporter': {'icon': '📝', 'label': 'Reporter', 'phase': 'Integration'},
+    'final_qa': {'icon': '✅', 'label': 'Final QA', 'phase': 'Integration'},
+}
+
+def init_session_state():
+    defaults = {
+        'execution_active': False,
+        'events': [],
+        'current_phase': None,
+        'active_agents': [],
+        'task_progress': {'current': 0, 'total': 0, 'name': ''},
+        'communication_log': [],
+        'workspace_files': {},
+        'specs': '',
+        'final_report': '',
+        'result_holder': {},
+        'event_queue': None,
+        'worker_thread': None,
+        'revision_count': 0,
+    }
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+def reset_execution_state():
+    for key in ['events', 'active_agents', 'communication_log', 'workspace_files', 'specs', 'final_report', 'result_holder']:
+        st.session_state[key] = [] if key in ('events', 'active_agents', 'communication_log') else ({} if key in ('workspace_files', 'result_holder') else '')
+    st.session_state['task_progress'] = {'current': 0, 'total': 0, 'name': ''}
+    st.session_state['revision_count'] = 0
+    st.session_state['current_phase'] = 'Planning'
+    st.session_state['execution_active'] = True
+
+def process_event(event: dict):
+    st.session_state['events'].append(event)
+    event_type = event['type']
+
+    if event_type == StreamlitLogger.EVT_START:
+        st.session_state['current_phase'] = 'Planning'
+        return
+
+    if event_type == StreamlitLogger.EVT_STEP:
+        _process_step_event(event)
+        return
+
+    if event_type == StreamlitLogger.EVT_PAUSE:
+        return
+
+    if event_type in (StreamlitLogger.EVT_FINISH, StreamlitLogger.EVT_ERROR):
+        st.session_state['execution_active'] = False
+        if event_type == StreamlitLogger.EVT_FINISH:
+            st.session_state['current_phase'] = 'Complete'
+            final = event.get('state', {})
+            if final.get('final_report'):
+                st.session_state['final_report'] = final['final_report']
+
+def drain_queue() -> bool:
+    queue = st.session_state.get('event_queue')
+    if queue is None:
+        return False
+    had_events = False
+    while True:
+        try:
+            event = queue.get_nowait()
+            had_events = True
+            process_event(event)
+        except Empty:
+            break
+    if had_events:
+        logging.debug('Drained %d total events from queue', len(st.session_state.get('events', [])))
+    return had_events
+
+def _process_step_event(event: dict):
+    state_update = event.get('state_update', {})
+    full_state = event.get('full_state', {})
+    for node_name, node_output in state_update.items():
+        meta = AGENT_META.get(node_name, {'icon': '⚙️', 'label': node_name, 'phase': 'Unknown'})
+        st.session_state['current_phase'] = meta['phase']
+        st.session_state['active_agents'].append(
+            {
+                'node': node_name,
+                'label': meta['label'],
+                'icon': meta['icon'],
+                'phase': meta['phase'],
+                'ts': event['ts'],
+                'output_keys': list(node_output.keys()) if isinstance(node_output, dict) else [],
+            }
+        )
+        if isinstance(node_output, dict):
+            if 'specs' in node_output and node_output['specs']:
+                st.session_state['specs'] = node_output['specs']
+            if 'workspace_files' in node_output and node_output['workspace_files']:
+                st.session_state['workspace_files'] = node_output['workspace_files']
+            if 'final_report' in node_output and node_output['final_report']:
+                st.session_state['final_report'] = node_output['final_report']
+            if 'revision_count' in node_output:
+                st.session_state['revision_count'] = node_output['revision_count']
+    pending = full_state.get('pending_tasks', [])
+    index = full_state.get('current_task_index', 0)
+    current_task = full_state.get('current_task', '')
+    if pending:
+        task_name = ''
+        if 0 < index <= len(pending):
+            task_name = pending[index - 1].get('task_name', f'Task {index}')
+        st.session_state['task_progress'] = {
+            'current': index,
+            'total': len(pending),
+            'name': task_name,
+        }
+    if current_task == 'ALL_DONE':
+        st.session_state['current_phase'] = 'Integration'
+    st.session_state['communication_log'] = full_state.get('communication_log', [])
