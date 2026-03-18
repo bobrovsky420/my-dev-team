@@ -1,6 +1,22 @@
 import re
 from typing import List, Optional
 
+def normalize_workspace_content(text: str) -> str:
+    """Normalize double-escaped newlines from LLM JSON responses."""
+    escaped_nl = text.count('\\n')
+    escaped_crlf = text.count('\\r\\n')
+    if escaped_nl == 0 and escaped_crlf == 0:
+        return text
+    real_nl = text.count('\n')
+    should_normalize = real_nl == 0 and (escaped_nl > 0 or escaped_crlf > 0)
+    if not should_normalize and ('\\n\\n' in text or '\\r\\n\\r\\n' in text):
+        should_normalize = True
+    if not should_normalize and escaped_nl >= 4 and escaped_nl > (real_nl * 2):
+        should_normalize = True
+    if not should_normalize:
+        return text
+    return text.replace('\\r\\n', '\n').replace('\\n', '\n')
+
 def sanitize_for_prompt(content: str, protected_tags: Optional[List[str]] = None) -> str:
     """
     Cleans raw file content and text before injecting it into an LLM prompt.

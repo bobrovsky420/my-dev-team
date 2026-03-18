@@ -78,6 +78,25 @@ class TestCodeReviewer:
 # --- SeniorDeveloper Tests ---
 
 class TestSeniorDeveloper:
+    def test_workspace_file_normalizes_fully_escaped_newlines(self):
+        file_obj = WorkspaceFile(
+            path="tests/test_user_input.py",
+            content="import unittest\\n\\nfrom user_input import parse_number\\n",
+        )
+        assert "\\n" not in file_obj.content
+        assert "import unittest\n\nfrom user_input import parse_number\n" == file_obj.content
+
+    def test_workspace_file_preserves_normal_multiline_content(self):
+        content = "def add(a, b):\n    return a + b\n"
+        file_obj = WorkspaceFile(path="calculator.py", content=content)
+        assert file_obj.content == content
+
+    def test_workspace_file_normalizes_heavily_escaped_mixed_content(self):
+        content = "'''Doc'''\\n\\ndef parse_number(x):\n    return float(x)\\n"
+        file_obj = WorkspaceFile(path="user_input.py", content=content)
+        assert "\\n\\n" not in file_obj.content
+        assert "'''Doc'''\n\ndef parse_number(x):\n    return float(x)\n" == file_obj.content
+
     def test_build_inputs_no_workspace(self):
         config = make_config("Developer", ["specs", "current_task"])
         agent = SeniorDeveloper(config, "prompt {specs} {current_task} {workspace}", "developer")

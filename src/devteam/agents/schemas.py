@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+from devteam.utils.sanitizer import normalize_workspace_content
 
 # pylint: disable=line-too-long
 
@@ -46,6 +47,13 @@ class WorkspaceFile(BaseModel):
     content: str = Field(
         description="The ENTIRE, 100% complete source code or text for this file. NEVER use placeholders like '// ... existing code ...' or '# ... previous logic ...'. If you omit existing lines from a modified file, that logic will be permanently deleted."
     )
+
+    @field_validator('content', mode='before')
+    @classmethod
+    def normalize_content(cls, value):
+        if isinstance(value, str):
+            return normalize_workspace_content(value)
+        return value
 
 class DeveloperResponse(BaseModel):
     workspace_files: list[WorkspaceFile] = Field(
