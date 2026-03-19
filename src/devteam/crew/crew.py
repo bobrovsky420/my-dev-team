@@ -161,19 +161,13 @@ class VirtualCrew(EventEmitter):
                 break
             next_node = state_snapshot.next[0]
             self.logger.debug("Workflow paused. Waiting on: %s", next_node)
-            update_provided = False
-            for ext in self.all_extensions:
-                update = ext.on_pause(thread_id, state_snapshot.values, next_node)
-                if update:
-                    await self.app.aupdate_state(config, update)
-                    update_provided = True
-                    if update.get('abort_requested'):
-                        abort_requested = True
-                        break
-            if abort_requested:
-                self.logger.debug("Abort requested. Ending workflow.")
-                break
-            if not update_provided:
+            if update := self.emit_event('pause', thread_id, current_state=state_snapshot.values, next_node=next_node):
+                await self.app.aupdate_state(config, update)
+                if update.get('abort_requested'):
+                    abort_requested = True
+                    self.logger.debug("Abort requested. Ending workflow.")
+                    break
+            else:
                 break
         final_state = await self.app.aget_state(config)
         final_state = final_state.values
