@@ -31,7 +31,7 @@ def _apply_config(custom_config_path: str):
     custom_path = Path(custom_config_path)
     if not custom_path.exists() or not custom_path.is_dir():
         print(f"❌ Error: Config directory '{custom_path}' not found.")
-        raise SystemExit(1)
+        sys.exit(1)
     settings.set_config_dir(custom_path)
 
 def _validate_inputs(parser: argparse.ArgumentParser, args):
@@ -39,11 +39,11 @@ def _validate_inputs(parser: argparse.ArgumentParser, args):
         path = settings.get_workspaces_dir() / args.resume
         if not path.exists():
             logging.error("❌ Error: Could not find workspace for thread '%s'", args.resume)
-            raise SystemExit(1)
+            sys.exit(1)
     elif args.project_file:
         if not Path(args.project_file).exists():
             logging.error("❌ Error: Could not find project file '%s'", args.project_file)
-            raise SystemExit(1)
+            sys.exit(1)
     else:
         parser.error('You must provide either a project_file OR the --resume flag.')
     if args.history and not args.resume:
@@ -53,7 +53,10 @@ def main_ui():
     """Entry point for the devteam-ui command."""
     load_dotenv()
     app_path = Path(__file__).resolve().parents[1] / 'gui' / 'app.py'
-    subprocess.run([sys.executable, '-m', 'streamlit', 'run', str(app_path)], check=False)
+    try:
+        subprocess.run([sys.executable, '-m', 'streamlit', 'run', str(app_path)], check=False)
+    except KeyboardInterrupt:
+        sys.exit(0)
 
 def main():
     load_dotenv()

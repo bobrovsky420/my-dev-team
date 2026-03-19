@@ -1,7 +1,7 @@
 import logging
 import time
 from queue import Queue
-from devteam.crew import Event
+from devteam.crew.events import Event
 from .base_extension import CrewExtension
 
 class StreamlitLogger(CrewExtension):

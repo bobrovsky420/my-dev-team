@@ -1,7 +1,7 @@
 import logging
 from queue import Empty
 import streamlit as st
-from devteam.crew import Event
+from devteam.crew.events import Event
 
 AGENT_META = {
     'pm': {'icon': '📋', 'label': 'Product Manager', 'phase': 'Planning'},

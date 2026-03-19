@@ -1,11 +1,6 @@
 import streamlit as st
 from devteam.utils import setup_logging
-from devteam.gui.pages import (
-    render_execution_dashboard_page,
-    render_history_page,
-    render_resume_project_page,
-    render_start_new_project_page,
-)
+from devteam.gui import pages
 from devteam.gui.session import drain_queue, init_session_state
 
 setup_logging(console_level=None)
@@ -23,7 +18,12 @@ def main():
 
     mode = st.sidebar.radio(
         'Choose an action:',
-        ['🚀 Start New Project', '📊 Execution Dashboard', '🔄 Resume Project', '🕰️ View History'],
+        [
+            '🚀 Start New Project',
+            '📊 Execution Dashboard',
+            '🔄 Resume Project',
+            '🕰️ Show History'
+        ],
         key='nav_mode',
     )
 
@@ -35,13 +35,13 @@ def main():
             st.session_state['execution_active'] = False
 
     if mode == '🚀 Start New Project':
-        render_start_new_project_page()
+        pages.render_start_new_project_page()
     elif mode == '📊 Execution Dashboard':
-        render_execution_dashboard_page()
+        pages.render_execution_dashboard_page()
     elif mode == '🔄 Resume Project':
-        render_resume_project_page()
-    elif mode == '🕰️ View History':
-        render_history_page()
+        pages.render_resume_project_page()
+    elif mode == '🕰️ Show History':
+        pages.render_history_page()
 
 if __name__ == '__main__':
     main()
