@@ -44,6 +44,10 @@ class WorkspaceSaver(CrewExtension):
             content.append(task_to_markdown(task, idx))
         tasks_file.write_text('\n'.join(content), encoding='utf-8')
 
+    def _save_current_task(self, current_task: str):
+        task_file = self.base_dir / 'task.md'
+        task_file.write_text(current_task, encoding='utf-8')
+
     def _save_workspace(self, workspace_files: dict, current_rev: int):
         if not workspace_files:
             return
@@ -81,6 +85,9 @@ class WorkspaceSaver(CrewExtension):
                     if pending := node_update.get('pending_tasks', []):
                         self._save_tasks(pending)
                 case 'developer':
+                    if state_update.get('revision_count', 0) == 0:
+                        if current_task := full_state.get('current_task', ''):
+                            self._save_current_task(current_task)
                     workspace_files = node_update.get('workspace_files', {})
                     current_rev = node_update.get('revision_count', 0)
                     self._save_workspace(workspace_files, current_rev)
