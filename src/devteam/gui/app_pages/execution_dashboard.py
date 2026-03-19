@@ -1,5 +1,5 @@
 import streamlit as st
-from devteam.gui.rendering import render_execution_dashboard
+from devteam.gui.components import render_execution_dashboard
 
 def render_execution_dashboard_page():
     st.header('Execution Dashboard')
