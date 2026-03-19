@@ -1,6 +1,6 @@
 import asyncio
 from functools import cached_property
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 import json
 import logging
 import re
@@ -22,6 +22,8 @@ class BaseAgent(Generic[T]):
     max_retries: int = 2
     rate_limiter: RateLimiter = None
     output_schema: type[T]
+
+    chain: Any # type: ignore
 
     def __init__(self, config: dict, prompt_template: str, node_name: str):
         self.config = config

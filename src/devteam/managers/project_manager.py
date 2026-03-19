@@ -9,6 +9,7 @@ from .integration_manager import IntegrationManager
 
 class ProjectManager(BaseManager):
     role = 'Project Manager'
+    agents: dict
 
     def build_graph(self, agents: dict, memory: Any = None) -> StateGraph: # pylint: disable=arguments-differ
         self.agents = agents
