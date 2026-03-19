@@ -65,11 +65,10 @@ where = ["src"]
 
 [tool.pylint.messages_control]
 disable = [
-    "missing-class-docstring",
-    "missing-function-docstring",
-    "missing-module-docstring",
+    "missing-docstring",
     "too-few-public-methods",
-    "unnecessary-pass"
+    "unnecessary-pass",
+    "no-else-return"
 ]
 
 [tool.pylint.design]
@@ -78,4 +77,4 @@ max-positional-arguments = 8
 max-attributes = 12
 
 [tool.pylint.format]
-max-line-length = 160
+max-line-length = 190

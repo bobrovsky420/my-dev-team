@@ -5,9 +5,10 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END
 from devteam.extensions import CrewExtension, WorkspaceSaver, GitCommitter
 from devteam.utils import LLMFactory, RateLimiter
+from .event_emitter import EventEmitter
 from .final_result import FinalResult
 
-class VirtualCrew:
+class VirtualCrew(EventEmitter):
     role = 'Virtual Crew'
     name: str = None
 
@@ -109,8 +110,7 @@ class VirtualCrew:
                 state_update['current_phase'] = 'planning'
             else:
                 state_update['communication_log'] = [f"**[Human]**: {feedback}"]
-            for ext in self.all_extensions:
-                ext.on_resume(thread_id, state_update)
+            self.emit_event('resume', thread_id, state_update=state_update)
             target_state = await self.app.aget_state(config)
             safe_config = target_state.config.copy()
             if 'configurable' not in safe_config:
@@ -129,12 +129,10 @@ class VirtualCrew:
                 'requirements': requirements,
                 'current_phase': 'planning',
             }
-            for ext in self.all_extensions:
-                ext.on_start(thread_id, initial_state)
+            self.emit_event('start', thread_id, initial_state=initial_state)
         else:
             initial_state = None
-            for ext in self.all_extensions:
-                ext.on_resume(thread_id, initial_state)
+            self.emit_event('resume', thread_id, state_update=initial_state)
 
         while True:
             async for event in self.app.astream(initial_state, config, stream_mode='updates', subgraphs=True):
@@ -144,8 +142,7 @@ class VirtualCrew:
                     state_update = event
                 state_object = await self.app.aget_state(config)
                 full_state = state_object.values
-                for ext in self.all_extensions:
-                    ext.on_step(thread_id, state_update=state_update, full_state=full_state)
+                self.emit_event('step', thread_id, state_update=state_update, full_state=full_state)
                 if full_state.get('error') is True:
                     traceback_str = full_state.get('error_message', 'Unknown Error')
                     self.logger.error("Workflow halted due to error:\n%s\n\nFix the issue and resume using: devteam --resume %s", traceback_str, thread_id)
@@ -184,7 +181,6 @@ class VirtualCrew:
             final_state['abort_requested'] = True
         else:
             final_state['current_phase'] = 'complete'
-        for ext in self.all_extensions:
-            ext.on_finish(thread_id, final_state)
+        self.emit_event('finish', thread_id, final_state=final_state)
         final_state['thread_id'] = thread_id
         return FinalResult(**final_state)

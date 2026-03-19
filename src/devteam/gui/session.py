@@ -1,7 +1,7 @@
 import logging
 from queue import Empty
 import streamlit as st
-from devteam.extensions import StreamlitLogger
+from devteam.crew import Event
 
 AGENT_META = {
     'pm': {'icon': '📋', 'label': 'Product Manager', 'phase': 'Planning'},
@@ -45,22 +45,22 @@ def reset_execution_state():
 
 def process_event(event: dict):
     st.session_state['events'].append(event)
-    event_type = event['type']
+    event_type: Event = event['type']
 
-    if event_type == StreamlitLogger.EVT_START:
+    if event_type == 'start':
         st.session_state['current_phase'] = 'Planning'
         return
 
-    if event_type == StreamlitLogger.EVT_STEP:
+    if event_type == 'step':
         _process_step_event(event)
         return
 
-    if event_type == StreamlitLogger.EVT_PAUSE:
+    if event_type == 'pause':
         return
 
-    if event_type in (StreamlitLogger.EVT_FINISH, StreamlitLogger.EVT_ERROR):
+    if event_type in ('finish', 'error'):
         st.session_state['execution_active'] = False
-        if event_type == StreamlitLogger.EVT_FINISH:
+        if event_type == 'finish':
             st.session_state['current_phase'] = 'Complete'
             final = event.get('state', {})
             if final.get('final_report'):
