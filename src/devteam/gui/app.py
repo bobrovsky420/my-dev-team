@@ -1,11 +1,18 @@
 import streamlit as st
 from devteam.utils import setup_logging
-from devteam.gui import pages
+from devteam.gui import app_pages as pages
 from devteam.gui.session import drain_queue, init_session_state
 
 setup_logging(console_level=None)
 
+def _configure_streamlit() -> None:
+    try:
+        st.set_option('client.showSidebarNavigation', False)
+    except Exception: # pylint: disable=broad-exception-caught
+        pass
+
 def main():
+    _configure_streamlit()
     st.set_page_config(page_title='My AI Dev Team', page_icon='🚀', layout='wide')
     init_session_state()
 
