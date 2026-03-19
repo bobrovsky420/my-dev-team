@@ -12,6 +12,9 @@ def main():
     st.title('🤖 My AI Dev Team')
     st.sidebar.title('Navigation')
 
+    if 'nav_mode' not in st.session_state:
+        st.session_state['nav_mode'] = '🏠 Welcome'
+
     if st.session_state.get('execution_active') and st.session_state.get('nav_mode') != '📊 Execution Dashboard':
         st.session_state['nav_mode'] = '📊 Execution Dashboard'
         st.rerun()
@@ -19,6 +22,7 @@ def main():
     mode = st.sidebar.radio(
         'Choose an action:',
         [
+            '🏠 Welcome',
             '🚀 Start New Project',
             '📊 Execution Dashboard',
             '🔄 Resume Project',
@@ -34,7 +38,9 @@ def main():
             drain_queue()
             st.session_state['execution_active'] = False
 
-    if mode == '🚀 Start New Project':
+    if mode == '🏠 Welcome':
+        pages.render_welcome_page()
+    elif mode == '🚀 Start New Project':
         pages.render_start_new_project_page()
     elif mode == '📊 Execution Dashboard':
         pages.render_execution_dashboard_page()
