@@ -12,19 +12,19 @@ def render_welcome_page():
         st.markdown('### 🚀 Start New')
         st.caption('Upload a requirements file and launch the team.')
         if st.button('Go to New Project', key='welcome_new_project'):
-            st.session_state['nav_mode'] = '🚀 Start New Project'
+            st.session_state['requested_mode'] = '🚀 Start New Project'
             st.rerun()
     with card_2:
         st.markdown('### 📊 Dashboard')
         st.caption('Track current phase, agent activity, and generated files.')
         if st.button('Open Dashboard', key='welcome_dashboard'):
-            st.session_state['nav_mode'] = '📊 Execution Dashboard'
+            st.session_state['requested_mode'] = '📊 Execution Dashboard'
             st.rerun()
     with card_3:
         st.markdown('### 🔄 Resume Work')
         st.caption('Continue from a saved workspace and inject feedback.')
         if st.button('Resume Project', key='welcome_resume'):
-            st.session_state['nav_mode'] = '🔄 Resume Project'
+            st.session_state['requested_mode'] = '🔄 Resume Project'
             st.rerun()
 
     st.divider()

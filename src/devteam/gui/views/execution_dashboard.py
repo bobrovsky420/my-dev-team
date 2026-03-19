@@ -1,10 +1,16 @@
 import time
 import streamlit as st
-from .activity import render_agent_timeline, render_task_progress
-from .artifacts import render_communication_log, render_workspace_files
-from .phase_tracker import render_phase_tracker
+from devteam.gui.components import render_agent_timeline, render_task_progress, render_communication_log, render_workspace_files, render_phase_tracker
 
-def render_execution_dashboard():
+def render_execution_dashboard_page():
+    st.header('Execution Dashboard')
+    if not (st.session_state.get('execution_active') or st.session_state.get('active_agents')):
+        st.info(
+            'No execution in progress. Go to **🚀 Start New Project** to launch one, '
+            'or results from a previous run will appear here.'
+        )
+        return
+
     render_phase_tracker()
     st.divider()
 
