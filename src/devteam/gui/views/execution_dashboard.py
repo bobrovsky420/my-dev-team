@@ -21,7 +21,6 @@ def render_execution_dashboard_page():
     with left:
         st.subheader('Agent Activity')
         render_agent_timeline()
-
         st.subheader('Task Progress')
         render_task_progress()
 

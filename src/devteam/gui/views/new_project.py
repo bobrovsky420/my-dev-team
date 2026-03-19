@@ -10,6 +10,13 @@ from devteam.utils import parse_spec_from_string
 def render_start_new_project_page():
     st.header('Start a New Project')
 
+    if st.session_state.get('execution_active', False):
+        st.info('Execution is currently running. Open the dashboard to monitor progress.')
+        if st.button('📊 Open Execution Dashboard', key='open_dashboard_while_running'):
+            st.session_state['requested_mode'] = '📊 Execution Dashboard'
+            st.rerun()
+        return
+
     uploaded_file = st.file_uploader('Upload your project requirements (.txt)', type=['txt'])
     col1, col2 = st.columns(2)
     with col1:

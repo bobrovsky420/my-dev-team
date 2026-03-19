@@ -6,7 +6,7 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from devteam import settings
 from devteam.utils import LLMFactory, generate_thread_id
 from devteam.cli.crew_builder import build_crew
-from devteam.extensions import StreamlitLogger, WorkspaceSaver
+from devteam.extensions import StreamlitLogger
 
 def get_providers_from_config() -> list[str]:
     config_path = Path('config/llms.yaml')
@@ -26,13 +26,12 @@ def run_crew_in_thread(project_name, requirements, provider, rpm, event_queue, r
         project_folder.mkdir(parents=True, exist_ok=True)
         db_path = project_folder / 'state.db'
         llm_factory = LLMFactory(provider=provider)
+        extensions = [
+            StreamlitLogger(event_queue),
+        ]
         async with aiosqlite.connect(db_path) as conn:
             checkpointer = AsyncSqliteSaver(conn)
-            extensions = [
-                WorkspaceSaver(workspace_dir=project_folder),
-                StreamlitLogger(event_queue),
-            ]
-            crew = build_crew(project_folder, llm_factory, checkpointer, rpm, extensions=extensions)
+            crew = build_crew(project_folder, llm_factory, checkpointer, rpm=rpm, extensions=extensions)
             final_state = await crew.execute(thread_id=thread_id, requirements=requirements)
             result_holder['final_state'] = final_state
             result_holder['thread_id'] = thread_id

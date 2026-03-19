@@ -36,11 +36,7 @@ def main():
         st.session_state['nav_mode_selector'] = '📊 Execution Dashboard'
         st.rerun()
 
-    mode = st.sidebar.radio(
-        'Choose an action:',
-        nav_options,
-        key='nav_mode_selector',
-    )
+    mode = st.sidebar.radio('Choose an action:', nav_options, key='nav_mode_selector')
     st.session_state['nav_mode'] = mode
 
     if st.session_state.get('execution_active') or st.session_state.get('event_queue') is not None:
