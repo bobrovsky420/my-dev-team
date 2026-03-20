@@ -1,6 +1,6 @@
 from typing import Any
 from langgraph.graph import StateGraph, START, END
-from devteam.crew import ProjectState
+from devteam.state import ProjectState
 from devteam.utils import task_to_markdown
 from .base_manager import BaseManager
 from .planning_manager import PlanningManager

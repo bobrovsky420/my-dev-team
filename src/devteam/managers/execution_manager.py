@@ -1,5 +1,5 @@
 from langgraph.graph import StateGraph, START, END
-from devteam.crew import ProjectState
+from devteam.state import ProjectState
 from devteam.utils.status import is_approved_status
 from .base_manager import BaseManager
 

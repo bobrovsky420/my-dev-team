@@ -4,18 +4,26 @@ import aiosqlite
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from rich import print # pylint: disable=redefined-builtin
 from devteam import settings
+from devteam.crew import CrewFactory
+from devteam.extensions import ConsoleLogger, HumanInTheLoop
 from devteam.utils import LLMFactory, TelemetryTracker, generate_thread_id, load_project_spec
-from .crew_builder import build_crew, my_extensions
 
 STATE_DB_FILE = 'state.db'
+
+def my_extensions() -> list:
+    return [
+        ConsoleLogger(),
+        HumanInTheLoop(),
+    ]
 
 async def show_history(thread_id: str):
     project_folder = settings.get_workspaces_dir() / thread_id
     db_path = project_folder / STATE_DB_FILE
     llm_factory = LLMFactory(provider='ollama')
+    crew_factory = CrewFactory(llm_factory=llm_factory)
     async with aiosqlite.connect(db_path) as conn:
         checkpointer = AsyncSqliteSaver(conn)
-        crew = build_crew(project_folder, llm_factory, checkpointer)
+        crew = crew_factory.create(project_folder, checkpointer=checkpointer)
         logging.info("Fetching timeline history...")
         history_data = await crew.get_history(thread_id)
         for checkpoint in history_data:
@@ -41,13 +49,13 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
     db_path = project_folder / 'state.db'
     telemetry = TelemetryTracker()
     llm_factory = LLMFactory(provider=provider, callbacks=[telemetry])
+    crew_factory = CrewFactory(llm_factory=llm_factory)
     try:
         async with aiosqlite.connect(db_path) as conn:
             checkpointer = AsyncSqliteSaver(conn)
-            crew = build_crew(
+            crew = crew_factory.create(
                 project_folder,
-                llm_factory,
-                checkpointer,
+                checkpointer=checkpointer,
                 rpm=rpm,
                 extensions=my_extensions()
             )

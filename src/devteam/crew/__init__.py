@@ -1,7 +1,7 @@
 from .crew import VirtualCrew
-from .project_state import ProjectState
+from .crew_factory import CrewFactory
 
 __all__ = [
     'VirtualCrew',
-    'ProjectState'
+    'CrewFactory'
 ]

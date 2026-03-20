@@ -5,7 +5,7 @@ import yaml
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from devteam import settings
 from devteam.utils import LLMFactory, generate_thread_id
-from devteam.cli.crew_builder import build_crew
+from devteam.crew import CrewFactory
 from devteam.extensions import StreamlitLogger
 from devteam.extensions.hitl_gui import HumanInTheLoopGUI
 
@@ -27,6 +27,7 @@ def run_crew_in_thread(project_name, requirements, provider, rpm, event_queue, r
         project_folder.mkdir(parents=True, exist_ok=True)
         db_path = project_folder / 'state.db'
         llm_factory = LLMFactory(provider=provider)
+        crew_factory = CrewFactory(llm_factory=llm_factory)
         extensions = [
             StreamlitLogger(event_queue),
         ]
@@ -34,7 +35,7 @@ def run_crew_in_thread(project_name, requirements, provider, rpm, event_queue, r
             extensions.append(hitl_extension)
         async with aiosqlite.connect(db_path) as conn:
             checkpointer = AsyncSqliteSaver(conn)
-            crew = build_crew(project_folder, llm_factory, checkpointer, rpm=rpm, extensions=extensions)
+            crew = crew_factory.create(project_folder, checkpointer=checkpointer, rpm=rpm, extensions=extensions)
             final_state = await crew.execute(thread_id=thread_id, requirements=requirements)
             result_holder['final_state'] = final_state
             result_holder['thread_id'] = thread_id
@@ -56,5 +57,6 @@ async def fetch_history_async(thread_id: str):
     async with aiosqlite.connect(db_path) as conn:
         project_folder = settings.get_workspaces_dir() / thread_id
         checkpointer = AsyncSqliteSaver(conn)
-        crew = build_crew(project_folder, LLMFactory(provider='ollama'), checkpointer)
+        crew_factory = CrewFactory()
+        crew = crew_factory.create(project_folder, checkpointer=checkpointer)
         return await crew.get_history(thread_id)

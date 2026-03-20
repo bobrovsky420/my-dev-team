@@ -1,7 +1,6 @@
 import logging
 from functools import cached_property
 from pathlib import Path
-from langgraph.checkpoint.memory import MemorySaver
 from devteam.extensions import CrewExtension, WorkspaceSaver, GitCommitter
 from devteam.utils import LLMFactory, RateLimiter
 from .execution import Execution
@@ -16,10 +15,10 @@ class VirtualCrew(Execution, History):
                  manager,
                  agents: dict,
                  llm_factory: LLMFactory,
+                 checkpointer,
                  *,
                  extensions: list[CrewExtension] = None,
                  rate_limiter: RateLimiter = None,
-                 checkpointer = None,
                  workspace_saver: CrewExtension = None,
                  git_committer: CrewExtension = None):
         self.logger = logging.getLogger(self.name or self.role)
@@ -33,7 +32,7 @@ class VirtualCrew(Execution, History):
             agent.llm_factory = llm_factory
             if rate_limiter:
                 agent.rate_limiter = rate_limiter
-        self.app = self.manager.build_graph(agents=self.agents, memory=checkpointer or MemorySaver())
+        self.app = self.manager.build_graph(agents=self.agents, memory=checkpointer)
 
     @cached_property
     def system_hooks(self) -> list[CrewExtension]:
