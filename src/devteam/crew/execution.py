@@ -9,9 +9,8 @@ class Execution(EventEmitter):
     app: Any # type: ignore
     logger: Logger
 
-    async def inject_feedback(self, thread_id: str, feedback: str, feedback_source: str = 'reviewer') -> dict:
+    async def _inject_feedback(self, config: dict, feedback: str, feedback_source: str = 'reviewer') -> dict:
         """Inject feedback before resuming a thread."""
-        config = {'configurable': {'thread_id': thread_id}}
         node_mapping = {
             'pm': 'planning',
             'architect': 'planning',
@@ -50,7 +49,7 @@ class Execution(EventEmitter):
             self.logger.debug("Rewinding time to checkpoint: %s", checkpoint_id)
         abort_requested = False
         if feedback:
-            state_update = await self.inject_feedback(thread_id, feedback, feedback_source)
+            state_update = await self._inject_feedback(config, feedback, feedback_source)
             self.emit_event('resume', thread_id, state_update=state_update)
             initial_state = None
         elif requirements:
