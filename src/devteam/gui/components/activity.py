@@ -13,7 +13,10 @@ def render_task_progress():
 def render_agent_timeline():
     agents = st.session_state.get('active_agents', [])
     if not agents:
-        st.info('Waiting for first agent to start...')
+        if st.session_state.get('crew_started'):
+            st.info('Waiting for the first agent response...')
+        else:
+            st.info('Waiting for first agent to start...')
         return
     start_time = agents[0]['ts'] if agents else time.time()
     for entry in reversed(agents[-30:]):

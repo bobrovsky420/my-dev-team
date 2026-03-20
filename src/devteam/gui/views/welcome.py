@@ -7,25 +7,22 @@ def render_welcome_page():
         'Launch new work, monitor execution live, or resume an existing workspace.'
     )
 
+    def navigate_to(mode: str):
+        st.session_state['requested_mode'] = mode
+
     card_1, card_2, card_3 = st.columns(3)
     with card_1:
         st.markdown('### 🚀 Start New')
         st.caption('Upload a requirements file and launch the team.')
-        if st.button('Go to New Project', key='welcome_new_project'):
-            st.session_state['requested_mode'] = '🚀 Start New Project'
-            st.rerun()
+        st.button('Go to New Project', key='welcome_new_project', on_click=navigate_to, args=('🚀 Start New Project',))
     with card_2:
         st.markdown('### 📊 Dashboard')
         st.caption('Track current phase, agent activity, and generated files.')
-        if st.button('Open Dashboard', key='welcome_dashboard'):
-            st.session_state['requested_mode'] = '📊 Execution Dashboard'
-            st.rerun()
+        st.button('Open Dashboard', key='welcome_dashboard', on_click=navigate_to, args=('📊 Execution Dashboard',))
     with card_3:
         st.markdown('### 🔄 Resume Work')
         st.caption('Continue from a saved workspace and inject feedback.')
-        if st.button('Resume Project', key='welcome_resume'):
-            st.session_state['requested_mode'] = '🔄 Resume Project'
-            st.rerun()
+        st.button('Resume Project', key='welcome_resume', on_click=navigate_to, args=('🔄 Resume Project',))
 
     st.divider()
     st.subheader('How It Works')

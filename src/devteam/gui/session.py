@@ -30,6 +30,7 @@ def init_session_state():
         'event_queue': None,
         'worker_thread': None,
         'revision_count': 0,
+        'crew_started': False,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -40,6 +41,7 @@ def reset_execution_state():
         st.session_state[key] = [] if key in ('events', 'active_agents', 'communication_log') else ({} if key in ('workspace_files', 'result_holder') else '')
     st.session_state['task_progress'] = {'current': 0, 'total': 0, 'name': ''}
     st.session_state['revision_count'] = 0
+    st.session_state['crew_started'] = False
     st.session_state['current_phase'] = 'Planning'
     st.session_state['execution_active'] = True
 
@@ -49,6 +51,7 @@ def process_event(event: dict):
 
     if event_type == 'start':
         st.session_state['current_phase'] = 'Planning'
+        st.session_state['crew_started'] = True
         return
 
     if event_type == 'step':

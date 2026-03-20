@@ -1,6 +1,7 @@
-import time
+from datetime import timedelta
 import streamlit as st
 from devteam.gui.components import render_agent_timeline, render_task_progress, render_communication_log, render_workspace_files, render_phase_tracker
+from devteam.gui.session import drain_queue
 
 def render_execution_dashboard_page():
     st.header('Execution Dashboard')
@@ -10,6 +11,16 @@ def render_execution_dashboard_page():
             'or results from a previous run will appear here.'
         )
         return
+    _live_dashboard()
+
+@st.fragment(run_every=timedelta(seconds=1))
+def _live_dashboard():
+    if st.session_state.get('execution_active') or st.session_state.get('event_queue') is not None:
+        drain_queue()
+        worker = st.session_state.get('worker_thread')
+        if worker and not worker.is_alive():
+            drain_queue()
+            st.session_state['execution_active'] = False
 
     render_phase_tracker()
     st.divider()
@@ -58,7 +69,3 @@ def render_execution_dashboard_page():
                 st.warning('🚨 Release failed — integration bugs found.')
                 for bug in getattr(final_state, 'integration_bugs', []):
                     st.warning(f'- {bug}')
-
-    if is_running:
-        time.sleep(1)
-        st.rerun()

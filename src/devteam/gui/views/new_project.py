@@ -12,9 +12,8 @@ def render_start_new_project_page():
 
     if st.session_state.get('execution_active', False):
         st.info('Execution is currently running. Open the dashboard to monitor progress.')
-        if st.button('📊 Open Execution Dashboard', key='open_dashboard_while_running'):
-            st.session_state['requested_mode'] = '📊 Execution Dashboard'
-            st.rerun()
+        st.button('📊 Open Execution Dashboard', key='open_dashboard_while_running',
+                  on_click=lambda: st.session_state.update({'requested_mode': '📊 Execution Dashboard'}))
         return
 
     uploaded_file = st.file_uploader('Upload your project requirements (.txt)', type=['txt'])
