@@ -6,6 +6,7 @@ from devteam import settings
 from devteam.gui.execution import get_providers_from_config, run_crew_in_thread
 from devteam.gui.session import reset_execution_state
 from devteam.utils import parse_spec_from_string
+from devteam.extensions.hitl_gui import HumanInTheLoopGUI
 
 def render_start_new_project_page():
     st.header('Start a New Project')
@@ -37,9 +38,12 @@ def render_start_new_project_page():
         result_holder = {}
         st.session_state['result_holder'] = result_holder
 
+        hitl_ext = HumanInTheLoopGUI(event_queue)
+        st.session_state['hitl_extension'] = hitl_ext
+
         worker = threading.Thread(
             target=run_crew_in_thread,
-            args=(project_name, requirements, provider, rpm, event_queue, result_holder),
+            args=(project_name, requirements, provider, rpm, event_queue, result_holder, hitl_ext),
             daemon=True,
         )
         st.session_state['worker_thread'] = worker

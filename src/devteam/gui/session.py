@@ -31,6 +31,9 @@ def init_session_state():
         'worker_thread': None,
         'revision_count': 0,
         'crew_started': False,
+        'hitl_pending': False,
+        'hitl_question': '',
+        'hitl_extension': None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -59,6 +62,11 @@ def process_event(event: dict):
         return
 
     if event_type == 'pause':
+        return
+
+    if event_type == 'hitl_request':
+        st.session_state['hitl_pending'] = True
+        st.session_state['hitl_question'] = event.get('question', 'The team needs your input.')
         return
 
     if event_type in ('finish', 'error'):

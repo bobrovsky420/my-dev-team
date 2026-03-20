@@ -7,6 +7,7 @@ from devteam import settings
 from devteam.utils import LLMFactory, generate_thread_id
 from devteam.cli.crew_builder import build_crew
 from devteam.extensions import StreamlitLogger
+from devteam.extensions.hitl_gui import HumanInTheLoopGUI
 
 def get_providers_from_config() -> list[str]:
     config_path = Path('config/llms.yaml')
@@ -18,7 +19,7 @@ def get_providers_from_config() -> list[str]:
     except Exception: # pylint: disable=broad-exception-caught
         return ['ollama', 'groq', 'openai']
 
-def run_crew_in_thread(project_name, requirements, provider, rpm, event_queue, result_holder):
+def run_crew_in_thread(project_name, requirements, provider, rpm, event_queue, result_holder, hitl_extension=None):
     """Run async crew execution inside a dedicated thread and event loop."""
     async def _inner():
         thread_id = generate_thread_id(project_name)
@@ -29,6 +30,8 @@ def run_crew_in_thread(project_name, requirements, provider, rpm, event_queue, r
         extensions = [
             StreamlitLogger(event_queue),
         ]
+        if hitl_extension:
+            extensions.append(hitl_extension)
         async with aiosqlite.connect(db_path) as conn:
             checkpointer = AsyncSqliteSaver(conn)
             crew = build_crew(project_folder, llm_factory, checkpointer, rpm=rpm, extensions=extensions)

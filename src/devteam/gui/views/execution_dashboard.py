@@ -1,6 +1,6 @@
 from datetime import timedelta
 import streamlit as st
-from devteam.gui.components import render_agent_timeline, render_task_progress, render_communication_log, render_workspace_files, render_phase_tracker
+from devteam.gui.components import render_agent_timeline, render_task_progress, render_communication_log, render_workspace_files, render_phase_tracker, render_hitl_input
 from devteam.gui.session import drain_queue
 
 def render_execution_dashboard_page():
@@ -23,6 +23,10 @@ def _live_dashboard():
             st.session_state['execution_active'] = False
 
     render_phase_tracker()
+
+    if st.session_state.get('hitl_pending'):
+        render_hitl_input()
+
     st.divider()
 
     result = st.session_state.get('result_holder', {})
