@@ -17,6 +17,7 @@ class WorkspaceSaver(CrewExtension):
     def on_start(self, thread_id: str, initial_state: dict):
         self.base_dir = self._get_target_dir(initial_state)
         self.base_dir.mkdir(parents=True, exist_ok=True)
+        initial_state['workspace_path'] = str(self.live_dir)
         if requirements := initial_state.get('requirements'):
             self._save_requirements(requirements)
 

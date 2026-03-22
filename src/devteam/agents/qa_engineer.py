@@ -1,4 +1,3 @@
-import tempfile
 from pathlib import Path
 from devteam.tools import DockerSandbox
 from devteam.utils.status import is_approved_status
@@ -25,18 +24,12 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
         return inputs
 
     def _run_tests(self, state: dict) -> str:
-        workspace_files = state['workspace_files']
         target_runtime = state.get('runtime', 'auto')
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_path = Path(temp_dir)
-            for filepath, content in workspace_files.items():
-                full_path = temp_path / filepath
-                full_path.parent.mkdir(parents=True, exist_ok=True)
-                full_path.write_text(content, encoding='utf-8')
-            self.logger.info("🐳 Running tests in Docker Sandbox...")
-            test_results = self.sandbox.run_tests(temp_path, runtime=target_runtime)
-            self.logger.debug("Sandbox Output:\n%s", test_results)
-            return test_results
+        workspace_path = Path(state['workspace_path'])
+        self.logger.info("🐳 Running tests in Docker Sandbox...")
+        test_results = self.sandbox.run_tests(workspace_path, runtime=target_runtime)
+        self.logger.debug("Sandbox Output:\n%s", test_results)
+        return test_results
 
     def _update_state(self, parsed_data: QAEngineerResponse, current_state: dict) -> dict:
         results = parsed_data.test_results

@@ -55,7 +55,7 @@ class Execution(EventEmitter):
         elif requirements:
             initial_state = {
                 'requirements': requirements,
-                'current_phase': 'planning',
+                'current_phase': 'planning'
             }
             self.emit_event('start', thread_id, initial_state=initial_state)
         else:

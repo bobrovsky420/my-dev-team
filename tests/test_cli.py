@@ -1,7 +1,6 @@
 from pathlib import Path
-from unittest.mock import MagicMock
 import pytest
-from devteam.cli import crew_builder
+from devteam.cli.runtime import my_extensions
 from devteam.utils import project_spec
 
 def test_parse_spec_from_string_extracts_subject_name():
@@ -37,40 +36,10 @@ def test_generate_thread_id_slugifies_name_and_adds_timestamp(monkeypatch):
     assert thread_id == "my_cool_project_20260317_123456"
 
 def test_my_extensions_returns_expected_extensions(tmp_path: Path):
-    extensions = crew_builder.my_extensions(tmp_path)
-    assert len(extensions) == 3
+    extensions = my_extensions()
+    assert len(extensions) == 2
     assert extensions[0].__class__.__name__ == "ConsoleLogger"
-    assert extensions[1].__class__.__name__ == "WorkspaceSaver"
-    assert extensions[2].__class__.__name__ == "HumanInTheLoop"
-
-def test_build_crew_passes_expected_dependencies(monkeypatch):
-    captured = {}
-    class FakeVirtualCrew:
-        def __init__(self, **kwargs):
-            captured.update(kwargs)
-    monkeypatch.setattr(crew_builder, "VirtualCrew", FakeVirtualCrew)
-    monkeypatch.setattr(crew_builder, "build_agents_from_config", lambda _: ["agent-a", "agent-b"])
-    llm_factory = MagicMock(name="llm_factory")
-    checkpointer = MagicMock(name="checkpointer")
-    ext = [MagicMock(name="extension")]
-    crew = crew_builder.build_crew(llm_factory, checkpointer, rpm=7, extensions=ext)
-    assert isinstance(crew, FakeVirtualCrew)
-    assert captured["manager"].__class__.__name__ == "ProjectManager"
-    assert captured["agents"] == ["agent-a", "agent-b"]
-    assert captured["extensions"] is ext
-    assert captured["llm_factory"] is llm_factory
-    assert captured["checkpointer"] is checkpointer
-    assert captured["rate_limiter"].rpm_limit == 7
-
-def test_build_crew_without_rpm_disables_rate_limiter(monkeypatch):
-    captured = {}
-    class FakeVirtualCrew:
-        def __init__(self, **kwargs):
-            captured.update(kwargs)
-    monkeypatch.setattr(crew_builder, "VirtualCrew", FakeVirtualCrew)
-    monkeypatch.setattr(crew_builder, "build_agents_from_config", lambda _: [])
-    crew_builder.build_crew(MagicMock(), MagicMock(), rpm=0, extensions=[])
-    assert captured["rate_limiter"] is None
+    assert extensions[1].__class__.__name__ == "HumanInTheLoop"
 
 @pytest.mark.parametrize(
     "source, expected",

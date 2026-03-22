@@ -25,6 +25,7 @@ class ProjectState(TypedDict):
     final_report: str
     integration_bugs: List[str]
     communication_log: Annotated[List[str], operator.add]
+    workspace_path: str
     abort_requested: NotRequired[bool]
     error: NotRequired[bool]
     error_message: NotRequired[str]
