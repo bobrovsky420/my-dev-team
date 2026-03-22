@@ -23,6 +23,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--history', action='store_true', help='print the timeline of checkpoints for this thread and exit')
     parser.add_argument('--checkpoint', type=str, help='specific checkpoint ID to rewind to before injecting feedback')
     parser.add_argument('--timeout', type=int, default=120, help='maximum time (in seconds) to wait for an LLM response (default: 120)')
+    parser.add_argument('--thinking', action='store_true', help='stream raw LLM thinking output to stderr')
     return parser
 
 def _apply_config(custom_config_path: str):
@@ -67,6 +68,7 @@ def main():
     setup_logging(console_level=logging.DEBUG if args.verbose else logging.INFO)
     _apply_config(args.config)
     settings.set_llm_timeout(args.timeout)
+    settings.set_llm_streaming(args.thinking)
     _validate_inputs(parser, args)
 
     if args.history:

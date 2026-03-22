@@ -5,6 +5,7 @@ from pathlib import Path
 _WORKSPACES_DIR = Path('workspaces')
 _CONFIG_DIR: Path = Path(__file__).parent / 'config'
 _LLM_TIMEOUT: int = 120 # seconds
+_LLM_STREAMING: bool = False
 
 def set_workspaces_dir(path: Path) -> None:
     global _WORKSPACES_DIR
@@ -26,3 +27,10 @@ def set_llm_timeout(seconds: int) -> None:
 
 def get_llm_timeout() -> int:
     return _LLM_TIMEOUT
+
+def set_llm_streaming(enabled: bool) -> None:
+    global _LLM_STREAMING
+    _LLM_STREAMING = enabled
+
+def get_llm_streaming() -> bool:
+    return _LLM_STREAMING

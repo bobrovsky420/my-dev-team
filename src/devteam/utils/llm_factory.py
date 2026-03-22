@@ -1,7 +1,7 @@
 from functools import cached_property
 import yaml
 from langchain_core.language_models.chat_models import BaseChatModel
-from devteam.settings import get_config_dir
+from devteam.settings import get_config_dir, get_llm_streaming
 
 class LLMFactory:
     def __init__(self, provider: str, callbacks: list = None):
@@ -29,6 +29,7 @@ class LLMFactory:
                 return ChatOllama(
                     model=model_name,
                     temperature=temperature,
+                    streaming=get_llm_streaming(),
                     callbacks=self.callbacks,
                     tags=[f'node:{node_name}'],
                     format='json'
@@ -38,6 +39,7 @@ class LLMFactory:
                 llm = ChatGroq(
                     model=model_name,
                     temperature=temperature,
+                    streaming=get_llm_streaming(),
                     callbacks=self.callbacks,
                     tags=[f'node:{node_name}'],
                     max_retries=2
@@ -48,6 +50,7 @@ class LLMFactory:
                 return ChatOpenAI(
                     model=model_name,
                     temperature=temperature,
+                    streaming=get_llm_streaming(),
                     callbacks=self.callbacks,
                     tags=[f'node:{node_name}']
                 )

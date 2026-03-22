@@ -6,7 +6,7 @@ from rich import print # pylint: disable=redefined-builtin
 from devteam import settings
 from devteam.crew import CrewFactory
 from devteam.extensions import ConsoleLogger, HumanInTheLoop
-from devteam.utils import LLMFactory, TelemetryTracker, generate_thread_id, load_project_spec
+from devteam.utils import LLMFactory, StreamHandler, TelemetryTracker, generate_thread_id, load_project_spec
 
 STATE_DB_FILE = 'state.db'
 
@@ -48,7 +48,10 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
     project_folder.mkdir(parents=True, exist_ok=True)
     db_path = project_folder / 'state.db'
     telemetry = TelemetryTracker()
-    llm_factory = LLMFactory(provider=provider, callbacks=[telemetry])
+    callbacks = [telemetry]
+    if settings.get_llm_streaming():
+        callbacks.append(StreamHandler())
+    llm_factory = LLMFactory(provider=provider, callbacks=callbacks)
     crew_factory = CrewFactory(llm_factory=llm_factory)
     try:
         async with aiosqlite.connect(db_path) as conn:
