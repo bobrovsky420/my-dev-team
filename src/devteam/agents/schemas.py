@@ -6,7 +6,7 @@ from devteam.utils.sanitizer import normalize_workspace_content
 class ThinkingModel(BaseModel):
     thinking: str | None = Field(
         default=None,
-        description="Your internal reasoning and thought process before producing the final output."
+        description="Your internal step-by-step reasoning and thought process before producing the final output."
     )
 
 class ProductManagerResponse(ThinkingModel):
