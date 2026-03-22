@@ -4,6 +4,10 @@ from devteam.utils.sanitizer import normalize_workspace_content
 # pylint: disable=line-too-long
 
 class ProductManagerResponse(BaseModel):
+    thinking: str | None = Field(
+        default=None,
+        description="Your internal reasoning and thought process before producing the final output."
+    )
     clarification_question: str | None = Field(
         default=None,
         description="Provide exactly ONE clarifying question ONLY if the requirements are too vague to determine the tech stack or core features. Leave null if requirements are clear."
@@ -34,6 +38,10 @@ class DevelopmentTask(BaseModel):
     )
 
 class SystemArchitectResponse(BaseModel):
+    thinking: str | None = Field(
+        default=None,
+        description="Your internal reasoning and thought process before producing the final output."
+    )
     runtime: str = Field(description="The primary runtime environment for this project (e.g., 'python', 'node', 'java', etc.)")
     pending_tasks: list[DevelopmentTask] = Field(
         min_length=1,
@@ -73,11 +81,19 @@ class CodeJudgeResponse(BaseModel):
     )
 
 class QAEngineerResponse(BaseModel):
+    thinking: str | None = Field(
+        default=None,
+        description="Your internal reasoning and thought process before producing the final output."
+    )
     test_results: str = Field(
         description="Must be exactly 'PASSED' if the logic for the current task is completely sound, handles edge cases, and passes all simulated tests. If the logic fails, misses edge cases, or has poorly written tests, provide a detailed bug report containing failed test scenarios and referencing specific file paths, formatted with newlines."
     )
 
 class FinalQAResponse(BaseModel):
+    thinking: str | None = Field(
+        default=None,
+        description="Your internal reasoning and thought process before producing the final output."
+    )
     evaluation_summary: str = Field(
         description="Your step-by-step mental simulation, edge-case analysis, and reasoning for why the code passes or fails."
     )

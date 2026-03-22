@@ -148,11 +148,20 @@ class BaseAgent(Generic[T]):
         cleaned_text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL | re.IGNORECASE)
         return cleaned_text.strip()
 
+    def _extract_thinking(self, text: str) -> str | None:
+        """Extracts the content inside <think> tags, if present."""
+        match = re.search(r'<think>(.*?)</think>', text, flags=re.DOTALL | re.IGNORECASE)
+        return match.group(1).strip() if match else None
+
     def _parse_outputs(self, response: str) -> T:
         try:
+            thinking = self._extract_thinking(response)
             clean_json = self._clean_response(response)
             clean_json = clean_json.replace('```json', '').replace('```', '').strip()
-            return self.parser.invoke(clean_json)
+            parsed = self.parser.invoke(clean_json)
+            if thinking and hasattr(parsed, 'thinking'):
+                parsed.thinking = thinking
+            return parsed
         except ValidationError:
             raise
         except Exception as e:
