@@ -120,6 +120,7 @@ devteam --resume web_scraper_cli_20260312_083500
 * `--resume`: Resume a specific thread ID (e.g., my_app_20260312_083500).
 * `--history`: Print the timeline of checkpoints for the thread and exit.
 * `--checkpoint`: Specific checkpoint ID to rewind to.
+* `--thinking`: Stream raw LLM thinking output to stderr in real-time.
 
 Note: Ensure you have the corresponding API keys (e.g., `GROQ_API_KEY`, `OPENAI_API_KEY`) set in your `.env` file, or ensure your local Ollama instance is running.
 
