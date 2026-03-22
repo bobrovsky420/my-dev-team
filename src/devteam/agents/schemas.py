@@ -3,11 +3,13 @@ from devteam.utils.sanitizer import normalize_workspace_content
 
 # pylint: disable=line-too-long
 
-class ProductManagerResponse(BaseModel):
+class ThinkingModel(BaseModel):
     thinking: str | None = Field(
         default=None,
         description="Your internal reasoning and thought process before producing the final output."
     )
+
+class ProductManagerResponse(ThinkingModel):
     clarification_question: str | None = Field(
         default=None,
         description="Provide exactly ONE clarifying question ONLY if the requirements are too vague to determine the tech stack or core features. Leave null if requirements are clear."
@@ -37,11 +39,7 @@ class DevelopmentTask(BaseModel):
         description="A bulleted list of specific, testable conditions that must be met for this task to be considered complete."
     )
 
-class SystemArchitectResponse(BaseModel):
-    thinking: str | None = Field(
-        default=None,
-        description="Your internal reasoning and thought process before producing the final output."
-    )
+class SystemArchitectResponse(ThinkingModel):
     runtime: str = Field(description="The primary runtime environment for this project (e.g., 'python', 'node', 'java', etc.)")
     pending_tasks: list[DevelopmentTask] = Field(
         min_length=1,
@@ -69,7 +67,7 @@ class DeveloperResponse(BaseModel):
         description="A list of files that were created or modified during this task. Do NOT include existing files from the workspace that do not need to be modified."
     )
 
-class CodeReviewerResponse(BaseModel):
+class CodeReviewerResponse(ThinkingModel):
     review_feedback: str = Field(
         description="Must be exactly 'APPROVED' if the code perfectly meets all criteria. If it fails, provide a newline-separated list of bugs formatted exactly as: '- [File Path] - [Bug/Missing Logic]: Description of why it fails.'"
     )
@@ -80,20 +78,12 @@ class CodeJudgeResponse(BaseModel):
         description="The integer index of the winning draft (e.g., 0, 1, or 2). Must be a valid index from the provided drafts."
     )
 
-class QAEngineerResponse(BaseModel):
-    thinking: str | None = Field(
-        default=None,
-        description="Your internal reasoning and thought process before producing the final output."
-    )
+class QAEngineerResponse(ThinkingModel):
     test_results: str = Field(
         description="Must be exactly 'PASSED' if the logic for the current task is completely sound, handles edge cases, and passes all simulated tests. If the logic fails, misses edge cases, or has poorly written tests, provide a detailed bug report containing failed test scenarios and referencing specific file paths, formatted with newlines."
     )
 
-class FinalQAResponse(BaseModel):
-    thinking: str | None = Field(
-        default=None,
-        description="Your internal reasoning and thought process before producing the final output."
-    )
+class FinalQAResponse(ThinkingModel):
     evaluation_summary: str = Field(
         description="Your step-by-step mental simulation, edge-case analysis, and reasoning for why the code passes or fails."
     )
