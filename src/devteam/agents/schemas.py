@@ -9,6 +9,24 @@ class ThinkingModel(BaseModel):
         description="Your internal step-by-step reasoning and thought process before producing the final output."
     )
 
+class AskClarification(BaseModel):
+    """Ask the stakeholders a single clarifying question when the requirements are too vague to determine the tech stack or core features."""
+    question: str = Field(description="A single clarifying question to ask the stakeholders.")
+
+class SubmitSpecification(BaseModel):
+    """Submit the completed Technical Specifications document when the requirements are clear enough to proceed."""
+    specs: str = Field(
+        description="Detailed Technical Specifications in clean Markdown with sections for architecture, features, acceptance criteria, constraints, and testing. MUST end with an '## Alignment Confirmation' section."
+    )
+
+class SubmitArchitecture(BaseModel):
+    """Submit the development task backlog derived from the Technical Specifications."""
+    runtime: str = Field(description="The primary runtime environment for this project (e.g., 'python', 'node', 'java')")
+    pending_tasks: list['DevelopmentTask'] = Field(
+        min_length=1,
+        description="A sequential backlog of development tasks required to build the project."
+    )
+
 class ProductManagerResponse(ThinkingModel):
     clarification_question: str | None = Field(
         default=None,

@@ -19,20 +19,24 @@ class LLMFactory:
     def model_map(self) -> dict:
         return self.llm_config.get('providers', {})
 
-    def create(self, category: str, temperature: float, *, node_name: str = None) -> BaseChatModel:
+    def create(self, category: str, temperature: float, *, node_name: str, json_mode = True) -> BaseChatModel:
         """Returns a configured LLM instance."""
         # pylint: disable=import-error,import-outside-toplevel
         model_name = self.model_map[self.provider].get(category, self.model_map[self.provider]['reasoning'])
+        streaming = get_llm_streaming()
+        node_tag = f'node:{node_name}'
+        llm_tags = [node_tag]
         match self.provider:
             case 'ollama':
                 from langchain_ollama import ChatOllama
                 return ChatOllama(
                     model=model_name,
                     temperature=temperature,
-                    streaming=get_llm_streaming(),
+                    streaming=streaming,
                     callbacks=self.callbacks,
-                    tags=[f'node:{node_name}'],
-                    format='json'
+                    tags=llm_tags,
+                    format='json' if json_mode else None,
+                    reasoning=streaming and not json_mode # Stream reasoning if enabled via CLI and not in strict JSON mode
                 )
             case 'groq':
                 from langchain_groq import ChatGroq
@@ -41,10 +45,12 @@ class LLMFactory:
                     temperature=temperature,
                     streaming=get_llm_streaming(),
                     callbacks=self.callbacks,
-                    tags=[f'node:{node_name}'],
+                    tags=llm_tags,
                     max_retries=2
                 )
-                return llm.bind(response_format={'type': 'json_object'})
+                if json_mode:
+                    return llm.bind(response_format={'type': 'json_object'})
+                return llm
             case 'openai':
                 from langchain_openai import ChatOpenAI
                 return ChatOpenAI(
@@ -52,7 +58,7 @@ class LLMFactory:
                     temperature=temperature,
                     streaming=get_llm_streaming(),
                     callbacks=self.callbacks,
-                    tags=[f'node:{node_name}']
+                    tags=llm_tags
                 )
             case _:
                 raise ValueError(f"Unsupported provider: {self.provider}")

@@ -1,5 +1,15 @@
-from .base_agent import BaseAgent
-from .schemas import SystemArchitectResponse
+from .schemas import SubmitArchitecture, SystemArchitectResponse
+from .tool_agent import ToolAgent
 
-class SystemArchitect(BaseAgent[SystemArchitectResponse]):
+
+class SystemArchitect(ToolAgent[SystemArchitectResponse]):
     output_schema = SystemArchitectResponse
+    tools = [SubmitArchitecture]
+
+    def _map_tool_to_output(self, tool_name: str, tool_args: dict) -> SystemArchitectResponse:
+        if tool_name == 'SubmitArchitecture':
+            return SystemArchitectResponse(
+                runtime=tool_args['runtime'],
+                pending_tasks=tool_args['pending_tasks'],
+            )
+        raise ValueError(f"Unexpected tool call: {tool_name}")
