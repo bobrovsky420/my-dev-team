@@ -1,11 +1,13 @@
 from pathlib import Path
 from devteam.tools import DockerSandbox
 from devteam.utils.status import is_approved_status
+from .schemas import ApproveCode, QAEngineerResponse, ReportIssues
 from .base_agent import BaseAgent
-from .schemas import QAEngineerResponse
+
 
 class QAEngineer(BaseAgent[QAEngineerResponse]):
     output_schema = QAEngineerResponse
+    tools = [ApproveCode, ReportIssues]
     sandbox: DockerSandbox = None
 
     def _build_inputs(self, state: dict) -> dict:
@@ -30,6 +32,13 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
         test_results = self.sandbox.run_tests(workspace_path, runtime=target_runtime)
         self.logger.debug("Sandbox Output:\n%s", test_results)
         return test_results
+
+    def _map_tool_to_output(self, tool_name: str, tool_args: dict) -> QAEngineerResponse:
+        if tool_name == 'ApproveCode':
+            return QAEngineerResponse(test_results='PASSED')
+        if tool_name == 'ReportIssues':
+            return QAEngineerResponse(test_results=tool_args['feedback'])
+        raise ValueError(f"Unexpected tool call: {tool_name}")
 
     def _update_state(self, parsed_data: QAEngineerResponse, current_state: dict) -> dict:
         results = parsed_data.test_results

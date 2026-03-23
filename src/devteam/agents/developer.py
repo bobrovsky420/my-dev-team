@@ -1,9 +1,11 @@
 from devteam.utils import workspace_str_from_files
+from .schemas import DeveloperResponse, SubmitCode
 from .base_agent import BaseAgent
-from .schemas import DeveloperResponse
+
 
 class SeniorDeveloper(BaseAgent[DeveloperResponse]):
     output_schema = DeveloperResponse
+    tools = [SubmitCode]
 
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
@@ -20,6 +22,12 @@ class SeniorDeveloper(BaseAgent[DeveloperResponse]):
             workspace_str += f"\n\n### ACTIVE BUG REPORTS TO FIX ###\n{feedback_str}"
         inputs['workspace'] = workspace_str
         return inputs
+
+    def _map_tool_to_output(self, tool_name: str, tool_args: dict) -> DeveloperResponse:
+        if tool_name == 'SubmitCode':
+            files = tool_args.get('workspace_files', [])
+            return DeveloperResponse(workspace_files=files)
+        raise ValueError(f"Unexpected tool call: {tool_name}")
 
     def _update_state(self, parsed_data: DeveloperResponse, current_state: dict) -> dict:
         workspace_files = current_state.get('workspace_files', {}).copy()

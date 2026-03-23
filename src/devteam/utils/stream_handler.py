@@ -27,19 +27,16 @@ class StreamHandler(BaseCallbackHandler):
             if reasoning:
                 if not self._in_thinking:
                     self._in_thinking = True
-                    self._file.write('<think>\n')
                 self._file.write(reasoning)
                 self._file.flush()
                 return
             if self._in_thinking:
                 self._in_thinking = False
-                self._file.write('\n</think>\n')
         self._file.write(token)
         self._file.flush()
 
     def on_llm_end(self, response, **kwargs) -> None:
         if self._in_thinking:
             self._in_thinking = False
-            self._file.write('\n</think>\n')
         self._file.write("\n")
         self._file.flush()

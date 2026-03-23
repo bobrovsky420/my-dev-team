@@ -19,6 +19,7 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 * **Incremental Development:** The System Architect breaks down requirements into a manageable backlog of strictly formatted JSON tasks.
 * **Self-Healing Code:** The Developer, Reviewer, and QA Engineer agents continuously loop until unit tests pass and code meets specifications.
 * **Structured Outputs:** Powered by Pydantic and LangChain, ensuring zero "Markdown spillage" and robust state management.
+* **Tool-Calling Agents:** All agents use LLM-native tool calling to submit their work, enabling free-form reasoning and thinking before structured output.
 * **Extensible:** Easily add custom tools like `HumanInTheLoop` or `ConsoleLogger`.
 * **Local Git Versioning:** Every line of AI-generated code is automatically version-controlled.
 * **Cost & Token Optimization Analyzer:** Built-in telemetry tracks API costs down to the fraction of a cent and generates a diagnostic report at the end of every run, actively warning you if agents are stuck in loops or suffering from context bloat.

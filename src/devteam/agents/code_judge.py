@@ -1,8 +1,10 @@
+from .schemas import CodeJudgeResponse, SubmitWinner
 from .base_agent import BaseAgent
-from .schemas import CodeJudgeResponse
+
 
 class CodeJudge(BaseAgent[CodeJudgeResponse]):
     output_schema = CodeJudgeResponse
+    tools = [SubmitWinner]
 
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
@@ -14,6 +16,11 @@ class CodeJudge(BaseAgent[CodeJudgeResponse]):
             drafts_formatted += f"<{draft_idx}>\n{safe_draft}\n</{draft_idx}>\n\n"
         inputs['drafts'] = drafts_formatted
         return inputs
+
+    def _map_tool_to_output(self, tool_name: str, tool_args: dict) -> CodeJudgeResponse:
+        if tool_name == 'SubmitWinner':
+            return CodeJudgeResponse(winner_index=tool_args['winner_index'])
+        raise ValueError(f"Unexpected tool call: {tool_name}")
 
     def _update_state(self, parsed_data: CodeJudgeResponse, current_state: dict) -> dict:
         try:

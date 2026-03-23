@@ -27,6 +27,34 @@ class SubmitArchitecture(BaseModel):
         description="A sequential backlog of development tasks required to build the project."
     )
 
+class ApproveCode(BaseModel):
+    """Approve the code when it perfectly meets all acceptance criteria for the current task."""
+
+class ReportIssues(BaseModel):
+    """Report issues when the code has bugs, missing logic, failing tests, or doesn't meet acceptance criteria."""
+    feedback: str = Field(
+        description="A detailed report of issues found, formatted as: '- [File Path] - [Issue]: Description of the problem.'"
+    )
+
+class SubmitReport(BaseModel):
+    """Submit the final stakeholder report after the project has concluded."""
+    final_report: str = Field(
+        description="A detailed Final Markdown Report with sections for Executive Summary, Technical Architecture, Development & QA History, and Final Deliverables."
+    )
+
+class SubmitWinner(BaseModel):
+    """Submit the index of the best code draft after evaluating all candidates."""
+    winner_index: int = Field(
+        description="The integer index of the winning draft (e.g., 0, 1, or 2). Must be a valid index from the provided drafts."
+    )
+
+class SubmitCode(BaseModel):
+    """Submit the code you have written or modified for the current task."""
+    workspace_files: list['WorkspaceFile'] = Field(
+        min_length=1,
+        description="A list of files that were created or modified during this task. Do NOT include existing files from the workspace that do not need to be modified."
+    )
+
 class ProductManagerResponse(ThinkingModel):
     clarification_question: str | None = Field(
         default=None,
