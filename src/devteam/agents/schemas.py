@@ -107,21 +107,9 @@ class WorkspaceFile(BaseModel):
             return normalize_workspace_content(value)
         return value
 
-class DeveloperResponse(BaseModel):
-    workspace_files: list[WorkspaceFile] = Field(
-        default_factory=list,
-        description="A list of files that were created or modified during this task. Do NOT include existing files from the workspace that do not need to be modified."
-    )
-
 class CodeReviewerResponse(ThinkingModel):
     review_feedback: str = Field(
         description="Must be exactly 'APPROVED' if the code perfectly meets all criteria. If it fails, provide a newline-separated list of bugs formatted exactly as: '- [File Path] - [Bug/Missing Logic]: Description of why it fails.'"
-    )
-
-class CodeJudgeResponse(BaseModel):
-    winner_index: int = Field(
-        default=0,
-        description="The integer index of the winning draft (e.g., 0, 1, or 2). Must be a valid index from the provided drafts."
     )
 
 class QAEngineerResponse(ThinkingModel):
@@ -137,7 +125,11 @@ class FinalQAResponse(ThinkingModel):
         description="Must be exactly 'PASSED' if the logic for the current task is completely sound, handles edge cases, and passes all simulated tests. If it fails, provide a detailed bug report."
     )
 
-class FinalReportResponse(BaseModel):
-    final_report: str = Field(
-        description="A detailed Final Markdown Report for the stakeholders. Must include 4 sections: 1. Executive Summary. 2. Technical Architecture. 3. Development & QA History (a chronological narrative of bugs and revisions). 4. Final Deliverables (workspace files rendered into markdown code blocks with file paths)."
-    )
+class DeveloperResponse(SubmitCode):
+    """Response wrapper for SeniorDeveloper agent."""
+
+class ReporterResponse(SubmitReport):
+    """Response wrapper for Reporter agent."""
+
+class CodeJudgeResponse(SubmitWinner):
+    """Response wrapper for CodeJudge agent."""

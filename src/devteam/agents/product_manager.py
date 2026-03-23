@@ -1,7 +1,6 @@
 from .schemas import AskClarification, ProductManagerResponse, SubmitSpecification
 from .base_agent import BaseAgent
 
-
 class ProductManager(BaseAgent[ProductManagerResponse]):
     output_schema = ProductManagerResponse
     tools = [AskClarification, SubmitSpecification]

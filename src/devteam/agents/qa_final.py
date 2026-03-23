@@ -2,7 +2,6 @@ from devteam.utils.status import is_approved_status
 from .schemas import ApproveCode, FinalQAResponse, ReportIssues
 from .base_agent import BaseAgent
 
-
 class FinalQAEngineer(BaseAgent[FinalQAResponse]):
     output_schema = FinalQAResponse
     tools = [ApproveCode, ReportIssues]

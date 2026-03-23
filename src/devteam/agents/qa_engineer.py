@@ -4,7 +4,6 @@ from devteam.utils.status import is_approved_status
 from .schemas import ApproveCode, QAEngineerResponse, ReportIssues
 from .base_agent import BaseAgent
 
-
 class QAEngineer(BaseAgent[QAEngineerResponse]):
     output_schema = QAEngineerResponse
     tools = [ApproveCode, ReportIssues]

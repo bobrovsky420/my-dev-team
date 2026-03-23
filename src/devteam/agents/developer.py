@@ -2,7 +2,6 @@ from devteam.utils import workspace_str_from_files
 from .schemas import DeveloperResponse, SubmitCode
 from .base_agent import BaseAgent
 
-
 class SeniorDeveloper(BaseAgent[DeveloperResponse]):
     output_schema = DeveloperResponse
     tools = [SubmitCode]

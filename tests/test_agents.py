@@ -1,6 +1,4 @@
-import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
-from devteam.agents.code_judge import CodeJudge
+from unittest.mock import patch
 from devteam.agents.code_reviewer import CodeReviewer
 from devteam.agents.developer import SeniorDeveloper
 from devteam.agents.product_manager import ProductManager
@@ -10,13 +8,11 @@ from devteam.agents.reporter import Reporter
 from devteam.agents.system_architect import SystemArchitect
 
 from devteam.agents.schemas import (
-    CodeJudgeResponse,
     CodeReviewerResponse,
     DeveloperResponse,
     WorkspaceFile,
     QAEngineerResponse,
     FinalQAResponse,
-    FinalReportResponse,
 )
 
 # --- Helpers ---

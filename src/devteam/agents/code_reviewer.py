@@ -2,7 +2,6 @@ from devteam.utils.status import is_approved_status
 from .schemas import ApproveCode, CodeReviewerResponse, ReportIssues
 from .base_agent import BaseAgent
 
-
 class CodeReviewer(BaseAgent[CodeReviewerResponse]):
     output_schema = CodeReviewerResponse
     tools = [ApproveCode, ReportIssues]

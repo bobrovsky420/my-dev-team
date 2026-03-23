@@ -1,10 +1,9 @@
 from devteam.utils import workspace_str_from_files
-from .schemas import FinalReportResponse, SubmitReport
+from .schemas import ReporterResponse, SubmitReport
 from .base_agent import BaseAgent
 
-
-class Reporter(BaseAgent[FinalReportResponse]):
-    output_schema = FinalReportResponse
+class Reporter(BaseAgent[ReporterResponse]):
+    output_schema = ReporterResponse
     tools = [SubmitReport]
 
     def _build_inputs(self, state: dict) -> dict:
@@ -19,7 +18,7 @@ class Reporter(BaseAgent[FinalReportResponse]):
         inputs['history'] = self.sanitize_for_prompt(history_str, ['history'])
         return inputs
 
-    def _map_tool_to_output(self, tool_name: str, tool_args: dict) -> FinalReportResponse:
+    def _map_tool_to_output(self, tool_name: str, tool_args: dict) -> SubmitReport:
         if tool_name == 'SubmitReport':
-            return FinalReportResponse(final_report=tool_args['final_report'])
+            return SubmitReport(final_report=tool_args['final_report'])
         raise ValueError(f"Unexpected tool call: {tool_name}")

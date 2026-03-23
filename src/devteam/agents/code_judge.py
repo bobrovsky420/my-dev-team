@@ -1,7 +1,6 @@
 from .schemas import CodeJudgeResponse, SubmitWinner
 from .base_agent import BaseAgent
 
-
 class CodeJudge(BaseAgent[CodeJudgeResponse]):
     output_schema = CodeJudgeResponse
     tools = [SubmitWinner]
