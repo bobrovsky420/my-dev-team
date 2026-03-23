@@ -6,21 +6,9 @@ class StreamHandler(BaseCallbackHandler):
 
     def __init__(self, file=None):
         self._file = file or sys.stderr
-        self._current_agent = None
         self._in_thinking = False
 
-    def _write_agent_header(self, tags):
-        agent = next(
-            (tag.split(':', maxsplit=1)[1] for tag in tags if isinstance(tag, str) and tag.startswith('node:')),
-            None
-        )
-        if agent and agent != self._current_agent:
-            self._current_agent = agent
-            self._file.write(f"\n--- [{agent}] ---\n")
-
     def on_llm_new_token(self, token: str, **kwargs) -> None:
-        tags = kwargs.get('tags', [])
-        self._write_agent_header(tags)
         chunk = kwargs.get('chunk')
         if chunk and hasattr(chunk, 'message'):
             reasoning = chunk.message.additional_kwargs.get('reasoning_content', '')
