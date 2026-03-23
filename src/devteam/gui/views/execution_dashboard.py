@@ -1,6 +1,6 @@
 from datetime import timedelta
 import streamlit as st
-from devteam.gui.components import render_agent_timeline, render_task_progress, render_communication_log, render_workspace_files, render_phase_tracker, render_hitl_input
+from devteam.gui.components import render_agent_timeline, render_task_progress, render_communication_log, render_workspace_files, render_phase_tracker, render_hitl_input, render_thinking_stream
 from devteam.gui.session import drain_queue
 
 def render_execution_dashboard_page():
@@ -40,23 +40,29 @@ def _live_dashboard():
         render_task_progress()
 
     with right:
-        tab_log, tab_files, tab_specs, tab_report = st.tabs(['💬 Communication Log', '📁 Workspace Files', '📋 Specs', '📝 Final Report'])
-        with tab_log:
+        tabs = ['💬 Communication Log', '📁 Workspace Files', '📋 Specs', '📝 Final Report']
+        if st.session_state.get('thinking_enabled'):
+            tabs.append('🧠 Thinking')
+        tab_objects = st.tabs(tabs)
+        with tab_objects[0]:
             render_communication_log()
-        with tab_files:
+        with tab_objects[1]:
             render_workspace_files()
-        with tab_specs:
+        with tab_objects[2]:
             specs = st.session_state.get('specs', '')
             if specs:
                 st.markdown(specs)
             else:
                 st.caption('Specs not yet generated.')
-        with tab_report:
+        with tab_objects[3]:
             report = st.session_state.get('final_report', '')
             if report:
                 st.markdown(report)
             else:
                 st.caption('Report not yet available.')
+        if st.session_state.get('thinking_enabled') and len(tab_objects) > 4:
+            with tab_objects[4]:
+                render_thinking_stream()
 
     if not is_running and result:
         st.divider()

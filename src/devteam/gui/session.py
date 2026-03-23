@@ -34,6 +34,9 @@ def init_session_state():
         'hitl_pending': False,
         'hitl_question': '',
         'hitl_extension': None,
+        'thinking_text': '',
+        'thinking_active': False,
+        'thinking_enabled': False,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -47,10 +50,25 @@ def reset_execution_state():
     st.session_state['crew_started'] = False
     st.session_state['current_phase'] = 'Planning'
     st.session_state['execution_active'] = True
+    st.session_state['thinking_text'] = ''
+    st.session_state['thinking_active'] = False
 
 def process_event(event: dict):
+    event_type = event['type']
+
+    if event_type == 'thinking_token':
+        token = event.get('token', '')
+        is_thinking = event.get('is_thinking', False)
+        if is_thinking:
+            if not st.session_state.get('thinking_active'):
+                st.session_state['thinking_active'] = True
+                st.session_state['thinking_text'] += '\n---\n'
+            st.session_state['thinking_text'] += token
+        else:
+            st.session_state['thinking_active'] = False
+        return
+
     st.session_state['events'].append(event)
-    event_type: Event = event['type']
 
     if event_type == 'start':
         st.session_state['current_phase'] = 'Planning'

@@ -24,7 +24,11 @@ def render_start_new_project_page():
         provider = st.selectbox('LLM Provider', available_providers)
     with col2:
         rpm = st.number_input('Rate Limit (RPM, 0 = unlimited)', min_value=0, value=0, step=10)
-    timeout = st.number_input('LLM Timeout (seconds)', min_value=10, value=120, step=10)
+    col3, col4 = st.columns(2)
+    with col3:
+        timeout = st.number_input('LLM Timeout (seconds)', min_value=10, value=120, step=10)
+    with col4:
+        thinking = st.checkbox('🧠 Enable Thinking Stream', help='Stream LLM reasoning/thinking tokens in real-time on the dashboard.')
 
     if uploaded_file and st.button('🚀 Launch AI Team', type='primary'):
         content = uploaded_file.read().decode('utf-8')
@@ -32,6 +36,7 @@ def render_start_new_project_page():
 
         settings.set_llm_timeout(timeout)
         reset_execution_state()
+        st.session_state['thinking_enabled'] = thinking
 
         event_queue = Queue()
         st.session_state['event_queue'] = event_queue
@@ -43,7 +48,7 @@ def render_start_new_project_page():
 
         worker = threading.Thread(
             target=run_crew_in_thread,
-            args=(project_name, requirements, provider, rpm, event_queue, result_holder, hitl_ext),
+            args=(project_name, requirements, provider, rpm, event_queue, result_holder, hitl_ext, thinking),
             daemon=True,
         )
         st.session_state['worker_thread'] = worker

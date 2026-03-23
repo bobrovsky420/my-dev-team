@@ -19,14 +19,19 @@ def get_providers_from_config() -> list[str]:
     except Exception: # pylint: disable=broad-exception-caught
         return ['ollama', 'groq', 'openai']
 
-def run_crew_in_thread(project_name, requirements, provider, rpm, event_queue, result_holder, hitl_extension=None):
+def run_crew_in_thread(project_name, requirements, provider, rpm, event_queue, result_holder, hitl_extension=None, thinking=False):
     """Run async crew execution inside a dedicated thread and event loop."""
     async def _inner():
         thread_id = generate_thread_id(project_name)
         project_folder = settings.get_workspaces_dir() / thread_id
         project_folder.mkdir(parents=True, exist_ok=True)
         db_path = project_folder / 'state.db'
-        llm_factory = LLMFactory(provider=provider)
+        callbacks = []
+        if thinking:
+            settings.set_llm_streaming(True)
+            from devteam.utils import StreamHandler # pylint: disable=import-outside-toplevel
+            callbacks.append(StreamHandler(queue=event_queue))
+        llm_factory = LLMFactory(provider=provider, callbacks=callbacks)
         crew_factory = CrewFactory(llm_factory=llm_factory)
         extensions = [
             StreamlitLogger(event_queue),
