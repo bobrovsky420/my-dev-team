@@ -17,8 +17,3 @@ class Reporter(BaseAgent[ReporterResponse]):
         history_str = '\n\n'.join(communication_log)
         inputs['history'] = self.sanitize_for_prompt(history_str, ['history'])
         return inputs
-
-    def _map_tool_to_output(self, tool_name: str, tool_args: dict) -> SubmitReport:
-        if tool_name == 'SubmitReport':
-            return SubmitReport(final_report=tool_args['final_report'])
-        raise ValueError(f"Unexpected tool call: {tool_name}")

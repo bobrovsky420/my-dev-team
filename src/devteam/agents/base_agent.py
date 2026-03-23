@@ -166,8 +166,8 @@ class BaseAgent(Generic[T]):
         return self._map_tool_to_output(tool_call['name'], tool_call['args'])
 
     def _map_tool_to_output(self, tool_name: str, tool_args: dict) -> T:
-        """Map a tool call to the agent's output schema. Override in subclasses."""
-        raise NotImplementedError
+        """Map a tool call to the agent's output schema."""
+        return self.output_schema(**tool_args)
 
     @classmethod
     def from_config(cls, node_name: str, config_path: str, *, model_category: str = None, temperature: float = None):

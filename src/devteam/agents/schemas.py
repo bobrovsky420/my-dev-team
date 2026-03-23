@@ -3,59 +3,7 @@ from devteam.utils.sanitizer import normalize_workspace_content
 
 # pylint: disable=line-too-long
 
-class ThinkingModel(BaseModel):
-    thinking: str | None = Field(
-        default=None,
-        description="Your internal step-by-step reasoning and thought process before producing the final output."
-    )
-
-class AskClarification(BaseModel):
-    """Ask the stakeholders a single clarifying question when the requirements are too vague to determine the tech stack or core features."""
-    question: str = Field(description="A single clarifying question to ask the stakeholders.")
-
-class SubmitSpecification(BaseModel):
-    """Submit the completed Technical Specifications document when the requirements are clear enough to proceed."""
-    specs: str = Field(
-        description="Detailed Technical Specifications in clean Markdown with sections for architecture, features, acceptance criteria, constraints, and testing. MUST end with an '## Alignment Confirmation' section."
-    )
-
-class SubmitArchitecture(BaseModel):
-    """Submit the development task backlog derived from the Technical Specifications."""
-    runtime: str = Field(description="The primary runtime environment for this project (e.g., 'python', 'node', 'java')")
-    pending_tasks: list['DevelopmentTask'] = Field(
-        min_length=1,
-        description="A sequential backlog of development tasks required to build the project."
-    )
-
-class ApproveCode(BaseModel):
-    """Approve the code when it perfectly meets all acceptance criteria for the current task."""
-
-class ReportIssues(BaseModel):
-    """Report issues when the code has bugs, missing logic, failing tests, or doesn't meet acceptance criteria."""
-    feedback: str = Field(
-        description="A detailed report of issues found, formatted as: '- [File Path] - [Issue]: Description of the problem.'"
-    )
-
-class SubmitReport(BaseModel):
-    """Submit the final stakeholder report after the project has concluded."""
-    final_report: str = Field(
-        description="A detailed Final Markdown Report with sections for Executive Summary, Technical Architecture, Development & QA History, and Final Deliverables."
-    )
-
-class SubmitWinner(BaseModel):
-    """Submit the index of the best code draft after evaluating all candidates."""
-    winner_index: int = Field(
-        description="The integer index of the winning draft (e.g., 0, 1, or 2). Must be a valid index from the provided drafts."
-    )
-
-class SubmitCode(BaseModel):
-    """Submit the code you have written or modified for the current task."""
-    workspace_files: list['WorkspaceFile'] = Field(
-        min_length=1,
-        description="A list of files that were created or modified during this task. Do NOT include existing files from the workspace that do not need to be modified."
-    )
-
-class ProductManagerResponse(ThinkingModel):
+class ProductManagerResponse(BaseModel):
     clarification_question: str | None = Field(
         default=None,
         description="Provide exactly ONE clarifying question ONLY if the requirements are too vague to determine the tech stack or core features. Leave null if requirements are clear."
@@ -65,36 +13,49 @@ class ProductManagerResponse(ThinkingModel):
         description="Provide detailed Technical Specifications ONLY if the requirements are clear. Must be formatted in clean Markdown with sections for architecture, features, acceptance criteria, constraints, and testing. MUST end with an '## Alignment Confirmation' section."
     )
 
-    @model_validator(mode='after')
-    def validate_response(self):
-        has_question = bool((self.clarification_question or '').strip())
-        has_specs = bool((self.specs or '').strip())
-        if has_question == has_specs:
-            raise ValueError("Exactly one of 'clarification_question' or 'specs' must be provided, and the other must be empty.")
-        return self
+class AskClarification(BaseModel):
+    """Ask the stakeholder a clarifying question."""
+    question: str = Field(description="A single clarifying question to ask the stakeholder.")
+
+class SubmitSpecification(BaseModel):
+    """Submit the completed Technical Specifications document."""
+    specs: str = Field(
+        description="Detailed Technical Specifications in clean Markdown with sections for architecture, features, acceptance criteria, constraints, and testing. MUST end with an '## Alignment Confirmation' section."
+    )
 
 class DevelopmentTask(BaseModel):
     task_name: str = Field(
         description="A clear, concise name for the task."
     )
     user_story: str = Field(
-        description="The user story describing the 'why' and 'what' (e.g., 'As a user, I want to...')."
+        description="The user story describing the 'why' and 'what' (e.g. 'As a user, I want to...')."
     )
     acceptance_criteria: list[str] = Field(
         min_length=1,
         description="A bulleted list of specific, testable conditions that must be met for this task to be considered complete."
     )
 
-class SystemArchitectResponse(ThinkingModel):
-    runtime: str = Field(description="The primary runtime environment for this project (e.g., 'python', 'node', 'java', etc.)")
+class SystemArchitectResponse(BaseModel):
+    runtime: str = Field(description="The primary runtime environment for this project (e.g. 'python', 'node', 'java')")
     pending_tasks: list[DevelopmentTask] = Field(
         min_length=1,
         description="A sequential backlog of development tasks required to build the project."
     )
 
+class SubmitArchitecture(SystemArchitectResponse):
+    """Submit the development task backlog derived from the Technical Specifications."""
+
+class CodeJudgeResponse(BaseModel):
+    winner_index: int = Field(
+        description="The integer index of the winning draft (e.g. 0, 1, or 2). Must be a valid index from the provided drafts."
+    )
+
+class SubmitWinner(CodeJudgeResponse):
+    """Submit the index of the best code draft after evaluating all candidates."""
+
 class WorkspaceFile(BaseModel):
     path: str = Field(
-        description="The relative path to the file, including the filename and extension (e.g., 'src/main.py' or 'tests/test_main.py')."
+        description="The relative path to the file, including the filename and extension (e.g. 'src/main.py' or 'tests/test_main.py')."
     )
     content: str = Field(
         description="The ENTIRE, 100% complete source code or text for this file. NEVER use placeholders like '// ... existing code ...' or '# ... previous logic ...'. If you omit existing lines from a modified file, that logic will be permanently deleted."
@@ -107,29 +68,43 @@ class WorkspaceFile(BaseModel):
             return normalize_workspace_content(value)
         return value
 
-class CodeReviewerResponse(ThinkingModel):
+class DeveloperResponse(BaseModel):
+    workspace_files: list[WorkspaceFile] = Field(
+        min_length=1,
+        description="A list of files that were created or modified during this task. Do NOT include existing files from the workspace that do not need to be modified."
+    )
+
+class SubmitCode(DeveloperResponse):
+    """Submit the code you have written or modified for the current task."""
+
+class CodeReviewerResponse(BaseModel):
     review_feedback: str = Field(
         description="Must be exactly 'APPROVED' if the code perfectly meets all criteria. If it fails, provide a newline-separated list of bugs formatted exactly as: '- [File Path] - [Bug/Missing Logic]: Description of why it fails.'"
     )
 
-class QAEngineerResponse(ThinkingModel):
+class QAEngineerResponse(BaseModel):
     test_results: str = Field(
         description="Must be exactly 'PASSED' if the logic for the current task is completely sound, handles edge cases, and passes all simulated tests. If the logic fails, misses edge cases, or has poorly written tests, provide a detailed bug report containing failed test scenarios and referencing specific file paths, formatted with newlines."
     )
 
-class FinalQAResponse(ThinkingModel):
-    evaluation_summary: str = Field(
-        description="Your step-by-step mental simulation, edge-case analysis, and reasoning for why the code passes or fails."
-    )
+class FinalQAResponse(BaseModel):
     test_results: str = Field(
-        description="Must be exactly 'PASSED' if the logic for the current task is completely sound, handles edge cases, and passes all simulated tests. If it fails, provide a detailed bug report."
+        description="Must be exactly 'PASSED' if the entire project meets all specifications, handles edge cases, and passes all integration checks. If it fails, provide a detailed bug report covering cross-module issues, missing features, and integration failures."
     )
 
-class DeveloperResponse(SubmitCode):
-    """Response wrapper for SeniorDeveloper agent."""
+class ApproveCode(BaseModel):
+    """Approve the code when it perfectly meets all acceptance criteria for the current task."""
 
-class ReporterResponse(SubmitReport):
-    """Response wrapper for Reporter agent."""
+class ReportIssues(BaseModel):
+    """Report issues when the code has bugs, missing logic, failing tests, or doesn't meet acceptance criteria."""
+    feedback: str = Field(
+        description="A detailed report of issues found, formatted as: '- [File Path] - [Issue]: Description of the problem.'"
+    )
 
-class CodeJudgeResponse(SubmitWinner):
-    """Response wrapper for CodeJudge agent."""
+class ReporterResponse(BaseModel):
+    final_report: str = Field(
+        description="A detailed Final Markdown Report with sections for Executive Summary, Technical Architecture, Development & QA History, and Final Deliverables."
+    )
+
+class SubmitReport(ReporterResponse):
+    """Submit the final stakeholder report after the project has concluded."""

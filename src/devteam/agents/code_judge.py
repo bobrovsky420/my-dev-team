@@ -16,11 +16,6 @@ class CodeJudge(BaseAgent[CodeJudgeResponse]):
         inputs['drafts'] = drafts_formatted
         return inputs
 
-    def _map_tool_to_output(self, tool_name: str, tool_args: dict) -> CodeJudgeResponse:
-        if tool_name == 'SubmitWinner':
-            return CodeJudgeResponse(winner_index=tool_args['winner_index'])
-        raise ValueError(f"Unexpected tool call: {tool_name}")
-
     def _update_state(self, parsed_data: CodeJudgeResponse, current_state: dict) -> dict:
         try:
             winner_index = parsed_data.winner_index

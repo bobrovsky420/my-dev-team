@@ -22,12 +22,6 @@ class SeniorDeveloper(BaseAgent[DeveloperResponse]):
         inputs['workspace'] = workspace_str
         return inputs
 
-    def _map_tool_to_output(self, tool_name: str, tool_args: dict) -> DeveloperResponse:
-        if tool_name == 'SubmitCode':
-            files = tool_args.get('workspace_files', [])
-            return DeveloperResponse(workspace_files=files)
-        raise ValueError(f"Unexpected tool call: {tool_name}")
-
     def _update_state(self, parsed_data: DeveloperResponse, current_state: dict) -> dict:
         workspace_files = current_state.get('workspace_files', {}).copy()
         for file_obj in parsed_data.workspace_files:
