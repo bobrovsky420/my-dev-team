@@ -22,8 +22,6 @@ class BaseAgent(Generic[T]):
     output_schema: type[T]
     tools: list[type[BaseModel]]
 
-    chain: Any # type: ignore
-
     def __init__(self, config: dict, prompt_template: str, node_name: str, llm_factory: LLMFactory = None, rate_limiter: RateLimiter = None):
         self.config = config
         self.prompt_template = prompt_template
@@ -57,86 +55,42 @@ class BaseAgent(Generic[T]):
     async def process(self, state: dict) -> dict:
         self.logger.info("Executing...")
         inputs = self._build_inputs(state)
-        self._build_chain(self.temperature)
-        last_error = None
-        for attempt in range(1, self.max_retries + 1):
-            try:
-                ai_message = await self._invoke_llm(**inputs)
-                parsed_data = self._parse_outputs(ai_message)
-            except (ValueError, ValidationError) as e:
-                last_error = e
-                self.logger.error(
-                    "Attempt %i/%i failed to parse: %s",
-                    attempt, self.max_retries, e,
-                )
-                if attempt < self.max_retries:
-                    self._bump_temperature(attempt, last_error)
-                continue
-            except Exception:  # pylint: disable=broad-exception-caught
-                full_traceback = traceback.format_exc()
-                return {
-                    'error': True,
-                    'error_message': full_traceback,
-                }
-            final_state = self._update_state(parsed_data, state)
-            content = ai_message.content or ''
-            if 'communication_log' not in final_state:
-                final_state['communication_log'] = [
-                    f"**[{self.name or self.role}]**: {content}"
-                ]
-            return final_state
-
-        self.logger.error(
-            "All %i attempts failed. Last error: %s",
-            self.max_retries, last_error,
-        )
-        return {
-            'abort_requested': True,
-            'communication_log': [
-                f"**[{self.name or self.role}]**: Failed after "
-                f"{self.max_retries} attempts. Last error: {last_error}"
-            ],
-        }
-
-    def _bump_temperature(self, attempt: int, last_error: Exception):
-        new_temp = min(self.temperature + (attempt * 0.1), 1.0)
-        self.logger.debug("Bumping temperature to %.1f for retry", new_temp)
-        retry_prompt = self._bump_prompt(last_error)
-        self._build_chain(temperature=new_temp, retry_prompt=retry_prompt)
-
-    def _bump_prompt(self, last_error: Exception) -> str:
-        if isinstance(last_error, ValidationError):
-            error_details = [
-                f"Field '{e.get('loc', [''])[0]}': {e.get('msg', '')}"
-                for e in last_error.errors()
+        try:
+            ai_message = await self._invoke_llm(**inputs)
+            parsed_data = self._parse_outputs(ai_message)
+        except Exception:  # pylint: disable=broad-exception-caught
+            full_traceback = traceback.format_exc()
+            return {
+                'error': True,
+                'error_message': full_traceback,
+            }
+        final_state = self._update_state(parsed_data, state)
+        content = ai_message.content or ''
+        if 'communication_log' not in final_state:
+            final_state['communication_log'] = [
+                f"**[{self.name or self.role}]**: {content}"
             ]
-            concise_error = "Schema mismatch: " + "; ".join(error_details)
-        else:
-            concise_error = str(last_error).split('\n', maxsplit=1)[0][:200]
-        error_msg = concise_error.replace('{', '{{').replace('}', '}}')
-        return (
-            f"### ERROR ON PREVIOUS ATTEMPT ###\n"
-            f"{error_msg}\n\n"
-            f"You MUST call one of the provided tools to submit your work. "
-            f"Do NOT respond with plain text only — use a tool call."
-        )
+        return final_state
 
-    def _build_chain(self, temperature: float, retry_prompt: str = None):
+    @cached_property
+    def llm(self) -> Any:
         llm = self.llm_factory.create(
             category=self.model_category,
-            temperature=temperature,
+            temperature=self.temperature,
             node_name=self.node_name,
-            json_mode=False,
+            json_mode=False
         )
-        llm_with_tools = llm.bind_tools(self.tools)
-        prompt = self._build_prompt(retry_prompt)
-        self.chain = prompt | llm_with_tools
+        if self.tools:
+            llm = llm.bind_tools(self.tools)
+        return llm
 
-    def _build_prompt(self, retry_prompt: str = None) -> PromptTemplate:
-        template = self.prompt_template
-        if retry_prompt:
-            template += f"\n\n{retry_prompt}"
-        return PromptTemplate(template=template)
+    @cached_property
+    def prompt(self) -> PromptTemplate:
+        return PromptTemplate(template=self.prompt_template)
+
+    @cached_property
+    def chain(self) -> Any:
+        return self.prompt | self.llm
 
     @cached_property
     def llm_timeout(self) -> int:
