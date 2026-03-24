@@ -2,7 +2,6 @@ import threading
 import time
 from queue import Queue
 from .base_extension import CrewExtension
-from .hitl_cli import HumanInTheLoop
 
 class HumanInTheLoopGUI(CrewExtension):
     """Extension that pauses the workflow to get human input via the Streamlit GUI."""
@@ -26,7 +25,7 @@ class HumanInTheLoopGUI(CrewExtension):
         self._response_event.set()
 
     def on_pause(self, thread_id: str, current_state: dict, next_node: str) -> dict | None:
-        if not HumanInTheLoop.needs_human_input(current_state, next_node):
+        if next_node != 'human':
             return None
         question = current_state.get('clarification_question', 'The team needs your input.')
         self.event_queue.put({

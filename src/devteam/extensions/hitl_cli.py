@@ -3,12 +3,8 @@ from .base_extension import CrewExtension
 class HumanInTheLoop(CrewExtension):
     """Extension that pauses the workflow to get human input at the 'human' node."""
 
-    @staticmethod
-    def needs_human_input(current_state: dict, next_node: str) -> bool:
-        return bool(current_state.get('clarification_question')) or next_node == 'human'
-
     def on_pause(self, thread_id: str, current_state: dict, next_node: str) -> dict | None:
-        if not self.needs_human_input(current_state, next_node):
+        if next_node != 'human':
             return None
         question = current_state.get('clarification_question', 'The team needs your input.')
         print("\n" + "="*50)
