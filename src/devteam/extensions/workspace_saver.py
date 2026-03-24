@@ -1,3 +1,4 @@
+import logging
 from functools import cached_property
 from pathlib import Path
 from devteam.utils import task_to_markdown
@@ -7,6 +8,7 @@ class WorkspaceSaver(CrewExtension):
     base_dir: Path
 
     def __init__(self, workspace_dir: Path):
+        self.logger = logging.getLogger('Workspace Saver')
         self.workspace_dir = workspace_dir
         self.workspace_dir.mkdir(parents=True, exist_ok=True)
 
@@ -55,10 +57,22 @@ class WorkspaceSaver(CrewExtension):
         revision_dir = f'rev_{current_rev}'
         self.live_dir.mkdir(parents=True, exist_ok=True)
         for filepath, content in workspace_files.items():
-            full_file_path = self.base_dir / revision_dir / filepath
+            relative_path = Path(filepath)
+            if relative_path.is_absolute():
+                self.logger.warning("Skipping absolute path from agent output: %s", filepath)
+                continue
+            revision_root = (self.base_dir / revision_dir).resolve()
+            full_file_path = (revision_root / relative_path).resolve()
+            if not full_file_path.is_relative_to(revision_root):
+                self.logger.warning("Skipping unsafe workspace path (revision): %s", filepath)
+                continue
             full_file_path.parent.mkdir(parents=True, exist_ok=True)
             full_file_path.write_text(content, encoding='utf-8')
-            live_file_path = self.live_dir / filepath
+            live_root = self.live_dir.resolve()
+            live_file_path = (live_root / relative_path).resolve()
+            if not live_file_path.is_relative_to(live_root):
+                self.logger.warning("Skipping unsafe workspace path (live): %s", filepath)
+                continue
             live_file_path.parent.mkdir(parents=True, exist_ok=True)
             live_file_path.write_text(content, encoding='utf-8')
 
