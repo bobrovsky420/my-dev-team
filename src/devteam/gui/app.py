@@ -7,6 +7,7 @@ setup_logging(console_level=None)
 
 def main():
     st.set_page_config(page_title='My AI Dev Team', page_icon='🚀', layout='wide')
+    st.markdown('<style>.block-container { padding-top: 1rem; }</style>', unsafe_allow_html=True)
     init_session_state()
 
     nav_options = [

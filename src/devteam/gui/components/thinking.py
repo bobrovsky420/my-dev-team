@@ -5,7 +5,7 @@ _THINKING_CSS = """
 .thinking-outer {
     display: flex;
     flex-direction: column-reverse;
-    max-height: 500px;
+    height: calc(100vh - 28rem);
     overflow-y: auto;
     background-color: #262730;
     border-radius: 0.5rem;
