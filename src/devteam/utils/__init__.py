@@ -1,4 +1,3 @@
-from .crew_helpers import build_agents_from_config
 from .llm_factory import LLMFactory
 from .logging_utils import setup_logging
 from .project_spec import generate_thread_id, load_project_spec, parse_spec_from_string
@@ -13,7 +12,6 @@ __all__ = [
     'RateLimiter',
     'task_to_markdown',
     'TelemetryTracker',
-    'build_agents_from_config',
     'generate_thread_id',
     'load_project_spec',
     'parse_spec_from_string',
