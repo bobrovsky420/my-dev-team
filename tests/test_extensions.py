@@ -1,6 +1,10 @@
 from pathlib import Path
+import threading
+from queue import Queue
 from unittest.mock import MagicMock
 from devteam.extensions.console_logger import _format_value, ConsoleLogger
+from devteam.extensions.hitl_cli import HumanInTheLoop
+from devteam.extensions.hitl_gui import HumanInTheLoopGUI
 from devteam.extensions.workspace_saver import WorkspaceSaver
 
 def test_format_value_workspace_files_summary():
@@ -106,3 +110,49 @@ def test_workspace_saver_on_step_saves_all_outputs(tmp_path: Path):
     assert (tmp_path / "01_task" / "feedback_v2.md").read_text(encoding="utf-8") == "Looks good"
     assert (tmp_path / "01_task" / "test_results_v2.md").read_text(encoding="utf-8") == "PASSED"
     assert (tmp_path / "90_integration" / "final_report.md").read_text(encoding="utf-8") == "Final summary"
+
+
+def test_hitl_cli_handles_planning_pause_with_clarification(monkeypatch):
+    ext = HumanInTheLoop()
+    monkeypatch.setattr('builtins.input', lambda _: 'Use only integer operations')
+
+    update = ext.on_pause(
+        'thread-1',
+        {'clarification_question': 'Should division return floats?'},
+        'planning',
+    )
+
+    assert update == {
+        'human_answer': 'Use only integer operations',
+        'communication_log': ['**[Human]**: Use only integer operations']
+    }
+
+
+def test_hitl_cli_ignores_non_human_pause_without_question():
+    ext = HumanInTheLoop()
+    update = ext.on_pause('thread-1', {'clarification_question': ''}, 'planning')
+    assert update is None
+
+
+def test_hitl_gui_handles_planning_pause_with_clarification():
+    event_queue = Queue()
+    ext = HumanInTheLoopGUI(event_queue)
+
+    timer = threading.Timer(0.05, ext.submit_response, args=('Build only a CLI version',))
+    timer.start()
+    try:
+        update = ext.on_pause(
+            'thread-1',
+            {'clarification_question': 'CLI or GUI calculator?'},
+            'planning',
+        )
+    finally:
+        timer.cancel()
+
+    queued_event = event_queue.get(timeout=1)
+    assert queued_event['type'] == 'hitl_request'
+    assert queued_event['question'] == 'CLI or GUI calculator?'
+    assert update == {
+        'human_answer': 'Build only a CLI version',
+        'communication_log': ['**[Human]**: Build only a CLI version']
+    }

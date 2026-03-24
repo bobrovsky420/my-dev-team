@@ -1,0 +1,3 @@
+Subject: NEW PROJECT: Python calculator
+
+Develop a calculator application in Python.
