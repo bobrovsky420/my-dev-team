@@ -15,7 +15,6 @@ T = TypeVar('T', bound=BaseModel)
 class BaseAgent(Generic[T]):
     """Base agent that uses LLM tool calling to submit structured results."""
 
-    llm_factory: LLMFactory
     model_category: str = 'reasoning'
     temperature: float = 0.2
     max_retries: int = 2
@@ -25,10 +24,12 @@ class BaseAgent(Generic[T]):
 
     chain: Any # type: ignore
 
-    def __init__(self, config: dict, prompt_template: str, node_name: str):
+    def __init__(self, config: dict, prompt_template: str, node_name: str, llm_factory: LLMFactory = None, rate_limiter: RateLimiter = None):
         self.config = config
         self.prompt_template = prompt_template
         self.node_name = node_name
+        self.llm_factory = llm_factory
+        self.rate_limiter = rate_limiter
         self.role = config.get('role', 'Agent')
         self.name = config.get('name', None)
         self.model_category = config.get('model', self.model_category)
@@ -170,7 +171,7 @@ class BaseAgent(Generic[T]):
         return self.output_schema(**tool_args)
 
     @classmethod
-    def from_config(cls, node_name: str, config_path: str, *, model_category: str = None, temperature: float = None):
+    def from_config(cls, node_name: str, config_path: str, *, llm_factory: LLMFactory = None, rate_limiter: RateLimiter = None, model_category: str = None, temperature: float = None):
         prompt_file = get_config_dir() / 'agents' / config_path
         try:
             content = prompt_file.read_text(encoding='utf-8')
@@ -185,4 +186,4 @@ class BaseAgent(Generic[T]):
             config['model'] = model_category
         if temperature is not None:
             config['temperature'] = temperature
-        return cls(config, prompt, node_name)
+        return cls(config, prompt, node_name, llm_factory=llm_factory, rate_limiter=rate_limiter)

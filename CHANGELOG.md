@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.1] - Unpublished
 
+### ⚙️ Changed
+
+* **Flat Graph Architecture:** Replaced nested subgraphs with a single flat `StateGraph` in `ProjectManager`. All nodes (`human`, `pm`, `architect`, `officer`, `developer`, `reviewer`, `qa`, `final_qa`, `reporter`) and edges are now defined in one graph. Removed `PlanningManager`, `StandardExecutionManager`, and `IntegrationManager` classes. Simplified `Execution` streaming (removed `subgraphs=True`) and `History` checkpoint traversal (removed subgraph namespace iteration).
+
 ### 🐛 Fixed
 
 * **WorkspaceSaver Path Traversal Hardening:** Prevented writes outside snapshot and live workspace roots by rejecting absolute paths and validating resolved paths remain within allowed directories before writing generated files.

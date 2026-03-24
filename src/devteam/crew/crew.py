@@ -2,7 +2,7 @@ import logging
 from functools import cached_property
 from pathlib import Path
 from devteam.extensions import CrewExtension, WorkspaceSaver, GitCommitter
-from devteam.utils import LLMFactory, RateLimiter
+from devteam.utils import RateLimiter
 from .execution import Execution
 from .history import History
 
@@ -13,26 +13,18 @@ class VirtualCrew(Execution, History):
     def __init__(self,
                  project_folder: Path,
                  manager,
-                 agents: dict,
-                 llm_factory: LLMFactory,
                  checkpointer,
                  *,
                  extensions: list[CrewExtension] = None,
-                 rate_limiter: RateLimiter = None,
                  workspace_saver: CrewExtension = None,
                  git_committer: CrewExtension = None):
         self.logger = logging.getLogger(self.name or self.role)
         self.project_folder = project_folder
         self.manager = manager
-        self.agents = agents or {}
         self.workspace_saver = workspace_saver or WorkspaceSaver(workspace_dir=project_folder)
         self.git_committer = git_committer or GitCommitter(workspace_dir=project_folder / 'workspace')
         self.extensions = extensions or []
-        for agent in self.agents.values():
-            agent.llm_factory = llm_factory
-            if rate_limiter:
-                agent.rate_limiter = rate_limiter
-        self.app = self.manager.build_graph(agents=self.agents, memory=checkpointer)
+        self.app = self.manager.build_graph(memory=checkpointer)
 
     @cached_property
     def system_hooks(self) -> list[CrewExtension]:

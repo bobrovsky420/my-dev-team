@@ -291,46 +291,6 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Customizing Crew
-
-**My Dev Team** is completely configuration-driven. You don't need to write Python code to change how the agents are built or which prompts they use.
-
-The entire agent roster is defined in `config/crew.yaml`. The framework uses dynamic module reflection to read this file and build the LangGraph workflow on the fly.
-
-**Example `config/small_crew.yaml`:**
-```yaml
-agents:
-    pm:
-        class: ProductManager
-        config: product-manager.md
-    developer:
-        class: SeniorDeveloper
-        config: senior-developer.md
-```
-
-You can rewrite the previous example as follows:
-
-```python
-from devteam.utils import build_agents_from_config
-
-def my_extensions() -> list:
-    return [
-        ConsoleLogger(),
-        HumanInTheLoop()
-    ]
-
-def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver) -> VirtualCrew:
-    """Instantiates the agents and returns the crew instance"""
-    return VirtualCrew(
-        project_folder,
-        manager=ProjectManager(),
-        agents=build_agents_from_config('basic.yaml'),
-        extensions=my_extensions(project_folder),
-        llm_factory=llm_factory,
-        checkpointer=checkpointer
-    )
-```
-
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first...

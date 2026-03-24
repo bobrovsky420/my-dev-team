@@ -10,7 +10,7 @@ AGENT_META = {
     'developer': {'icon': '💻', 'label': 'Senior Developer', 'phase': 'Development'},
     'reviewer': {'icon': '🔍', 'label': 'Code Reviewer', 'phase': 'Development'},
     'qa': {'icon': '🧪', 'label': 'QA Engineer', 'phase': 'Development'},
-    'officer': {'icon': '🔀', 'label': 'Task Router', 'phase': 'Development'},
+    'manager': {'icon': '🔀', 'label': 'Task Router', 'phase': 'Development'},
     'reporter': {'icon': '📝', 'label': 'Reporter', 'phase': 'Integration'},
     'final_qa': {'icon': '✅', 'label': 'Final QA', 'phase': 'Integration'},
 }

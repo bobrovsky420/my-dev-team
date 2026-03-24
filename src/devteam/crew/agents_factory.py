@@ -3,10 +3,13 @@ import yaml
 import devteam.agents as agents_module
 from devteam.settings import get_config_dir
 import devteam.tools as tools_module
+from devteam.utils import LLMFactory, RateLimiter
 
 class AgentsFactory:
-    def __init__(self, config_dir = None):
+    def __init__(self, llm_factory: LLMFactory = None, rate_limiter: RateLimiter = None, config_dir = None):
         self.logger = logging.getLogger('Agents Factory')
+        self.llm_factory = llm_factory
+        self.rate_limiter = rate_limiter
         self.config_dir = config_dir or get_config_dir()
 
     def _load_crew_config(self, config_name: str) -> dict:
@@ -23,7 +26,7 @@ class AgentsFactory:
             if not AgentClass:
                 raise ValueError(f"Configuration Error: '{class_name}' is not a valid class in devteam.agents")
             self.logger.debug("Instantiating '%s' as %s with configuration file '%s'...", node_name, class_name, config_file)
-            agent = AgentClass.from_config(node_name, config_file)
+            agent = AgentClass.from_config(node_name, config_file, llm_factory=self.llm_factory, rate_limiter=self.rate_limiter)
             if sandbox_class := details.get('sandbox', None):
                 ToolsClass = getattr(tools_module, sandbox_class, None) # pylint: disable=invalid-name
                 if not ToolsClass:

@@ -12,10 +12,10 @@ class Execution(EventEmitter):
     async def _inject_feedback(self, config: dict, feedback: str, feedback_source: str = 'reviewer') -> dict:
         """Inject feedback before resuming a thread."""
         node_mapping = {
-            'pm': 'planning',
-            'architect': 'planning',
-            'reviewer': 'development',
-            'qa': 'development'
+            'pm': 'pm',
+            'architect': 'architect',
+            'reviewer': 'reviewer',
+            'qa': 'qa'
         }
         state_update = {}
         if feedback_source == 'reviewer':
@@ -33,8 +33,6 @@ class Execution(EventEmitter):
         safe_config = target_state.config.copy()
         if 'configurable' not in safe_config:
             safe_config['configurable'] = {}
-        if 'checkpoint_ns' not in safe_config['configurable']:
-            safe_config['configurable']['checkpoint_ns'] = ""
         await self.app.aupdate_state(
             safe_config,
             state_update,
@@ -63,11 +61,8 @@ class Execution(EventEmitter):
             self.emit_event('resume', thread_id, state_update=initial_state)
 
         while True:
-            async for event in self.app.astream(initial_state, config, stream_mode='updates', subgraphs=True):
-                if isinstance(event, tuple) and len(event) == 2:
-                    _, state_update = event
-                else:
-                    state_update = event
+            async for event in self.app.astream(initial_state, config, stream_mode='updates'):
+                state_update = event
                 state_object = await self.app.aget_state(config)
                 full_state = state_object.values
                 self.emit_event('step', thread_id, state_update=state_update, full_state=full_state)

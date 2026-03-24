@@ -2,6 +2,7 @@ from pathlib import Path
 import threading
 from queue import Queue
 from unittest.mock import MagicMock
+from devteam.utils import RateLimiter
 from devteam.extensions.console_logger import _format_value, ConsoleLogger
 from devteam.extensions.hitl_cli import HumanInTheLoop
 from devteam.extensions.hitl_gui import HumanInTheLoopGUI
