@@ -54,7 +54,7 @@ class ProjectManager:
 
         return workflow.compile(checkpointer=memory, interrupt_before=['human'])
 
-    # -- Planning routing --
+    # Planning routing
 
     def dummy_human_node(self, state: dict) -> dict:
         self.logger.debug("Human input received. Resuming workflow...")
@@ -80,7 +80,7 @@ class ProjectManager:
             return END
         return 'manager'
 
-    # -- Task routing --
+    # Task routing
 
     def route_tasks_node(self, state: dict) -> dict:
         pending = state.get('pending_tasks', [])
@@ -118,7 +118,7 @@ class ProjectManager:
             return 'final_qa'
         return END
 
-    # -- Development routing --
+    # Development routing
 
     def route_reviewer(self, state: dict) -> str:
         feedback = state.get('review_feedback', '')
@@ -139,7 +139,7 @@ class ProjectManager:
             return 'manager'
         return 'developer'
 
-    # -- Integration routing --
+    # Integration routing
 
     def route_final_qa(self, state: dict) -> str:
         results = state.get('test_results', '')

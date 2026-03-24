@@ -11,12 +11,6 @@ class Execution(EventEmitter):
 
     async def _inject_feedback(self, config: dict, feedback: str, feedback_source: str = 'reviewer') -> dict:
         """Inject feedback before resuming a thread."""
-        node_mapping = {
-            'pm': 'pm',
-            'architect': 'architect',
-            'reviewer': 'reviewer',
-            'qa': 'qa'
-        }
         state_update = {}
         if feedback_source == 'reviewer':
             state_update['review_feedback'] = f"CRITICAL HUMAN FEEDBACK: {feedback}"
@@ -36,7 +30,7 @@ class Execution(EventEmitter):
         await self.app.aupdate_state(
             safe_config,
             state_update,
-            as_node=node_mapping.get(feedback_source, 'development')
+            as_node=feedback_source
         )
         return state_update
 

@@ -5,11 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.1] - Unpublished
+## [0.6.2] - TBD
 
 ### ⚙️ Changed
 
 * **Flat Graph Architecture:** Replaced nested subgraphs with a single flat `StateGraph` in `ProjectManager`. All nodes (`human`, `pm`, `architect`, `officer`, `developer`, `reviewer`, `qa`, `final_qa`, `reporter`) and edges are now defined in one graph. Removed `PlanningManager`, `StandardExecutionManager`, and `IntegrationManager` classes. Simplified `Execution` streaming (removed `subgraphs=True`) and `History` checkpoint traversal (removed subgraph namespace iteration).
+
+## [0.6.1] - 2026-03-24
 
 ### 🐛 Fixed
 
