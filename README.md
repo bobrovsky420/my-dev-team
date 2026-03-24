@@ -242,26 +242,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from devteam import VirtualCrew, ProjectManager, LLMFactory
-from devteam.agents import ProductManager, SystemArchitect, SeniorDeveloper, CodeReviewer, QAEngineer, FinalQAEngineer, Reporter
+
+from devteam.crew import CrewFactory
 from devteam.extensions import ConsoleLogger, HumanInTheLoop
-from devteam.tools import DockerSandbox
-from devteam.utils import RateLimiter, TelemetryTracker
+from devteam.utils import LLMFactory
 
 load_dotenv()
-
-def my_agents() -> dict:
-    """Initialize agents using built-in prompt templates."""
-    return {
-        'pm': ProductManager.from_config('pm', 'product-manager.md'),
-        'architect': SystemArchitect.from_config('architect', 'system-architect.md'),
-        'developer': SeniorDeveloper.from_config('developer', 'senior-developer.md'),
-        'reviewer': CodeReviewer.from_config('reviewer', 'code-reviewer.md'),
-        'qa': QAEngineer.from_config('qa', 'qa-engineer-sandbox.md').with_sandbox(DockerSandbox()),
-        'final_qa': FinalQAEngineer.from_config('final_qa', 'final-qa-engineer.md'),
-        # Example: Forcing the reporter to use a more creative reasoning model
-        'reporter': Reporter.from_config('reporter', 'reporter.md', model_category='reasoning', temperature=0.7)
-    }
 
 def my_extensions() -> list:
     return [
@@ -269,33 +255,20 @@ def my_extensions() -> list:
         HumanInTheLoop()
     ]
 
-def build_crew(project_folder: Path, llm_factory: LLMFactory, checkpointer: AsyncSqliteSaver) -> VirtualCrew:
-    return VirtualCrew(
-        project_folder,
-        manager=ProjectManager(),
-        agents=my_agents(),
-        llm_factory=llm_factory,
-        extensions=my_extensions(),
-        checkpointer=checkpointer
-    )
-
 async def main():
     requirements = "Build a simple Python calculator CLI with basic arithmetic."
     thread_id = 'calc_run_01'
-    workspace = Path('./workspaces/calculator_app')
-    workspace.mkdir(parents=True, exist_ok=True)
-    db_path = workspace / 'state.db'
-    telemetry = TelemetryTracker()
-    llm_factory = LLMFactory(provider='groq', callbacks=[telemetry])
+    project_folder = Path('./workspaces/calculator_app')
+    project_folder.mkdir(parents=True, exist_ok=True)
+    db_path = project_folder / 'state.db'
+    llm_factory = LLMFactory(provider='groq')
+    crew_factory = CrewFactory(llm_factory=llm_factory)
     try:
         async with aiosqlite.connect(db_path) as conn:
             checkpointer = AsyncSqliteSaver(conn)
-            crew = build_crew(workspace, llm_factory, checkpointer)
+            crew = crew_factory.create(project_folder, checkpointer=checkpointer, extensions=my_extensions())
             print("🚀 Starting the AI Dev Team...")
-            final_state = await crew.execute(
-                thread_id=thread_id,
-                requirements=requirements
-            )
+            final_state = await crew.execute(thread_id=thread_id, requirements=requirements)
         if final_state.abort_requested:
             print("❌ Workflow aborted by user or validation failure.")
         elif final_state.success:
