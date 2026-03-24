@@ -99,7 +99,7 @@ class WorkspaceSaver(CrewExtension):
                 case 'architect':
                     if pending := node_update.get('pending_tasks', []):
                         self._save_tasks(pending)
-                case 'developer':
+                case 'developer': # TODO: Verify revision_count attribute - whether it is in state_update or in node_update
                     if state_update.get('revision_count', 0) == 0:
                         if current_task := full_state.get('current_task', ''):
                             self._save_current_task(current_task)

@@ -1,16 +1,14 @@
 import asyncio
-from pathlib import Path
 import aiosqlite
 import yaml
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from devteam import settings
-from devteam.utils import LLMFactory, generate_thread_id
+from devteam.utils import LLMFactory, StreamHandler, generate_thread_id
 from devteam.crew import CrewFactory
 from devteam.extensions import StreamlitLogger
-from devteam.extensions.hitl_gui import HumanInTheLoopGUI
 
 def get_providers_from_config() -> list[str]:
-    config_path = Path('config/llms.yaml')
+    config_path = settings.get_config_dir() / 'llms.yaml'
     if not config_path.exists():
         return ['ollama', 'groq', 'openai']
     try:
@@ -27,9 +25,8 @@ def run_crew_in_thread(project_name, requirements, provider, rpm, event_queue, r
         project_folder.mkdir(parents=True, exist_ok=True)
         db_path = project_folder / 'state.db'
         callbacks = []
+        settings.set_llm_streaming(thinking)
         if thinking:
-            settings.set_llm_streaming(True)
-            from devteam.utils import StreamHandler # pylint: disable=import-outside-toplevel
             callbacks.append(StreamHandler(queue=event_queue))
         llm_factory = LLMFactory(provider=provider, callbacks=callbacks)
         crew_factory = CrewFactory(llm_factory=llm_factory)

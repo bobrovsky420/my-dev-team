@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - Unpublished
+
+### 🐛 Fixed
+
+* **WorkspaceSaver Path Traversal Hardening:** Prevented writes outside snapshot and live workspace roots by rejecting absolute paths and validating resolved paths remain within allowed directories before writing generated files.
+* **GUI Thinking Mode Global State Leak:** Fixed streaming state persisting across GUI runs by explicitly setting `thinking` on each execution, preventing stale state from prior runs with different thinking settings.
+
 ## [0.6.0] - 2026-03-23
 
 ### 🚀 Added
