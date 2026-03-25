@@ -1,6 +1,6 @@
 import time
 import asyncio
-from devteam.utils import WithLogging
+from .with_logging import WithLogging
 
 class RateLimiter(WithLogging):
     """

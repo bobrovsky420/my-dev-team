@@ -8,7 +8,7 @@ from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
 from litellm import cost_per_token
 from devteam.settings import get_config_dir
-from devteam.utils import WithLogging
+from .with_logging import WithLogging
 from .cost_optimization import CostOptimization
 
 class TelemetryTracker(BaseCallbackHandler, CostOptimization, WithLogging):
