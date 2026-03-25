@@ -7,20 +7,20 @@ def test_parse_spec_from_string_extracts_subject_name():
     content = "Subject: NEW PROJECT: Fancy API\nOwner: Team\n\nBuild a REST API."
     project_name, requirements = project_spec.parse_spec_from_string(content)
     assert project_name == "Fancy API"
-    assert requirements == content.strip()
+    assert requirements == "Build a REST API."
 
 def test_parse_spec_from_string_defaults_without_subject():
     content = "Owner: Team\n\nBuild a CLI tool."
     project_name, requirements = project_spec.parse_spec_from_string(content)
     assert project_name == "New Project"
-    assert requirements == content.strip()
+    assert requirements == "Build a CLI tool."
 
 def test_load_project_spec_reads_file(tmp_path: Path):
     spec_file = tmp_path / "project.txt"
     spec_file.write_text("Subject: NEW PROJECT: Unit Test App\n\nDo work.", encoding="utf-8")
     project_name, requirements = project_spec.load_project_spec(str(spec_file))
     assert project_name == "Unit Test App"
-    assert requirements == "Subject: NEW PROJECT: Unit Test App\n\nDo work."
+    assert requirements == "Do work."
 
 def test_generate_thread_id_slugifies_name_and_adds_timestamp(monkeypatch):
     class FakeNow:

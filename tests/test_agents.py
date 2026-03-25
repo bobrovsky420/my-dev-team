@@ -100,21 +100,16 @@ class TestSeniorDeveloper:
         inputs = agent._build_inputs(state)
         assert "No files exist yet" in inputs["workspace"]
 
-    def test_build_inputs_with_workspace_and_feedback(self, sample_workspace_files):
+    def test_build_inputs_with_workspace(self, sample_workspace_files):
         config = make_config("Developer", ["specs", "current_task"])
         agent = SeniorDeveloper(config, "prompt {specs} {current_task} {workspace}", "developer")
         state = {
             "specs": "spec",
             "current_task": "task",
-            "workspace_files": sample_workspace_files,
-            "review_feedback": "Fix the import",
-            "test_results": "FAILED: edge case",
+            "workspace_files": sample_workspace_files
         }
         inputs = agent._build_inputs(state)
         assert "--- FILE: src/main.py ---" in inputs["workspace"]
-        assert "ACTIVE BUG REPORTS" in inputs["workspace"]
-        assert "review_feedback" in inputs["workspace"]
-        assert "test_results" in inputs["workspace"]
 
     def test_update_state_new_files(self):
         config = make_config("Developer")

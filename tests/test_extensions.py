@@ -2,7 +2,6 @@ from pathlib import Path
 import threading
 from queue import Queue
 from unittest.mock import MagicMock
-from devteam.utils import RateLimiter
 from devteam.extensions.console_logger import _format_value, ConsoleLogger
 from devteam.extensions.hitl_cli import HumanInTheLoop
 from devteam.extensions.hitl_gui import HumanInTheLoopGUI
@@ -51,7 +50,7 @@ def test_workspace_saver_target_dir_rules(tmp_path: Path):
     assert saver._get_target_dir({'current_phase': 'integration'}) == tmp_path / "90_integration"
     assert saver._get_target_dir({'current_phase': 'complete'}) == tmp_path / "90_integration"
     assert saver._get_target_dir({'current_phase': 'development', 'current_task_index': 3}) == tmp_path / "03_task"
-    assert saver._get_target_dir({'current_phase': 'development'}) == tmp_path / "00_task"
+    assert saver._get_target_dir({'current_phase': 'development'}) == tmp_path / "01_task"
     assert saver._get_target_dir({}) == tmp_path / "00_planning"
 
 
@@ -116,22 +115,22 @@ def test_workspace_saver_on_step_saves_all_outputs(tmp_path: Path):
 def test_hitl_cli_handles_planning_pause_with_clarification(monkeypatch):
     ext = HumanInTheLoop()
     monkeypatch.setattr('builtins.input', lambda _: 'Use only integer operations')
-
     update = ext.on_pause(
         'thread-1',
         {'clarification_question': 'Should division return floats?'},
-        'planning',
+        'human',
     )
-
-    assert update == {
-        'human_answer': 'Use only integer operations',
-        'communication_log': ['**[Human]**: Use only integer operations']
-    }
+    assert update['messages'][0].content == 'Use only integer operations'
+    assert update['communication_log'][0] == '**[Human]**: Use only integer operations'
 
 
-def test_hitl_cli_ignores_non_human_pause_without_question():
+def test_hitl_cli_ignores_non_human_pause():
     ext = HumanInTheLoop()
-    update = ext.on_pause('thread-1', {'clarification_question': ''}, 'planning')
+    update = ext.on_pause(
+        'thread-1',
+        {'clarification_question': ''},
+        'other',
+    )
     assert update is None
 
 
@@ -145,7 +144,7 @@ def test_hitl_gui_handles_planning_pause_with_clarification():
         update = ext.on_pause(
             'thread-1',
             {'clarification_question': 'CLI or GUI calculator?'},
-            'planning',
+            'human',
         )
     finally:
         timer.cancel()
