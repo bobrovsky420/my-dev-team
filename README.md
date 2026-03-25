@@ -105,6 +105,9 @@ You can easily switch between cloud providers and local models, and adjust rate 
 # Run entirely locally for free using Ollama, with no rate limit!
 devteam project.txt --provider ollama
 
+# Switch to QA engineer without Docker sandbox
+devteam project.txt --no-docker
+
 # Run using OpenAI's flagship models, limited to 15 requests per minute
 devteam project.txt --provider openai --rpm 15
 
@@ -122,6 +125,7 @@ devteam --resume web_scraper_cli_20260312_083500
 * `--history`: Print the timeline of checkpoints for the thread and exit.
 * `--checkpoint`: Specific checkpoint ID to rewind to.
 * `--thinking`: Stream raw LLM thinking output to stderr in real-time.
+* `--no-docker`: Useful if Docker is not installed or you want to use LLM-based QA only.
 
 Note: Ensure you have the corresponding API keys (e.g., `GROQ_API_KEY`, `OPENAI_API_KEY`) set in your `.env` file, or ensure your local Ollama instance is running.
 

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-03-26
+
+### 🚀 Added
+
+* **Sandbox Control:** Added `--no-docker` flag to run QA engineer without Docker sandbox.
+
 ## [0.7.0] - 2026-03-25
 
 ### ⚙️ Changed
@@ -37,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🚀 Added
 
 * **CrewFactory:** Added a dedicated `CrewFactory` to centralize and standardize crew instantiation.
-* **LLM Thinking Output:** New `--thinking` CLI flag streams raw LLM token output (including `<think>` reasoning) to stderr in real-time via a new `StreamHandler` callback. When enabled, all LLM instances are created with `streaming=True`.
+* **LLM Thinking Output:** New `--thinking` CLI flag streams raw LLM token output (including `心智` reasoning) to stderr in real-time via a new `StreamHandler` callback. When enabled, all LLM instances are created with `streaming=True`.
 
 ## [0.5.0] - 2026-03-18
 
