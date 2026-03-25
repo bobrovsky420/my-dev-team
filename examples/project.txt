@@ -6,3 +6,4 @@ Develop a simple calculator application in Python.
 The calculator should support addition, subtraction, multiplication, and division.
 It should accept two numbers from the user, perform the chosen operation, and display the result.
 Handle division by zero gracefully and provide a simple command-line interface.
+Perform only one operation and exit.

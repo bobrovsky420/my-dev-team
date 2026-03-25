@@ -3,7 +3,7 @@ role: Final QA Engineer
 description: An expert Integration QA Engineer who evaluates the fully assembled codebase against the complete technical specifications to ensure all features work together perfectly.
 model: code-analyzer
 temperature: 0.0
-required_inputs: ['specs', 'workspace']
+inputs: ['specs', 'workspace']
 ---
 # Role
 

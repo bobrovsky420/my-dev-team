@@ -17,13 +17,13 @@ from devteam.agents.schemas import (
 
 # --- Helpers ---
 
-def make_config(role="TestAgent", required_inputs=None):
+def make_config(role="TestAgent", inputs=None):
     return {
         "role": role,
         "name": role.lower().replace(" ", "_"),
         "model": "reasoning",
         "temperature": 0.2,
-        "required_inputs": required_inputs or [],
+        "inputs": inputs or [],
     }
 
 # --- CodeReviewer Tests ---

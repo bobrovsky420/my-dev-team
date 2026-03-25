@@ -3,7 +3,8 @@ role: Product Manager
 description: An expert Product Manager who can review stakeholder requirements and write detailed technical specifications
 model: reasoning
 temperature: 0.4
-required_inputs: ['requirements', 'messages']
+inputs: ['requirements', 'messages']
+outputs: ['messages']
 ---
 # Role
 

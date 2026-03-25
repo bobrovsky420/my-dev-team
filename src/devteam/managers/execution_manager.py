@@ -17,14 +17,6 @@ class ExecutionManager:
         # 2) From developer node -> pass task for code review
         # 3) From reviewer node -> a) pass task to QA or b) return to developer
         # 4) From QA node -> either a) take next task or b) return to developer or c) pass to integration
-        if len(state.get('pending_tasks', [])) == 0:
-            self.logger.warning("No pending tasks found. Aborting the workflow.")
-            return {
-                'abort_requested': True,
-                'communication_log': [f"**[{self.role}]**: System architect didn't create tasks. Aborted the workflow."]
-            }
-        if not state.get('current_task_index', '') or not state.get('workspace_files', ''): # Case no. 1
-            return self.developer_node(state)
         current_revisions = state.get('revision_count', 0)
         if state.get('current_agent', '') == 'developer': # Case no. 2 : Developer just finished a task
             return {
@@ -66,25 +58,28 @@ class ExecutionManager:
                 'messages': [HumanMessage(content=instruction)],
                 'communication_log': [f"**[{self.role}]**: Revision {current_revisions + 1} requested by QA."]
             }
-        return self.developer_node(state) # Case no. 4a or 4c
+        return {
+            'current_agent': 'officer' # Case no. 4a or 4c
+        }
 
-    def developer_node(self, state: dict, task_idx = 0) -> dict:
+    def officer_node(self, state: dict) -> dict:
         """Take next task for developer or pass to integration."""
         pending = state.get('pending_tasks', [])
-        if task_idx < len(pending):
-            task = pending[task_idx]
-            t_name = task.get('task_name', f'Task {task_idx+1}')
-            formatted_task = task_to_markdown(task, task_idx + 1)
-            self.logger.info("Routing to Task %i/%i: %s", task_idx + 1, len(pending), t_name)
+        idx = state.get('current_task_index', 0)
+        if idx < len(pending):
+            task = pending[idx]
+            t_name = task.get('task_name', f'Task {idx+1}')
+            formatted_task = task_to_markdown(task, idx + 1)
+            self.logger.info("Routing to task %i/%i: %s", idx + 1, len(pending), t_name)
             return {
                 'current_agent': 'developer',
                 'current_task': formatted_task,
-                'current_task_index': task_idx + 1,
+                'current_task_index': idx + 1,
                 'revision_count': 0, # Clear state including messages for next task
                 'review_feedback': '',
                 'test_results': '',
                 'messages': self._cleanup_messages(state.get('messages')),
-                'communication_log': [f"\n### Task {task_idx + 1}: {t_name} ###"]
+                'communication_log': [f"\n### Task {idx + 1}: {t_name} ###"]
             }
         self.logger.debug("Execution phase completed. Routing to integration.")
         return {
@@ -95,4 +90,4 @@ class ExecutionManager:
         }
 
     def route_execution(self, state: dict) -> str:
-        return state.get('current_agent', 'manager')
+        return state.get('current_agent', 'officer')

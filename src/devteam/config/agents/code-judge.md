@@ -3,7 +3,7 @@ role: Code Judge
 description: Judge the quality of code drafts based on provided specifications and determine the best implementation.
 model: reasoning
 temperature: 0.0
-required_inputs: ['specs', 'current_task']
+inputs: ['specs', 'current_task']
 ---
 # Role
 

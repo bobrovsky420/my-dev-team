@@ -19,15 +19,18 @@ class ProjectManager(PlanningManager, ExecutionManager, IntegrationManager):
         workflow = StateGraph(ProjectState)
         workflow.add_node('human', self.dummy_human_node)
         workflow.add_node('manager', self.manager_node)
+        workflow.add_node('officer', self.officer_node)
         for node_name, agent in self.agents.items():
             workflow.add_node(node_name, agent.process)
             workflow.add_edge(node_name, 'manager')
+        workflow.add_edge('human', 'manager')
         workflow.add_edge(START, 'manager')
         workflow.add_conditional_edges('manager', self.central_router)
+        workflow.add_conditional_edges('officer', self.central_router)
         return workflow.compile(checkpointer=memory, interrupt_before=interrupt_before or ['human'])
 
     def manager_node(self, state: dict) -> dict:
-        self.logger.info("Project Manager is reviewing the project state...")
+        self.logger.debug("Project Manager is reviewing the project state...")
         match state.get('current_phase', 'planning'):
             case 'planning':
                 return self.planning_node(state)

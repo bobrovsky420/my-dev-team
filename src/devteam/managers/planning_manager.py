@@ -12,7 +12,11 @@ class PlanningManager:
                 'current_phase': 'development',
                 'messages': self._cleanup_messages(state.get('messages'))
             }
-        return {}
+        if state.get('specs', ''): # PM has finished - clean up messages
+            return {
+                'messages': self._cleanup_messages(state.get('messages'))
+            }
+        return {} # Sentinel - in theory should never happen
 
     def route_planning(self, state: dict) -> str:
         if state.get('clarification_question'):

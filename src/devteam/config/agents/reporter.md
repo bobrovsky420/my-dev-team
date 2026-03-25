@@ -3,7 +3,7 @@ role: Reporter
 description: The Reporter writes a detailed Final Markdown Report for the stakeholders after the software project has successfully concluded.
 model: fast-utility
 temperature: 0.3
-required_inputs: ['requirements', 'specs', 'workspace', 'revision_count']
+inputs: ['requirements', 'specs', 'workspace', 'revision_count']
 ---
 # Role
 

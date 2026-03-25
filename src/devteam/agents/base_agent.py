@@ -39,12 +39,16 @@ class BaseAgent(Generic[T]):
         return sanitize_for_prompt(content, tags)
 
     @cached_property
-    def required_inputs(self) -> list[str]:
-        return self.config.get('required_inputs', [])
+    def inputs(self) -> list[str]:
+        return self.config.get('inputs', [])
+
+    @cached_property
+    def outputs(self) -> list[str]:
+        return self.config.get('outputs', [])
 
     def _build_inputs(self, state: dict) -> dict:
         inputs = {}
-        for key in self.required_inputs:
+        for key in self.inputs:
             val = state.get(key, '')
             if key == 'messages': # Do not sanitize messages
                 inputs[key] = val
@@ -59,6 +63,7 @@ class BaseAgent(Generic[T]):
         self.logger.info("Executing...")
         inputs = self._build_inputs(state)
         try:
+            self.logger.debug("Invoking LLM with inputs:\n%s", inputs)
             ai_message = await self._invoke_llm(**inputs)
             parsed_data = self._parse_outputs(ai_message)
         except Exception:  # pylint: disable=broad-exception-caught
@@ -68,7 +73,8 @@ class BaseAgent(Generic[T]):
                 'error_message': full_traceback,
             }
         final_state = self._update_state(parsed_data, state)
-        final_state['messages'] = [ai_message]
+        if 'messages' in self.outputs:
+            final_state['messages'] = [ai_message]
         final_state['communication_log'] = [f"**[{self.name or self.role}]**: {ai_message.content}"]
         return final_state
 

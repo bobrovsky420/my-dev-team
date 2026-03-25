@@ -3,7 +3,7 @@ role: System Architect
 description: An expert software architect who breaks technical specifications down into a sequential backlog of detailed developer tasks.
 model: reasoning
 temperature: 0.1
-required_inputs: ['requirements', 'specs']
+inputs: ['requirements', 'specs']
 ---
 # Role
 

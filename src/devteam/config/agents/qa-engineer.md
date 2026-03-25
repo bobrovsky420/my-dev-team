@@ -3,7 +3,7 @@ role: QA Engineer
 description: A meticulous Quality Assurance Engineer who evaluates code against technical specifications and simulates unit tests to identify bugs and edge cases.
 model: code-analyzer
 temperature: 0.1
-required_inputs: ['specs', 'current_task', 'workspace']
+inputs: ['specs', 'current_task', 'workspace']
 ---
 # Role
 
