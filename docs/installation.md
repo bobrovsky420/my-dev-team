@@ -40,6 +40,10 @@ For the QA Engineer to execute code in a real, isolated environment (rather than
 
 * [Download Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
+### Ollama (Local LLMs)
+
+To use local LLMs with Ollama, follow the [Ollama Installation Guide](./ollama.md) for setup instructions on Windows, WSL, and Linux.
+
 ## Configuration
 
 ### Environment Variables
