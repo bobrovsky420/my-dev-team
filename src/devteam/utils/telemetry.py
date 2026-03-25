@@ -1,4 +1,3 @@
-import logging
 from collections import defaultdict
 from functools import cached_property
 from typing import Any, Dict, List
@@ -9,12 +8,12 @@ from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
 from litellm import cost_per_token
 from devteam.settings import get_config_dir
+from devteam.utils import WithLogging
 from .cost_optimization import CostOptimization
 
-class TelemetryTracker(BaseCallbackHandler, CostOptimization):
+class TelemetryTracker(BaseCallbackHandler, CostOptimization, WithLogging):
     """Tracks token usage and estimates costs across all agent LLM calls"""
     def __init__(self):
-        self.logger = logging.getLogger('Telemetry')
         self.total_requests = 0
         self.input_tokens = 0
         self.output_tokens = 0

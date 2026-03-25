@@ -1,7 +1,20 @@
 import logging
 import sys
+from logging.handlers import RotatingFileHandler
 
 LOG_FILE_NAME = 'mycrew.log'
+LOG_MAX_BYTES = 5 * 1024 * 1024  # 5 MB
+
+LOG_BACKUP_COUNT = 3
+
+NOISY_LOGGERS = [
+    'aiosqlite',
+    'asyncio',
+    'httpx',
+    'httpcore',
+    'LiteLLM',
+    'urllib3.connectionpool',
+]
 
 class ConsoleDispatchFormatter(logging.Formatter):
     """Custom formatter for console output."""
@@ -17,7 +30,13 @@ class ConsoleDispatchFormatter(logging.Formatter):
         return self.default_formatter.format(record)
 
 def setup_logging(*, file_level=logging.DEBUG, console_level=logging.INFO):
-    file_handler = logging.FileHandler(LOG_FILE_NAME, encoding='utf-8')
+    file_handler = RotatingFileHandler(
+        LOG_FILE_NAME,
+        maxBytes=LOG_MAX_BYTES,
+        backupCount=LOG_BACKUP_COUNT,
+        encoding='utf-8'
+    )
+    file_handler.doRollover() # Rotate on every start
     file_handler.setLevel(file_level)
     file_formatter = logging.Formatter(
         fmt='%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s',
@@ -32,11 +51,5 @@ def setup_logging(*, file_level=logging.DEBUG, console_level=logging.INFO):
         handlers.append(console_handler)
     logging.basicConfig(level=logging.DEBUG, handlers=handlers)
 
-    # Disable annoying debug logs from libraries
-
-    logging.getLogger('aiosqlite').setLevel(logging.WARNING)
-    logging.getLogger('asyncio').setLevel(logging.WARNING)
-    logging.getLogger('httpx').setLevel(logging.WARNING)
-    logging.getLogger('httpcore').setLevel(logging.WARNING)
-    logging.getLogger('LiteLLM').setLevel(logging.WARNING)
-    logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
+    for noisy_logger in NOISY_LOGGERS:
+        logging.getLogger(noisy_logger).setLevel(logging.WARNING)

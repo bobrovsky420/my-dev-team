@@ -1,13 +1,12 @@
 import time
-import logging
 import asyncio
+from devteam.utils import WithLogging
 
-class RateLimiter():
+class RateLimiter(WithLogging):
     """
     Prevents the crew from exceeding free tier API rate limits using a rolling time window.
     """
     def __init__(self, requests_per_minute: int = 3):
-        self.logger = logging.getLogger('Rate Limiter')
         self.rpm_limit = requests_per_minute
         self.call_timestamps = []
         self._lock = asyncio.Lock()

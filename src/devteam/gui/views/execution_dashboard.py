@@ -1,6 +1,14 @@
 from datetime import timedelta
 import streamlit as st
-from devteam.gui.components import render_agent_timeline, render_task_progress, render_communication_log, render_workspace_files, render_phase_tracker, render_hitl_input, render_thinking_stream
+from devteam.gui.components import (
+    render_agent_timeline,
+    render_task_progress,
+    render_communication_log,
+    render_workspace_files,
+    render_phase_tracker,
+    render_hitl_input,
+    render_thinking_stream,
+)
 from devteam.gui.session import drain_queue
 
 def render_execution_dashboard_page():

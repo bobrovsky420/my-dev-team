@@ -1,13 +1,12 @@
-import logging
 from functools import cached_property
 from pathlib import Path
 from devteam.extensions import CrewExtension, WorkspaceSaver, GitCommitter
+from devteam.utils import WithLogging
 from .execution import Execution
 from .history import History
 
-class VirtualCrew(Execution, History):
-    role = 'Virtual Crew'
-    name: str = None
+class VirtualCrew(WithLogging, Execution, History):
+    """Orchestrator of a virtual crew."""
 
     def __init__(self,
                  project_folder: Path,
@@ -17,7 +16,6 @@ class VirtualCrew(Execution, History):
                  extensions: list[CrewExtension] = None,
                  workspace_saver: CrewExtension = None,
                  git_committer: CrewExtension = None):
-        self.logger = logging.getLogger(self.name or self.role)
         self.project_folder = project_folder
         self.manager = manager
         self.workspace_saver = workspace_saver or WorkspaceSaver(workspace_dir=project_folder)

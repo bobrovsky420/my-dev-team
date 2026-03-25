@@ -7,6 +7,7 @@ from .sanitizer import sanitize_for_prompt
 from .stream_handler import StreamHandler
 from .telemetry import TelemetryTracker
 from .workspace import workspace_str_from_files
+from .with_logging import WithLogging
 
 __all__ = [
     'LLMFactory',
@@ -19,5 +20,6 @@ __all__ = [
     'sanitize_for_prompt',
     'StreamHandler',
     'setup_logging',
-    'workspace_str_from_files'
+    'workspace_str_from_files',
+    'WithLogging'
 ]

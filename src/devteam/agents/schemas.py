@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 from devteam.utils.sanitizer import normalize_workspace_content
 
 # pylint: disable=line-too-long

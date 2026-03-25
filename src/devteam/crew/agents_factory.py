@@ -1,13 +1,13 @@
-import logging
 import yaml
 import devteam.agents as agents_module
 from devteam.settings import get_config_dir
 import devteam.tools as tools_module
-from devteam.utils import LLMFactory, RateLimiter
+from devteam.utils import LLMFactory, RateLimiter, WithLogging
 
-class AgentsFactory:
+class AgentsFactory(WithLogging):
+    """Factory to create agent instances based on crew configuration files."""
+
     def __init__(self, llm_factory: LLMFactory = None, rate_limiter: RateLimiter = None, config_dir = None):
-        self.logger = logging.getLogger('Agents Factory')
         self.llm_factory = llm_factory
         self.rate_limiter = rate_limiter
         self.config_dir = config_dir or get_config_dir()

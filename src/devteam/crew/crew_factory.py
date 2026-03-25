@@ -1,11 +1,11 @@
 from pathlib import Path
 from langgraph.checkpoint.memory import MemorySaver
 from devteam.managers import ProjectManager
-from devteam.utils import LLMFactory, RateLimiter
+from devteam.utils import LLMFactory, RateLimiter, WithLogging
 from .agents_factory import AgentsFactory
 from .crew import VirtualCrew
 
-class CrewFactory:
+class CrewFactory(WithLogging):
     BASIC_CREW = 'basic.yaml'
 
     def __init__(self, llm_factory: LLMFactory = None, agents_factory: AgentsFactory = None, rate_limiter: RateLimiter = None):

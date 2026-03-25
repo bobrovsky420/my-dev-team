@@ -1,14 +1,13 @@
 from functools import cached_property
 from pathlib import Path
-import logging
 import docker
 from docker.errors import ImageNotFound
 import yaml
 from devteam.settings import get_config_dir
+from devteam.utils import WithLogging
 
-class DockerSandbox:
+class DockerSandbox(WithLogging):
     def __init__(self):
-        self.logger = logging.getLogger('Docker Sandbox')
         try:
             self.client = docker.from_env()
         except Exception as e: # pylint: disable=broad-exception-caught

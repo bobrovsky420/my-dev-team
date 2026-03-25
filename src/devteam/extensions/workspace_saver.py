@@ -1,4 +1,3 @@
-import logging
 from functools import cached_property
 from pathlib import Path
 from devteam.utils import task_to_markdown
@@ -8,7 +7,6 @@ class WorkspaceSaver(CrewExtension):
     base_dir: Path
 
     def __init__(self, workspace_dir: Path):
-        self.logger = logging.getLogger('Workspace Saver')
         self.workspace_dir = workspace_dir
         self.workspace_dir.mkdir(parents=True, exist_ok=True)
 

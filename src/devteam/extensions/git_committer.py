@@ -3,6 +3,8 @@ from pathlib import Path
 from .base_extension import CrewExtension
 
 class GitCommitter(CrewExtension):
+    """Extension that commits workspace changes to a Git repository."""
+
     def __init__(self, workspace_dir: Path):
         self.workspace_dir = workspace_dir
 

@@ -1,4 +1,3 @@
-import logging
 import time
 from queue import Queue
 from devteam.crew.events import Event
@@ -8,7 +7,6 @@ class StreamlitLogger(CrewExtension):
     """Extension to publish execution events to a thread-safe queue"""
 
     def __init__(self, event_queue: Queue):
-        self.logger = logging.getLogger("Streamlit Logger")
         self.queue = event_queue
 
     def _emit(self, event_type: Event, **data):

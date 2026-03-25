@@ -1,18 +1,17 @@
 import asyncio
 from functools import cached_property
 from typing import Any, Generic, TypeVar
-import logging
 import traceback
 import yaml
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from pydantic import BaseModel
 from devteam.settings import get_config_dir, get_llm_timeout
-from devteam.utils import LLMFactory, RateLimiter
+from devteam.utils import LLMFactory, RateLimiter, WithLogging
 from devteam.utils.sanitizer import sanitize_for_prompt
 
 T = TypeVar('T', bound=BaseModel)
 
-class BaseAgent(Generic[T]):
+class BaseAgent(WithLogging, Generic[T]):
     """Base agent that uses LLM tool calling to submit structured results."""
 
     model_category: str = 'reasoning'
@@ -32,7 +31,6 @@ class BaseAgent(Generic[T]):
         self.name = config.get('name', None)
         self.model_category = config.get('model', self.model_category)
         self.temperature = config.get('temperature', self.temperature)
-        self.logger = logging.getLogger(self.name or self.role)
 
     @staticmethod
     def sanitize_for_prompt(content: str, tags: list[str]) -> str:

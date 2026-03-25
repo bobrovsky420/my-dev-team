@@ -1,6 +1,6 @@
-from abc import ABC
+from devteam.utils import WithLogging
 
-class CrewExtension(ABC):
+class CrewExtension(WithLogging):
     """Base class for all Virtual Crew extensions."""
 
     def on_start(self, thread_id: str, initial_state: dict):
