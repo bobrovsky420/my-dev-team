@@ -1,3 +1,4 @@
+from langchain_core.messages import HumanMessage
 from .base_extension import CrewExtension
 
 class HumanInTheLoop(CrewExtension):
@@ -19,6 +20,6 @@ class HumanInTheLoop(CrewExtension):
                 'communication_log': ["**[Human]**: Aborted the workflow."]
             }
         return {
-            'human_answer': user_input,
+            'messages': [HumanMessage(content=user_input)],
             'communication_log': [f"**[Human]**: {user_input}"]
         }

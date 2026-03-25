@@ -4,8 +4,8 @@ from typing import Any, Generic, TypeVar
 import logging
 import traceback
 import yaml
-from langchain_core.prompts import PromptTemplate
-from pydantic import BaseModel, ValidationError
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from pydantic import BaseModel
 from devteam.settings import get_config_dir, get_llm_timeout
 from devteam.utils import LLMFactory, RateLimiter
 from devteam.utils.sanitizer import sanitize_for_prompt
@@ -46,7 +46,10 @@ class BaseAgent(Generic[T]):
         inputs = {}
         for key in self.required_inputs:
             val = state.get(key, '')
-            inputs[key] = self.sanitize_for_prompt(str(val), [key]) if val else ''
+            if key == 'messages': # Do not sanitize messages
+                inputs[key] = val
+            else:
+                inputs[key] = self.sanitize_for_prompt(str(val), [key]) if val else ''
         return inputs
 
     def _update_state(self, parsed_data: T, current_state: dict) -> dict:
@@ -65,11 +68,8 @@ class BaseAgent(Generic[T]):
                 'error_message': full_traceback,
             }
         final_state = self._update_state(parsed_data, state)
-        content = ai_message.content or ''
-        if 'communication_log' not in final_state:
-            final_state['communication_log'] = [
-                f"**[{self.name or self.role}]**: {content}"
-            ]
+        final_state['messages'] = [ai_message]
+        final_state['communication_log'] = [f"**[{self.name or self.role}]**: {ai_message.content}"]
         return final_state
 
     @cached_property
@@ -84,13 +84,15 @@ class BaseAgent(Generic[T]):
             llm = llm.bind_tools(self.tools)
         return llm
 
-    @cached_property
-    def prompt(self) -> PromptTemplate:
-        return PromptTemplate(template=self.prompt_template)
+    def _build_prompt(self) -> ChatPromptTemplate:
+        return ChatPromptTemplate.from_messages([
+            ('system', self.prompt_template),
+            MessagesPlaceholder(variable_name='messages', optional=True)
+        ])
 
     @cached_property
     def chain(self) -> Any:
-        return self.prompt | self.llm
+        return self._build_prompt() | self.llm
 
     @cached_property
     def llm_timeout(self) -> int:

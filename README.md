@@ -273,7 +273,6 @@ async def main():
             print("❌ Workflow aborted by user or validation failure.")
         elif final_state.success:
             print("🎉 Project completed successfully!")
-            print(f"Total Revisions: {final_state.total_revisions}")
             if final_state.final_report:
                 print(final_state.final_report)
         else:

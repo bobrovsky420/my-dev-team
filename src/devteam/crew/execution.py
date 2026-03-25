@@ -1,5 +1,7 @@
 from logging import Logger
 from typing import Any
+from langchain_core.messages import HumanMessage
+from devteam.utils import sanitize_for_prompt
 from .event_emitter import EventEmitter
 from .final_result import FinalResult
 
@@ -45,9 +47,17 @@ class Execution(EventEmitter):
             self.emit_event('resume', thread_id, state_update=state_update)
             initial_state = None
         elif requirements:
+            safe_requirements = sanitize_for_prompt(requirements, ['requirements'])
+            content = (
+                "Here are the new project requirements:\n\n"
+                "<requirements>\n"
+                f"{safe_requirements}\n"
+                "</requirements>"
+            )
             initial_state = {
                 'requirements': requirements,
-                'current_phase': 'planning'
+                'current_phase': 'planning',
+                'messages': [HumanMessage(content=content)]
             }
             self.emit_event('start', thread_id, initial_state=initial_state)
         else:

@@ -1,0 +1,98 @@
+from logging import Logger
+from langchain_core.messages import HumanMessage
+from langgraph.graph import END
+from devteam.utils.status import is_approved_status
+from devteam.utils.tasks import task_to_markdown
+
+class ExecutionManager:
+    """Mixin for managing development tasks."""
+
+    logger: Logger
+    max_revision_count: int
+
+    def execution_node(self, state: dict) -> dict:
+        # TODO: In this node we need to determine whether to take next task for developer, or this is a returned task, then we need to check if we exceeded the maximum revisions
+        # We can come here:
+        # 1) From planning node -> simply take first task for developer
+        # 2) From developer node -> pass task for code review
+        # 3) From reviewer node -> a) pass task to QA or b) return to developer
+        # 4) From QA node -> either a) take next task or b) return to developer or c) pass to integration
+        if len(state.get('pending_tasks', [])) == 0:
+            self.logger.warning("No pending tasks found. Aborting the workflow.")
+            return {
+                'abort_requested': True,
+                'communication_log': [f"**[{self.role}]**: System architect didn't create tasks. Aborted the workflow."]
+            }
+        if not state.get('current_task_index', '') or not state.get('workspace_files', ''): # Case no. 1
+            return self.developer_node(state)
+        current_revisions = state.get('revision_count', 0)
+        if state.get('current_agent', '') == 'developer': # Case no. 2 : Developer just finished a task
+            return {
+                'current_agent': 'reviewer'
+            }
+        if not state.get('review_feedback', ''): # Case no. 2 : Weird case when no feedback from reviewer
+            return {
+                'current_agent': 'reviewer'
+            }
+        if not is_approved_status(review_feedback := state.get('review_feedback', '')) and current_revisions < self.max_revision_count: # Case no. 3b
+            instruction = (
+                    "The Code Reviewer rejected your implementation. "
+                    "Please read the feedback below, fix the code and use your tools to update the workspace.\n\n"
+                    f"### Reviewer Feedback ###\n{review_feedback}"
+                )
+            return {
+                'current_agent': 'developer',
+                'revision_count': current_revisions + 1,
+                'review_feedback': '',
+                'test_results': '',
+                'messages': [HumanMessage(content=instruction)],
+                'communication_log': [f"**[{self.role}]**: Revision {current_revisions + 1} requested by reviewer."]
+            }
+        if not state.get('test_results', ''): # Case no. 3a
+            return {
+                'current_agent': 'qa'
+            }
+        if not is_approved_status(test_results := state.get('test_results', '')) and current_revisions < self.max_revision_count: # Case no. 4b
+            instruction = (
+                    "The QA rejected your implementation. "
+                    "Please read the feedback below, fix the code and use your tools to update the workspace.\n\n"
+                    f"### QA Feedback ###\n{test_results}"
+                )
+            return {
+                'current_agent': 'developer',
+                'revision_count': current_revisions + 1,
+                'review_feedback': '',
+                'test_results': '',
+                'messages': [HumanMessage(content=instruction)],
+                'communication_log': [f"**[{self.role}]**: Revision {current_revisions + 1} requested by QA."]
+            }
+        return self.developer_node(state) # Case no. 4a or 4c
+
+    def developer_node(self, state: dict, task_idx = 0) -> dict:
+        """Take next task for developer or pass to integration."""
+        pending = state.get('pending_tasks', [])
+        if task_idx < len(pending):
+            task = pending[task_idx]
+            t_name = task.get('task_name', f'Task {task_idx+1}')
+            formatted_task = task_to_markdown(task, task_idx + 1)
+            self.logger.info("Routing to Task %i/%i: %s", task_idx + 1, len(pending), t_name)
+            return {
+                'current_agent': 'developer',
+                'current_task': formatted_task,
+                'current_task_index': task_idx + 1,
+                'revision_count': 0, # Clear state including messages for next task
+                'review_feedback': '',
+                'test_results': '',
+                'messages': self._cleanup_messages(state.get('messages')),
+                'communication_log': [f"\n### Task {task_idx + 1}: {t_name} ###"]
+            }
+        self.logger.debug("Execution phase completed. Routing to integration.")
+        return {
+            'current_phase': 'integration',
+            'current_agent': '',
+            'current_task': '',
+            'messages': self._cleanup_messages(state.get('messages'))
+        }
+
+    def route_execution(self, state: dict) -> str:
+        return state.get('current_agent', 'manager')

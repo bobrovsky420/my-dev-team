@@ -1,14 +1,14 @@
 import operator
 from typing import Any, Dict, TypedDict, Annotated, List, NotRequired, Literal
-
-def add_ints(a: int, b: int) -> int:
-    """Safe reducer for accumulating integers across tasks."""
-    return (a or 0) + (b or 0)
+from langgraph.graph.message import add_messages
+from langchain_core.messages import BaseMessage
 
 ProjectPhase = Literal['planning', 'development', 'integration', 'complete']
 
 class ProjectState(TypedDict):
+    messages: Annotated[List[BaseMessage], add_messages]
     current_phase: ProjectPhase
+    current_agent: str
     requirements: str
     specs: str
     human_answer: str
@@ -21,7 +21,6 @@ class ProjectState(TypedDict):
     review_feedback: str
     test_results: str
     revision_count: int
-    total_revisions: Annotated[int, add_ints]
     final_report: str
     integration_bugs: List[str]
     communication_log: Annotated[List[str], operator.add]

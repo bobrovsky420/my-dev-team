@@ -79,7 +79,6 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
             return
         if final_state.success:
             print('\n🎉 PROJECT COMPLETED SUCCESSFULLY!')
-            print(f'Total Revisions: {final_state.total_revisions}\n')
             print(final_state.final_report or 'No report generated.')
             return
         logging.error('🚨 RELEASE FAILED: Integration bugs found!')

@@ -17,7 +17,6 @@ def sample_state():
         'review_feedback': '',
         'test_results': '',
         'revision_count': 0,
-        'total_revisions': 0,
         'final_report': '',
         'integration_bugs': [],
         'communication_log': [],

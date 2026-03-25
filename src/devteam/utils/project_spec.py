@@ -5,14 +5,17 @@ from pathlib import Path
 def parse_spec_from_string(content: str) -> tuple[str, str]:
     name = "New Project"
     lines = content.split('\n')
-    for line in lines:
+    spec_start = 0
+    for idx, line in enumerate(lines):
         if not line.strip():
+            spec_start = idx + 1
             break
         if line.startswith('Subject:') and 'NEW PROJECT:' in line:
             extracted_name = line.split('NEW PROJECT:', 1)[-1].strip()
             if extracted_name:
                 name = extracted_name
-    return name, content.strip()
+    spec_content = '\n'.join(lines[spec_start:]).strip()
+    return name, spec_content
 
 def load_project_spec(path: str) -> tuple[str, str]:
     return parse_spec_from_string(Path(path).read_text(encoding='utf-8'))

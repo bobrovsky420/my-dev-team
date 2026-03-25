@@ -2,7 +2,6 @@ import logging
 from functools import cached_property
 from pathlib import Path
 from devteam.extensions import CrewExtension, WorkspaceSaver, GitCommitter
-from devteam.utils import RateLimiter
 from .execution import Execution
 from .history import History
 
