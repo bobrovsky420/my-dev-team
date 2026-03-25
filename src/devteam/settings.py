@@ -6,6 +6,14 @@ _WORKSPACES_DIR = Path('workspaces')
 _CONFIG_DIR: Path = Path(__file__).parent / 'config'
 _LLM_TIMEOUT: int = 120 # seconds
 _LLM_STREAMING: bool = False
+_NO_DOCKER: bool = False
+
+def set_no_docker(enabled: bool) -> None:
+    global _NO_DOCKER
+    _NO_DOCKER = enabled
+
+def get_no_docker() -> bool:
+    return _NO_DOCKER
 
 def set_workspaces_dir(path: Path) -> None:
     global _WORKSPACES_DIR

@@ -24,6 +24,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--checkpoint', type=str, help='specific checkpoint ID to rewind to before injecting feedback')
     parser.add_argument('--timeout', type=int, default=120, help='maximum time (in seconds) to wait for an LLM response (default: 120)')
     parser.add_argument('--thinking', action='store_true', help='stream raw LLM thinking output to stderr')
+    parser.add_argument('--no-docker', action='store_true', help='run QA engineer without Docker sandbox')
     return parser
 
 def _apply_config(custom_config_path: str):
@@ -69,6 +70,7 @@ def main():
     _apply_config(args.config)
     settings.set_llm_timeout(args.timeout)
     settings.set_llm_streaming(args.thinking)
+    settings.set_no_docker(args.no_docker)
     _validate_inputs(parser, args)
 
     if args.history:

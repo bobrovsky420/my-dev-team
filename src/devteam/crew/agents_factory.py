@@ -1,6 +1,6 @@
 import yaml
 import devteam.agents as agents_module
-from devteam.settings import get_config_dir
+from devteam.settings import get_config_dir, get_no_docker
 import devteam.tools as tools_module
 from devteam.utils import LLMFactory, RateLimiter, WithLogging
 
@@ -21,17 +21,20 @@ class AgentsFactory(WithLogging):
         agents = {}
         for node_name, details in crew_config.get('agents', {}).items():
             class_name = details['class']
-            config_file = details['config']
+            config_file = details['config'] if not get_no_docker() else details.get('config-no-docker', details['config'])
             AgentClass = getattr(agents_module, class_name, None) # pylint: disable=invalid-name
             if not AgentClass:
                 raise ValueError(f"Configuration Error: '{class_name}' is not a valid class in devteam.agents")
             self.logger.debug("Instantiating '%s' as %s with configuration file '%s'...", node_name, class_name, config_file)
             agent = AgentClass.from_config(node_name, config_file, llm_factory=self.llm_factory, rate_limiter=self.rate_limiter)
             if sandbox_class := details.get('sandbox', None):
-                ToolsClass = getattr(tools_module, sandbox_class, None) # pylint: disable=invalid-name
-                if not ToolsClass:
-                    raise ValueError(f"Configuration Error: '{sandbox_class}' is not a valid class in devteam.tools")
-                self.logger.debug("Adding %s tool to '%s'...", sandbox_class, node_name)
-                agent = agent.with_sandbox(ToolsClass())
+                if not get_no_docker():
+                    ToolsClass = getattr(tools_module, sandbox_class, None) # pylint: disable=invalid-name
+                    if not ToolsClass:
+                        raise ValueError(f"Configuration Error: '{sandbox_class}' is not a valid class in devteam.tools")
+                    self.logger.debug("Adding %s tool to '%s'...", sandbox_class, node_name)
+                    agent = agent.with_sandbox(ToolsClass())
+                else:
+                    self.logger.debug("Skipping sandbox for %s", class_name)
             agents[node_name] = agent
         return agents
