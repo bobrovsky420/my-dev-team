@@ -57,8 +57,17 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
     def _update_state(self, parsed_data: T, current_state: dict) -> dict:
         return parsed_data.model_dump()
 
+    async def _pre_process(self, state: dict) -> dict:
+        """Lifecycle Hook: performs actions BEFORE the LLM runs."""
+        return state
+
+    async def _post_process(self, state: dict, final_state: dict) -> dict:
+        """Lifecycle Hook: performs actions AFTER the LLM runs."""
+        return final_state
+
     async def process(self, state: dict) -> dict:
         self.logger.info("Executing...")
+        state = await self._pre_process(state)
         inputs = self._build_inputs(state)
         try:
             self.logger.debug("Invoking LLM with inputs:\n%s", inputs)
@@ -71,6 +80,7 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
                 'error_message': full_traceback,
             }
         final_state = self._update_state(parsed_data, state)
+        final_state = await self._post_process(state, final_state)
         if 'messages' in self.outputs:
             final_state['messages'] = [ai_message]
         final_state['communication_log'] = self.communication(ai_message.content)

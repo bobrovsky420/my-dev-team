@@ -8,15 +8,14 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
     output_schema = QAEngineerResponse
     tools = [ApproveCode, ReportIssues]
     sandbox: DockerSandbox = None
-    raw_results: str = None
 
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
         workspace_str = ''
         if workspace_files := state.get('workspace_files', {}):
             workspace_str = workspace.workspace_str_from_files(workspace_files)
-            if self.raw_results:
-                inputs['test_results'] = self.sanitize_for_prompt(self.raw_results, ['test_results'])
+            if state.get('raw_test_results', ''):
+                inputs['test_results'] = self.sanitize_for_prompt(state['raw_test_results'], ['test_results'])
         else:
             workspace_str = "No files exist in the workspace."
         inputs['workspace'] = workspace_str.strip()
@@ -25,7 +24,7 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
     def _run_tests(self, state: dict) -> str:
         target_runtime = state.get('runtime', 'auto')
         workspace_path = Path(state['workspace_path'])
-        self.logger.info("🐳 Running tests in Docker Sandbox...")
+        self.logger.info("Running tests in Docker Sandbox...")
         test_results = self.sandbox.run_tests(workspace_path, runtime=target_runtime)
         self.logger.debug("Sandbox Output:\n%s", test_results)
         return test_results
@@ -47,11 +46,10 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
             'communication_log': self.communication(f"{status_str}\n{results}")
         }
 
-    async def process(self, state: dict) -> dict:
+    async def _pre_process(self, state: dict) -> dict:
         if self.sandbox and state.get('workspace_files'):
-            self.logger.info("Executing test suite in sandbox...")
-            self.raw_results = self._run_tests(state)
-        return await super().process(state)
+            state['raw_test_results'] = self._run_tests(state)
+        return state
 
     def with_sandbox(self, sandbox: DockerSandbox):
         self.sandbox = sandbox
