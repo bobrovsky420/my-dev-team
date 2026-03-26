@@ -1,6 +1,6 @@
-from devteam.utils import WithLogging
+from devteam.utils import CommunicationLog, WithLogging
 
-class CrewExtension(WithLogging):
+class CrewExtension(CommunicationLog, WithLogging):
     """Base class for all Virtual Crew extensions."""
 
     def on_start(self, thread_id: str, initial_state: dict):

@@ -17,9 +17,9 @@ class HumanInTheLoop(CrewExtension):
             print("Aborting project...")
             return {
                 'abort_requested': True,
-                'communication_log': ["**[Human]**: Aborted the workflow."]
+                'communication_log': self.communication("Aborted the workflow.")
             }
         return {
             'messages': [HumanMessage(content=user_input)],
-            'communication_log': [f"**[Human]**: {user_input}"]
+            'communication_log': self.communication(user_input)
         }

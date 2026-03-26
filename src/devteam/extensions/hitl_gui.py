@@ -1,6 +1,7 @@
 import threading
 import time
 from queue import Queue
+from langchain_core.messages import HumanMessage
 from .base_extension import CrewExtension
 
 class HumanInTheLoopGUI(CrewExtension):
@@ -39,9 +40,9 @@ class HumanInTheLoopGUI(CrewExtension):
         if self._aborted:
             return {
                 'abort_requested': True,
-                'communication_log': ["**[Human]**: Aborted the workflow."]
+                'communication_log': self.communication("Aborted the workflow.")
             }
         return {
-            'human_answer': self._response,
-            'communication_log': [f"**[Human]**: {self._response}"]
+            'messages': [HumanMessage(content=self._response)],
+            'communication_log': self.communication(self._response)
         }
