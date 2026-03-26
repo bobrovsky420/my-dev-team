@@ -1,6 +1,6 @@
 from pathlib import Path
 from devteam.tools import DockerSandbox
-from devteam.utils import is_approved_status, workspace_str_from_files
+from devteam.utils import status, workspace_str_from_files
 from .schemas import ApproveCode, QAEngineerResponse, ReportIssues
 from .base_agent import BaseAgent
 
@@ -8,15 +8,15 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
     output_schema = QAEngineerResponse
     tools = [ApproveCode, ReportIssues]
     sandbox: DockerSandbox = None
+    raw_results: str = None
 
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
         workspace_str = ''
         if workspace_files := state.get('workspace_files', {}):
             workspace_str = workspace_str_from_files(workspace_files)
-            if self.sandbox:
-                test_results = self._run_tests(state)
-                inputs['test_results'] = self.sanitize_for_prompt(test_results, ['test_results'])
+            if self.raw_results:
+                inputs['test_results'] = self.sanitize_for_prompt(self.raw_results, ['test_results'])
         else:
             workspace_str = "No files exist in the workspace."
         inputs['workspace'] = workspace_str.strip()
@@ -39,13 +39,19 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
 
     def _update_state(self, parsed_data: QAEngineerResponse, current_state: dict) -> dict:
         results = parsed_data.test_results
-        if is_approved_status(results):
+        if status.is_approved_status(results):
             results = 'APPROVED'
-        status = 'APPROVED' if results == 'APPROVED' else 'BUGS FOUND'
+        status_str = 'APPROVED' if results == 'APPROVED' else 'BUGS FOUND'
         return {
             'test_results': results,
-            'communication_log': self.communication(f"{status}\n{results}")
+            'communication_log': self.communication(f"{status_str}\n{results}")
         }
+
+    async def process(self, state: dict) -> dict:
+        if self.sandbox and state.get('workspace_files'):
+            self.logger.info("Executing test suite in sandbox...")
+            self.raw_results = self._run_tests(state)
+        return await super().process(state)
 
     def with_sandbox(self, sandbox: DockerSandbox):
         self.sandbox = sandbox

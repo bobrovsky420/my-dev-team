@@ -1,4 +1,4 @@
-from devteam.utils.status import is_approved_status, workspace_str_from_files
+from devteam.utils import status, workspace_str_from_files
 from .schemas import ApproveCode, FinalQAResponse, ReportIssues
 from .base_agent import BaseAgent
 
@@ -25,14 +25,14 @@ class FinalQAEngineer(BaseAgent[FinalQAResponse]):
 
     def _update_state(self, parsed_data: FinalQAResponse, current_state: dict) -> dict:
         results = parsed_data.test_results
-        if is_approved_status(results):
+        if status.is_approved_status(results):
             results = 'APPROVED'
-        status = 'APPROVED' if results == 'APPROVED' else 'INTEGRATION BUGS FOUND'
+        status_str = 'APPROVED' if results == 'APPROVED' else 'INTEGRATION BUGS FOUND'
         updates = {
             'test_results': results,
-            'communication_log': self.communication(f"{status}\n{results}")
+            'communication_log': self.communication(f"{status_str}\n{results}")
         }
-        if not is_approved_status(status):
+        if not status.is_approved_status(results):
             updates['current_task'] = "FINAL INTEGRATION: Fix the overarching bugs identified in the Final QA test results."
             updates['revision_count'] = 0
         return updates

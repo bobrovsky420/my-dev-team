@@ -1,7 +1,6 @@
 from logging import Logger
 from langchain_core.messages import HumanMessage
-from devteam.utils.status import is_approved_status
-from devteam.utils.tasks import task_to_markdown
+from devteam.utils import status, tasks
 
 class ExecutionManager:
     """Mixin for managing development tasks."""
@@ -25,7 +24,7 @@ class ExecutionManager:
             return {
                 'current_agent': 'reviewer'
             }
-        if not is_approved_status(review_feedback := state.get('review_feedback', '')) and current_revision < self.max_revision_count: # Case no. 3b
+        if not status.is_approved_status(review_feedback := state.get('review_feedback', '')) and current_revision < self.max_revision_count: # Case no. 3b
             instruction = (
                     "The Code Reviewer rejected your implementation. "
                     "Please read the feedback below, fix the code and use your tools to update the workspace.\n\n"
@@ -43,7 +42,7 @@ class ExecutionManager:
             return {
                 'current_agent': 'qa'
             }
-        if not is_approved_status(test_results := state.get('test_results', '')) and current_revision < self.max_revision_count: # Case no. 4b
+        if not status.is_approved_status(test_results := state.get('test_results', '')) and current_revision < self.max_revision_count: # Case no. 4b
             instruction = (
                     "The QA rejected your implementation. "
                     "Please read the feedback below, fix the code and use your tools to update the workspace.\n\n"
@@ -68,7 +67,7 @@ class ExecutionManager:
         if idx < len(pending):
             task = pending[idx]
             t_name = task.get('task_name', f'Task {idx+1}')
-            formatted_task = task_to_markdown(task, idx + 1)
+            formatted_task = tasks.task_to_markdown(task, idx + 1)
             self.logger.info("Routing to task %i/%i: %s", idx + 1, len(pending), t_name)
             return {
                 'current_agent': 'developer',
