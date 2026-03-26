@@ -8,7 +8,7 @@ from devteam.crew import CrewFactory
 from devteam.extensions import StreamlitLogger
 
 def get_providers_from_config() -> list[str]:
-    config_path = settings.get_config_dir() / 'llms.yaml'
+    config_path = settings.config_dir / 'llms.yaml'
     if not config_path.exists():
         return ['ollama', 'groq', 'openai']
     try:
@@ -21,11 +21,11 @@ def run_crew_in_thread(project_name, requirements, provider, rpm, event_queue, r
     """Run async crew execution inside a dedicated thread and event loop."""
     async def _inner():
         thread_id = generate_thread_id(project_name)
-        project_folder = settings.get_workspaces_dir() / thread_id
+        project_folder = settings.workspace_dir / thread_id
         project_folder.mkdir(parents=True, exist_ok=True)
         db_path = project_folder / 'state.db'
         callbacks = []
-        settings.set_llm_streaming(thinking)
+        settings.llm_streaming = thinking
         if thinking:
             callbacks.append(StreamHandler(queue=event_queue))
         llm_factory = LLMFactory(provider=provider, callbacks=callbacks)
@@ -50,14 +50,14 @@ def run_crew_in_thread(project_name, requirements, provider, rpm, event_queue, r
         loop.close()
 
 def get_existing_threads() -> list[str]:
-    if not settings.get_workspaces_dir().exists():
+    if not settings.workspace_dir.exists():
         return []
-    return [directory.name for directory in settings.get_workspaces_dir().iterdir() if directory.is_dir()]
+    return [directory.name for directory in settings.workspace_dir.iterdir() if directory.is_dir()]
 
 async def fetch_history_async(thread_id: str):
-    db_path = settings.get_workspaces_dir() / thread_id / 'state.db'
+    db_path = settings.workspace_dir / thread_id / 'state.db'
     async with aiosqlite.connect(db_path) as conn:
-        project_folder = settings.get_workspaces_dir() / thread_id
+        project_folder = settings.workspace_dir / thread_id
         checkpointer = AsyncSqliteSaver(conn)
         crew_factory = CrewFactory()
         crew = crew_factory.create(project_folder, checkpointer=checkpointer)

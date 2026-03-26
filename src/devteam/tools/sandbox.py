@@ -3,7 +3,7 @@ from pathlib import Path
 import docker
 from docker.errors import ImageNotFound
 import yaml
-from devteam.settings import get_config_dir
+from devteam import settings
 from devteam.utils import WithLogging
 
 class DockerSandbox(WithLogging):
@@ -15,7 +15,7 @@ class DockerSandbox(WithLogging):
 
     @cached_property
     def sandbox_config(self) -> dict:
-        config_path = get_config_dir() / 'sandbox.yaml'
+        config_path = settings.config_dir / 'sandbox.yaml'
         return yaml.safe_load(config_path.read_text(encoding='utf-8'))
 
     @cached_property

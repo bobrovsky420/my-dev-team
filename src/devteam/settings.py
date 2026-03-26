@@ -1,44 +1,54 @@
 from pathlib import Path
 
-# pylint: disable=global-statement
+class Settings:
+    def __init__(self):
+        self._settings = {
+            'WORKSPACES_DIR': Path('workspaces'),
+            'CONFIG_DIR': Path(__file__).parent / 'config',
+            'LLM_TIMEOUT': 120,  # seconds
+            'LLM_STREAMING': False,
+            'NO_DOCKER': False,
+        }
 
-_WORKSPACES_DIR = Path('workspaces')
-_CONFIG_DIR: Path = Path(__file__).parent / 'config'
-_LLM_TIMEOUT: int = 120 # seconds
-_LLM_STREAMING: bool = False
-_NO_DOCKER: bool = False
+    @property
+    def workspace_dir(self) -> Path:
+        return self._settings['WORKSPACES_DIR']
 
-def set_no_docker(enabled: bool) -> None:
-    global _NO_DOCKER
-    _NO_DOCKER = enabled
+    @workspace_dir.setter
+    def workspace_dir(self, path: Path) -> None:
+        self._settings['WORKSPACES_DIR'] = path.resolve()
 
-def get_no_docker() -> bool:
-    return _NO_DOCKER
+    @property
+    def config_dir(self) -> Path:
+        return self._settings['CONFIG_DIR']
 
-def set_workspaces_dir(path: Path) -> None:
-    global _WORKSPACES_DIR
-    _WORKSPACES_DIR = path.resolve()
+    @config_dir.setter
+    def config_dir(self, path: Path) -> None:
+        self._settings['CONFIG_DIR'] = path.resolve()
 
-def get_workspaces_dir() -> Path:
-    return _WORKSPACES_DIR
+    @property
+    def llm_timeout(self) -> int:
+        return self._settings['LLM_TIMEOUT']
 
-def set_config_dir(path: Path) -> None:
-    global _CONFIG_DIR
-    _CONFIG_DIR = path.resolve()
+    @llm_timeout.setter
+    def llm_timeout(self, seconds: int) -> None:
+        self._settings['LLM_TIMEOUT'] = seconds
 
-def get_config_dir() -> Path:
-    return _CONFIG_DIR
+    @property
+    def llm_streaming(self) -> bool:
+        return self._settings['LLM_STREAMING']
 
-def set_llm_timeout(seconds: int) -> None:
-    global _LLM_TIMEOUT
-    _LLM_TIMEOUT = seconds
+    @llm_streaming.setter
+    def llm_streaming(self, enabled: bool) -> None:
+        self._settings['LLM_STREAMING'] = enabled
 
-def get_llm_timeout() -> int:
-    return _LLM_TIMEOUT
+    @property
+    def no_docker(self) -> bool:
+        return self._settings['NO_DOCKER']
 
-def set_llm_streaming(enabled: bool) -> None:
-    global _LLM_STREAMING
-    _LLM_STREAMING = enabled
+    @no_docker.setter
+    def no_docker(self, enabled: bool) -> None:
+        self._settings['NO_DOCKER'] = enabled
 
-def get_llm_streaming() -> bool:
-    return _LLM_STREAMING
+
+settings = Settings()

@@ -34,11 +34,11 @@ def _apply_config(custom_config_path: str):
     if not custom_path.exists() or not custom_path.is_dir():
         print(f"❌ Error: Config directory '{custom_path}' not found.")
         sys.exit(1)
-    settings.set_config_dir(custom_path)
+    settings.config_dir = custom_path
 
 def _validate_inputs(parser: argparse.ArgumentParser, args):
     if args.resume:
-        path = settings.get_workspaces_dir() / args.resume
+        path = settings.workspace_dir / args.resume
         if not path.exists():
             logging.error("❌ Error: Could not find workspace for thread '%s'", args.resume)
             sys.exit(1)
@@ -68,9 +68,9 @@ def main():
 
     setup_logging(console_level=logging.DEBUG if args.verbose else logging.INFO)
     _apply_config(args.config)
-    settings.set_llm_timeout(args.timeout)
-    settings.set_llm_streaming(args.thinking)
-    settings.set_no_docker(args.no_docker)
+    settings.llm_timeout = args.timeout
+    settings.llm_streaming = args.thinking
+    settings.no_docker = args.no_docker
     _validate_inputs(parser, args)
 
     if args.history:

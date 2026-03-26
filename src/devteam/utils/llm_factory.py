@@ -1,7 +1,7 @@
 from functools import cached_property
 import yaml
 from langchain_core.language_models.chat_models import BaseChatModel
-from devteam.settings import get_config_dir, get_llm_streaming
+from devteam import settings
 
 class LLMFactory:
     def __init__(self, provider: str, callbacks: list = None):
@@ -12,7 +12,7 @@ class LLMFactory:
 
     @cached_property
     def llm_config(self) -> dict:
-        config_path = get_config_dir() / 'llms.yaml'
+        config_path = settings.config_dir / 'llms.yaml'
         return yaml.safe_load(config_path.read_text(encoding='utf-8'))
 
     @cached_property
@@ -23,7 +23,7 @@ class LLMFactory:
         """Returns a configured LLM instance."""
         # pylint: disable=import-error,import-outside-toplevel
         model_name = self.model_map[self.provider].get(category, self.model_map[self.provider]['reasoning'])
-        streaming = get_llm_streaming()
+        streaming = settings.llm_streaming
         node_tag = f'node:{node_name}'
         llm_tags = [node_tag]
         match self.provider:
@@ -43,7 +43,7 @@ class LLMFactory:
                 llm = ChatGroq(
                     model=model_name,
                     temperature=temperature,
-                    streaming=get_llm_streaming(),
+                    streaming=settings.llm_streaming,
                     callbacks=self.callbacks,
                     tags=llm_tags,
                     max_retries=2
@@ -56,7 +56,7 @@ class LLMFactory:
                 return ChatOpenAI(
                     model=model_name,
                     temperature=temperature,
-                    streaming=get_llm_streaming(),
+                    streaming=settings.llm_streaming,
                     callbacks=self.callbacks,
                     tags=llm_tags
                 )

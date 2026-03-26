@@ -34,7 +34,7 @@ def render_start_new_project_page():
         content = uploaded_file.read().decode('utf-8')
         project_name, requirements = parse_spec_from_string(content)
 
-        settings.set_llm_timeout(timeout)
+        settings.llm_timeout = timeout
         reset_execution_state()
         st.session_state['thinking_enabled'] = thinking
 

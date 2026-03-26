@@ -7,7 +7,7 @@ from rich.table import Table
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
 from litellm import cost_per_token
-from devteam.settings import get_config_dir
+from devteam import settings
 from .with_logging import WithLogging
 from .cost_optimization import CostOptimization
 
@@ -63,7 +63,7 @@ class TelemetryTracker(BaseCallbackHandler, CostOptimization, WithLogging):
     @cached_property
     def llm_aliases(self) -> dict:
         try:
-            config_path = get_config_dir() / 'llms.yaml'
+            config_path = settings.config_dir / 'llms.yaml'
             config = yaml.safe_load(config_path.read_text(encoding='utf-8'))
             return config.get('aliases', {})
         except Exception: # pylint: disable=broad-exception-caught

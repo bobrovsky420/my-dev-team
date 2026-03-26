@@ -5,7 +5,7 @@ import traceback
 import yaml
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from pydantic import BaseModel
-from devteam.settings import get_config_dir, get_llm_timeout
+from devteam import settings
 from devteam.utils import LLMFactory, RateLimiter, WithLogging, CommunicationLog
 from devteam.utils.sanitizer import sanitize_for_prompt
 
@@ -108,20 +108,16 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
     def chain(self) -> Any:
         return self._build_prompt() | self.llm
 
-    @cached_property
-    def llm_timeout(self) -> int:
-        return get_llm_timeout()
-
     async def _invoke_llm(self, **kwargs) -> Any:
         if self.rate_limiter:
             await self.rate_limiter.wait_if_needed()
         try:
             response = await asyncio.wait_for(
-                self.chain.ainvoke(kwargs), timeout=self.llm_timeout
+                self.chain.ainvoke(kwargs), timeout=settings.llm_timeout
             )
         except asyncio.TimeoutError:
             raise TimeoutError(
-                f"LLM call timed out after {self.llm_timeout} seconds"
+                f"LLM call timed out after {settings.llm_timeout} seconds"
             ) from None
         self.logger.debug("Raw Response Content:\n%s", response.content)
         self.logger.debug("Tool Calls:\n%s", response.tool_calls)
@@ -142,7 +138,7 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
 
     @classmethod
     def from_config(cls, node_name: str, config_path: str, *, llm_factory: LLMFactory = None, rate_limiter: RateLimiter = None, model_category: str = None, temperature: float = None):
-        prompt_file = get_config_dir() / 'agents' / config_path
+        prompt_file = settings.config_dir / 'agents' / config_path
         try:
             content = prompt_file.read_text(encoding='utf-8')
         except FileNotFoundError as e:
