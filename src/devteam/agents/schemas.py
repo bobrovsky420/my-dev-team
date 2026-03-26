@@ -108,3 +108,9 @@ class ReporterResponse(BaseModel):
 
 class SubmitReport(ReporterResponse):
     """Submit the final stakeholder report after the project has concluded."""
+
+class LoadSkill(BaseModel):
+    """Call this tool to load specialized framework rules and architectural best practices before writing code."""
+    skill_name: str = Field(
+        description="The exact name of the module to load, as listed in the <skills> section of your prompt (e.g. 'python-expert')."
+    )

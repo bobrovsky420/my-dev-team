@@ -3,11 +3,14 @@ from functools import cached_property
 from typing import Any, Generic, TypeVar
 import traceback
 import yaml
+from langchain_core.messages import ToolMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from pydantic import BaseModel
 from devteam import settings
+from devteam.skills import skills
 from devteam.utils import LLMFactory, RateLimiter, WithLogging, CommunicationLog
 from devteam.utils.sanitizer import sanitize_for_prompt
+from .schemas import LoadSkill
 
 T = TypeVar('T', bound=BaseModel)
 
@@ -33,7 +36,7 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
         self.temperature = config.get('temperature', self.temperature)
 
     @staticmethod
-    def sanitize_for_prompt(content: str, tags: list[str]) -> str:
+    def sanitize_for_prompt(content: str, tags: list[str] | str = None) -> str:
         return sanitize_for_prompt(content, tags)
 
     @cached_property
@@ -50,8 +53,10 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
             val = state.get(key, '')
             if key == 'messages': # Do not sanitize messages
                 inputs[key] = val
+            elif key == 'skills':
+                inputs[key] = self.sanitize_for_prompt(self.skills_catalog, 'skills')
             else:
-                inputs[key] = self.sanitize_for_prompt(str(val), [key]) if val else ''
+                inputs[key] = self.sanitize_for_prompt(str(val), key) if val else ''
         return inputs
 
     def _update_state(self, parsed_data: T, current_state: dict) -> dict:
@@ -66,14 +71,31 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
         return final_state
 
     async def process(self, state: dict) -> dict:
+        """Invoke LLM and use tools to provide structured results."""
         self.logger.info("Executing...")
         state = await self._pre_process(state)
         inputs = self._build_inputs(state)
+        conversation_history = []
         try:
-            self.logger.debug("Invoking LLM with inputs:\n%s", inputs)
-            ai_message = await self._invoke_llm(**inputs)
-            parsed_data = self._parse_outputs(ai_message)
-        except Exception:  # pylint: disable=broad-exception-caught
+            while True: # The loop allows the agent to re-prompt if needed, e.g. after loading a skill
+                self.logger.debug("Invoking LLM with inputs:\n%s", inputs)
+                ai_message = await self._invoke_llm(**inputs)
+                conversation_history.append(ai_message)
+                if not ai_message.tool_calls:
+                    raise ValueError("The model did not call any tool.")
+                tool_call = ai_message.tool_calls[0]
+                tool_name = tool_call['name']
+                if tool_name == 'LoadSkill':
+                    skill_name = tool_call['args'].get('skill_name')
+                    print("*************** SKILL:", skill_name)
+                    skill_content = skills.load_skill(skill_name)
+                    tool_msg = ToolMessage(content=skill_content, tool_call_id=tool_call['id'])
+                    conversation_history.append(tool_msg)
+                    self.logger.info(f"Loaded skill: {skill_name}. LLM is re-evaluating...")
+                    continue
+                parsed_data = self._parse_outputs(ai_message)
+                break
+        except Exception: # pylint: disable=broad-exception-caught
             full_traceback = traceback.format_exc()
             return {
                 'error': True,
@@ -87,6 +109,16 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
         return final_state
 
     @cached_property
+    def skills_catalog(self) -> str:
+        if catalog := skills.load_skills_catalog():
+            return '\n'.join(f"- `{item['name']}`: {item['description']}" for item in catalog)
+        return "No skills available."
+
+    @cached_property
+    def all_tools(self) -> list[type[BaseModel]]:
+        return [LoadSkill] + (self.tools or [])
+
+    @cached_property
     def llm(self) -> Any:
         llm = self.llm_factory.create(
             category=self.model_category,
@@ -94,9 +126,7 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
             node_name=self.node_name,
             json_mode=False
         )
-        if self.tools:
-            llm = llm.bind_tools(self.tools)
-        return llm
+        return llm.bind_tools(self.all_tools)
 
     def _build_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([

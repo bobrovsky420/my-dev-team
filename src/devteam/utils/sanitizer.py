@@ -17,7 +17,7 @@ def normalize_workspace_content(text: str) -> str:
         return text
     return text.replace('\\r\\n', '\n').replace('\\n', '\n')
 
-def sanitize_for_prompt(content: str, protected_tags: Optional[List[str]] = None) -> str:
+def sanitize_for_prompt(content: str, protected_tags: str | list[str] = None) -> str:
     """
     Cleans raw file content and text before injecting it into an LLM prompt.
     """
@@ -25,6 +25,8 @@ def sanitize_for_prompt(content: str, protected_tags: Optional[List[str]] = None
         return ''
     safe_content = content
     if protected_tags:
+        if isinstance(protected_tags, str):
+            protected_tags = [protected_tags]
         for tag in protected_tags:
             closing_tag = f'</{tag}>'
             safe_closing = f'&lt;/{tag}&gt;'
