@@ -27,7 +27,5 @@ class SeniorDeveloper(BaseAgent[DeveloperResponse]):
             'revision_count': new_revision_count,
             'review_feedback': '',
             'test_results': '',
-            'communication_log': [
-                f"**[{self.name or self.role}]**: Wrote/modified {files_modified} file(s). (Revision: {new_revision_count})"
-            ]
+            'communication_log': self.communication(f"Wrote/modified {files_modified} file(s). (Revision: {new_revision_count})")
         }

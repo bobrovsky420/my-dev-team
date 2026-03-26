@@ -2,12 +2,12 @@ from typing import Any
 from langchain.messages import RemoveMessage
 from langgraph.graph import StateGraph, START, END
 from devteam.state import ProjectState
-from devteam.utils import WithLogging
+from devteam.utils import CommunicationLog, WithLogging
 from .planning_manager import PlanningManager
 from .execution_manager import ExecutionManager
 from .integration_manager import IntegrationManager
 
-class ProjectManager(WithLogging, PlanningManager, ExecutionManager, IntegrationManager):
+class ProjectManager(CommunicationLog, WithLogging, PlanningManager, ExecutionManager, IntegrationManager):
     max_revision_count: int = 3
 
     def __init__(self, agents: dict):

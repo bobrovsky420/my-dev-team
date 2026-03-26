@@ -46,7 +46,7 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
         status = 'APPROVED' if results == 'APPROVED' else 'BUGS FOUND'
         return {
             'test_results': results,
-            'communication_log': [f"**[{self.name or self.role}]:** {status}\n{results}"]
+            'communication_log': self.communication(f"{status}\n{results}")
         }
 
     def with_sandbox(self, sandbox: DockerSandbox):

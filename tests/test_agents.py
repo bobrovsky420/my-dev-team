@@ -214,7 +214,7 @@ class TestFinalQAEngineer:
     def test_update_state_passed(self):
         config = make_config("Final QA")
         agent = FinalQAEngineer(config, "prompt", "final_qa")
-        parsed = FinalQAResponse(evaluation_summary="All good", test_results="PASSED")
+        parsed = FinalQAResponse(test_results="PASSED")
         result = agent._update_state(parsed, {})
         assert result["test_results"] == "APPROVED"
         assert "APPROVED" in result["communication_log"][0]
@@ -222,7 +222,7 @@ class TestFinalQAEngineer:
     def test_update_state_bugs_sets_integration_task(self):
         config = make_config("Final QA")
         agent = FinalQAEngineer(config, "prompt", "final_qa")
-        parsed = FinalQAResponse(evaluation_summary="Issues found", test_results="Integration bug in auth")
+        parsed = FinalQAResponse(test_results="Integration bug in auth")
         result = agent._update_state(parsed, {})
         assert result["test_results"] == "Integration bug in auth"
         assert "FINAL INTEGRATION" in result["current_task"]

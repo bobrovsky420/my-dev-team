@@ -6,12 +6,12 @@ import yaml
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from pydantic import BaseModel
 from devteam.settings import get_config_dir, get_llm_timeout
-from devteam.utils import LLMFactory, RateLimiter, WithLogging
+from devteam.utils import LLMFactory, RateLimiter, WithLogging, CommunicationLog
 from devteam.utils.sanitizer import sanitize_for_prompt
 
 T = TypeVar('T', bound=BaseModel)
 
-class BaseAgent(WithLogging, Generic[T]):
+class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
     """Base agent that uses LLM tool calling to submit structured results."""
 
     model_category: str = 'reasoning'
@@ -73,7 +73,7 @@ class BaseAgent(WithLogging, Generic[T]):
         final_state = self._update_state(parsed_data, state)
         if 'messages' in self.outputs:
             final_state['messages'] = [ai_message]
-        final_state['communication_log'] = [f"**[{self.name or self.role}]**: {ai_message.content}"]
+        final_state['communication_log'] = self.communication(ai_message.content)
         return final_state
 
     @cached_property

@@ -37,7 +37,7 @@ class ExecutionManager:
                 'review_feedback': '',
                 'test_results': '',
                 'messages': [HumanMessage(content=instruction)],
-                'communication_log': [f"**[{self.role}]**: Revision {current_revisions + 1} requested by reviewer."]
+                'communication_log': self.communication(f"Revision {current_revisions + 1} requested by reviewer.")
             }
         if not state.get('test_results', ''): # Case no. 3a
             return {
@@ -55,7 +55,7 @@ class ExecutionManager:
                 'review_feedback': '',
                 'test_results': '',
                 'messages': [HumanMessage(content=instruction)],
-                'communication_log': [f"**[{self.role}]**: Revision {current_revisions + 1} requested by QA."]
+                'communication_log': self.communication(f"Revision {current_revisions + 1} requested by QA.")
             }
         return {
             'current_agent': 'officer' # Case no. 4a or 4c
@@ -78,7 +78,7 @@ class ExecutionManager:
                 'review_feedback': '',
                 'test_results': '',
                 'messages': self._cleanup_messages(state.get('messages')),
-                'communication_log': [f"\n### Task {idx + 1}: {t_name} ###"]
+                'communication_log': self.communication(f"Task {idx + 1}: {t_name} ###")
             }
         self.logger.debug("Execution phase completed. Routing to integration.")
         return {

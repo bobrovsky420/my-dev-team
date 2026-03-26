@@ -20,9 +20,9 @@ class FinalQAEngineer(BaseAgent[FinalQAResponse]):
 
     def _map_tool_to_output(self, tool_name: str, tool_args: dict) -> FinalQAResponse:
         if tool_name == 'ApproveCode':
-            return FinalQAResponse(evaluation_summary='All checks passed.', test_results='PASSED')
+            return FinalQAResponse(test_results='PASSED')
         if tool_name == 'ReportIssues':
-            return FinalQAResponse(evaluation_summary='Issues found.', test_results=tool_args['feedback'])
+            return FinalQAResponse(test_results=tool_args['feedback'])
         raise ValueError(f"Unexpected tool call: {tool_name}")
 
     def _update_state(self, parsed_data: FinalQAResponse, current_state: dict) -> dict:
@@ -32,7 +32,7 @@ class FinalQAEngineer(BaseAgent[FinalQAResponse]):
         status = 'APPROVED' if results == 'APPROVED' else 'INTEGRATION BUGS FOUND'
         updates = {
             'test_results': results,
-            'communication_log': [f"**[{self.name or self.role}]:** {status}\n{results}"]
+            'communication_log': self.communication(f"{status}\n{results}")
         }
         if not is_approved_status(status):
             updates['current_task'] = "FINAL INTEGRATION: Fix the overarching bugs identified in the Final QA test results."

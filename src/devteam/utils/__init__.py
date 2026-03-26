@@ -8,6 +8,7 @@ from .stream_handler import StreamHandler
 from .telemetry import TelemetryTracker
 from .workspace import workspace_str_from_files
 from .with_logging import WithLogging
+from .communication_log import CommunicationLog
 
 __all__ = [
     'LLMFactory',
@@ -21,5 +22,6 @@ __all__ = [
     'StreamHandler',
     'setup_logging',
     'workspace_str_from_files',
-    'WithLogging'
+    'WithLogging',
+    'CommunicationLog'
 ]
