@@ -1,4 +1,4 @@
-from devteam.utils.status import is_approved_status
+from devteam.utils import is_approved_status, workspace_str_from_files
 from .schemas import ApproveCode, CodeReviewerResponse, ReportIssues
 from .base_agent import BaseAgent
 
@@ -10,9 +10,7 @@ class CodeReviewer(BaseAgent[CodeReviewerResponse]):
         inputs = super()._build_inputs(state)
         workspace_str = ''
         if workspace_files := state.get('workspace_files', {}):
-            for filepath, content in workspace_files.items():
-                clean_content = self.sanitize_for_prompt(content, [filepath, 'workspace'])
-                workspace_str += f"--- FILE: {filepath} ---\n{clean_content}\n\n"
+            workspace_str = workspace_str_from_files(workspace_files)
         else:
             workspace_str = "No files exist in the workspace."
         inputs['workspace'] = workspace_str.strip()

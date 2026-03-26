@@ -1,6 +1,6 @@
 from pathlib import Path
 from devteam.tools import DockerSandbox
-from devteam.utils.status import is_approved_status
+from devteam.utils import is_approved_status, workspace_str_from_files
 from .schemas import ApproveCode, QAEngineerResponse, ReportIssues
 from .base_agent import BaseAgent
 
@@ -13,9 +13,7 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
         inputs = super()._build_inputs(state)
         workspace_str = ''
         if workspace_files := state.get('workspace_files', {}):
-            for filepath, content in workspace_files.items():
-                clean_content = self.sanitize_for_prompt(content, [filepath, 'workspace'])
-                workspace_str += f"--- FILE: {filepath} ---\n{clean_content}\n\n"
+            workspace_str = workspace_str_from_files(workspace_files)
             if self.sandbox:
                 test_results = self._run_tests(state)
                 inputs['test_results'] = self.sanitize_for_prompt(test_results, ['test_results'])
