@@ -1,5 +1,5 @@
 from typing import Any
-from langchain.messages import RemoveMessage
+from langchain_core.messages import RemoveMessage
 from langgraph.graph import StateGraph, START, END
 from devteam.state import ProjectState
 from devteam.utils import CommunicationLog, WithLogging
