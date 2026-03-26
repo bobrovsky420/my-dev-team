@@ -27,11 +27,8 @@ async def show_history(thread_id: str):
         logging.info("Fetching timeline history...")
         history_data = await crew.get_history(thread_id)
         for checkpoint in history_data:
-            ns_display = checkpoint['ns'].split(':')[0]
-            print(ns_display)
             print(
                 f"[{checkpoint['time']}] "
-                f"[{ns_display[:12].center(12)}] "
                 f"Checkpoint: {checkpoint['c_id']} | Next: {checkpoint['node']}"
             )
 
