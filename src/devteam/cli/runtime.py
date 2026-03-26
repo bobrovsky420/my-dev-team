@@ -6,7 +6,7 @@ from rich import print # pylint: disable=redefined-builtin
 from devteam import settings
 from devteam.crew import CrewFactory
 from devteam.extensions import ConsoleLogger, HumanInTheLoop
-from devteam.utils import LLMFactory, StreamHandler, TelemetryTracker, generate_thread_id, load_project_spec
+from devteam.utils import LLMFactory, StreamHandler, TelemetryTracker, generate_thread_id, load_project_spec, add_file_handler, remove_file_handler
 
 STATE_DB_FILE = 'state.db'
 
@@ -44,6 +44,8 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
     project_folder = settings.get_workspaces_dir() / thread_id
     project_folder.mkdir(parents=True, exist_ok=True)
     db_path = project_folder / 'state.db'
+    log_file_path = project_folder / 'execution.log'
+    log_handler = add_file_handler(log_file_path)
     telemetry = TelemetryTracker()
     callbacks = [telemetry]
     if settings.get_llm_streaming():
@@ -95,3 +97,4 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
         print(telemetry.get_receipt_panel())
         print(telemetry.get_optimization_panel())
         print()
+        remove_file_handler(log_handler)

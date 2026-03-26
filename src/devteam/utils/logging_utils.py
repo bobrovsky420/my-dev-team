@@ -1,5 +1,6 @@
 import logging
 import sys
+from pathlib import Path
 from logging.handlers import RotatingFileHandler
 
 LOG_FILE_NAME = 'mycrew.log'
@@ -29,20 +30,25 @@ class ConsoleDispatchFormatter(logging.Formatter):
             return self.root_formatter.format(record)
         return self.default_formatter.format(record)
 
-def setup_logging(*, file_level=logging.DEBUG, console_level=logging.INFO):
+def setup_file_handler(file_name: str | Path, file_level = logging.DEBUG, do_rollover = False) -> logging.Handler:
     file_handler = RotatingFileHandler(
-        LOG_FILE_NAME,
+        file_name,
         maxBytes=LOG_MAX_BYTES,
         backupCount=LOG_BACKUP_COUNT,
         encoding='utf-8'
     )
-    file_handler.doRollover() # Rotate on every start
+    if do_rollover:
+        file_handler.doRollover()
     file_handler.setLevel(file_level)
     file_formatter = logging.Formatter(
         fmt='%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
     )
     file_handler.setFormatter(file_formatter)
+    return file_handler
+
+def setup_logging(*, file_level=logging.DEBUG, console_level=logging.INFO):
+    file_handler = setup_file_handler(file_name=LOG_FILE_NAME, file_level=file_level, do_rollover=True)
     handlers = [file_handler]
     if console_level is not None:
         console_handler = logging.StreamHandler(sys.stderr)
@@ -53,3 +59,11 @@ def setup_logging(*, file_level=logging.DEBUG, console_level=logging.INFO):
 
     for noisy_logger in NOISY_LOGGERS:
         logging.getLogger(noisy_logger).setLevel(logging.WARNING)
+
+def add_file_handler(file_name: str | Path, file_level = logging.DEBUG, do_rollover = False) -> logging.Handler:
+    file_handler = setup_file_handler(file_name=file_name, file_level=file_level, do_rollover=do_rollover)
+    logging.getLogger().addHandler(file_handler)
+    return file_handler
+
+def remove_file_handler(handler: logging.Handler):
+    logging.getLogger().removeHandler(handler)

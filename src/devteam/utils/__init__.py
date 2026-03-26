@@ -1,5 +1,5 @@
 from .llm_factory import LLMFactory
-from .logging_utils import setup_logging
+from .logging_utils import setup_logging, add_file_handler, remove_file_handler
 from .project_spec import generate_thread_id, load_project_spec, parse_spec_from_string
 from .rate_limiter import RateLimiter
 from .tasks import task_to_markdown
@@ -21,6 +21,8 @@ __all__ = [
     'sanitize_for_prompt',
     'StreamHandler',
     'setup_logging',
+    'add_file_handler',
+    'remove_file_handler',
     'workspace_str_from_files',
     'WithLogging',
     'CommunicationLog'
