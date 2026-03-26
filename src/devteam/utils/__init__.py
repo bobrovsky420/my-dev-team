@@ -6,7 +6,6 @@ from .tasks import task_to_markdown
 from .sanitizer import sanitize_for_prompt
 from .stream_handler import StreamHandler
 from .telemetry import TelemetryTracker
-from .workspace import workspace_str_from_files
 from .with_logging import WithLogging
 from .communication_log import CommunicationLog
 
@@ -23,7 +22,6 @@ __all__ = [
     'setup_logging',
     'add_file_handler',
     'remove_file_handler',
-    'workspace_str_from_files',
     'WithLogging',
     'CommunicationLog'
 ]

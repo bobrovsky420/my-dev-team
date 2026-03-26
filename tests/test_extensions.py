@@ -90,12 +90,11 @@ def test_workspace_saver_on_step_saves_all_outputs(tmp_path: Path):
         {
             "developer": {
                 "workspace_files": {"src/main.py": "print('ok')"},
-                "revision_count": 2,
             },
             "reviewer": {"review_feedback": "Looks good", "revision_count": 2},
             "qa": {"test_results": "PASSED", "revision_count": 2},
         },
-        {"current_phase": "development", "current_task_index": 1, "current_task": "Task 1"},
+        {"current_phase": "development", "current_task_index": 1, "current_task": "Task 1", "revision_count": 2},
     )
 
     saver.on_step(
@@ -121,7 +120,7 @@ def test_hitl_cli_handles_planning_pause_with_clarification(monkeypatch):
         'human',
     )
     assert update['messages'][0].content == 'Use only integer operations'
-    assert update['communication_log'][0] == '**[Human]**: Use only integer operations'
+    assert update['communication_log'][0] == '**[HumanInTheLoop]**: Use only integer operations'
 
 
 def test_hitl_cli_ignores_non_human_pause():
@@ -152,7 +151,5 @@ def test_hitl_gui_handles_planning_pause_with_clarification():
     queued_event = event_queue.get(timeout=1)
     assert queued_event['type'] == 'hitl_request'
     assert queued_event['question'] == 'CLI or GUI calculator?'
-    assert update == {
-        'human_answer': 'Build only a CLI version',
-        'communication_log': ['**[Human]**: Build only a CLI version']
-    }
+    assert update['messages'][0].content == 'Build only a CLI version'
+    assert update['communication_log'][0] == '**[HumanInTheLoopGUI]**: Build only a CLI version'

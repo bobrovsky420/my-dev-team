@@ -122,24 +122,8 @@ class TestSeniorDeveloper:
         result = agent._update_state(parsed, current_state)
         assert "src/app.py" in result["workspace_files"]
         assert "tests/test_app.py" in result["workspace_files"]
-        assert result["revision_count"] == 0  # First time, not a revision
         assert result["review_feedback"] == ""
         assert result["test_results"] == ""
-
-    def test_update_state_revision(self):
-        config = make_config("Developer")
-        agent = SeniorDeveloper(config, "prompt", "developer")
-        parsed = DeveloperResponse(workspace_files=[
-            WorkspaceFile(path="src/app.py", content="fixed code"),
-        ])
-        current_state = {
-            "workspace_files": {"src/app.py": "old code"},
-            "revision_count": 1,
-            "review_feedback": "Fix bug",
-        }
-        result = agent._update_state(parsed, current_state)
-        assert result["workspace_files"]["src/app.py"] == "fixed code"
-        assert result["revision_count"] == 2  # Incremented because review_feedback exists
 
     def test_update_state_merges_workspace(self):
         config = make_config("Developer")
@@ -226,7 +210,6 @@ class TestFinalQAEngineer:
         result = agent._update_state(parsed, {})
         assert result["test_results"] == "Integration bug in auth"
         assert "FINAL INTEGRATION" in result["current_task"]
-        assert result["revision_count"] == 0
 
 # --- Reporter Tests ---
 

@@ -1,4 +1,4 @@
-from devteam.utils import status, workspace_str_from_files
+from devteam.utils import status, workspace
 from .schemas import ApproveCode, FinalQAResponse, ReportIssues
 from .base_agent import BaseAgent
 
@@ -10,7 +10,7 @@ class FinalQAEngineer(BaseAgent[FinalQAResponse]):
         inputs = super()._build_inputs(state)
         workspace_str = ''
         if workspace_files := state.get('workspace_files', {}):
-            workspace_str = workspace_str_from_files(workspace_files)
+            workspace_str = workspace.workspace_str_from_files(workspace_files)
         else:
             workspace_str = "No files exist in the workspace."
         inputs['workspace'] = workspace_str.strip()
