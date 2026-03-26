@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * **Sandbox Control:** Added `--no-docker` flag to run QA engineer without Docker sandbox.
 
+### ⚙️ Changed
+
+* **Docker Sandbox:** Networking is now disabled for all Docker sandbox containers, improving test isolation and security.
+
+### 🔧 Internal
+
+* **New Docker Image:** Added a Dockerfile for Python 3.12 with pytest preinstalled at `src/devteam/config/docker/Dockerfile.python3.12-pytest`.
+
+  **How to Build:**
+  Run this command from your project root to build the image:
+
+  ```sh
+  docker build -t python:3.12-pytest -f src/devteam/config/docker/Dockerfile.python3.12-pytest .
+  ```
+  This image will run pytest by default in `/workspace`.
+
 ## [0.7.0] - 2026-03-25
 
 ### ⚙️ Changed

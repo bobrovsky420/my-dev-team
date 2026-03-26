@@ -1,7 +1,7 @@
 runtimes:
     python:
-        image: 'python:3.12-slim'
-        command: 'bash -c "pip install pytest --quiet --disable-pip-version-check --root-user-action=ignore && PYTHONPATH=/workspace pytest -v"'
+        image: 'python:3.12-pytest'
+        command: 'bash -c "PYTHONPATH=/workspace pytest -v"'
     node:
         image: 'node:20-slim'
         command: 'bash -c "npm install --silent && npm test"'

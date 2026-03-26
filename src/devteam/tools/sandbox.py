@@ -42,7 +42,7 @@ class DockerSandbox(WithLogging):
                 command=config['command'],
                 volumes={str(absolute_workspace): {'bind': '/workspace', 'mode': 'rw'}},
                 working_dir='/workspace',
-                network_disabled=False,
+                network_disabled=True,
                 mem_limit=config.get('mem_limit', '256m'),
                 nano_cpus=1_000_000_000,
                 detach=True
