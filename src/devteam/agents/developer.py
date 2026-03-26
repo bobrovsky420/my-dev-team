@@ -20,12 +20,10 @@ class SeniorDeveloper(BaseAgent[DeveloperResponse]):
         for file_obj in parsed_data.workspace_files:
             workspace_files[file_obj.path] = file_obj.content
         files_modified = len(parsed_data.workspace_files)
-        is_revision = bool(current_state.get('review_feedback') or current_state.get('test_results'))
-        new_revision_count = current_state.get('revision_count', 0) + (1 if is_revision else 0)
+        current_revision = current_state.get('revision_count', 0)
         return {
             'workspace_files': workspace_files,
-            'revision_count': new_revision_count,
             'review_feedback': '',
             'test_results': '',
-            'communication_log': self.communication(f"Wrote/modified {files_modified} file(s). (Revision: {new_revision_count})")
+            'communication_log': self.communication(f"Wrote/modified {files_modified} file(s)." +  (f" (Revision: {current_revision})" if current_revision > 0 else ""))
         }
