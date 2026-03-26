@@ -103,15 +103,15 @@ class WorkspaceSaver(CrewExtension):
                             self._save_current_task(current_task)
                 case 'developer':
                     workspace_files = node_update.get('workspace_files', {})
-                    current_rev = node_update.get('revision_count', 0)
+                    current_rev = full_state.get('revision_count', 0)
                     self._save_workspace(workspace_files, current_rev)
                 case 'reviewer':
                     if review_feedback := node_update.get('review_feedback', ''):
-                        current_rev = node_update.get('revision_count', 0)
+                        current_rev = full_state.get('revision_count', 0)
                         self._save_code_review(review_feedback, current_rev)
                 case 'qa':
                     if test_results := node_update.get('test_results', ''):
-                        current_rev = node_update.get('revision_count', 0)
+                        current_rev = full_state.get('revision_count', 0)
                         self._save_test_results(test_results, current_rev)
                 case 'reporter':
                     if final_report := node_update.get('final_report', ''):
