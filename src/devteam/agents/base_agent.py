@@ -78,6 +78,8 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
         conversation_history = []
         try:
             while True: # The loop allows the agent to re-prompt if needed, e.g. after loading a skill
+                if conversation_history:
+                    inputs['messages'] = inputs.get('messages', []) + conversation_history
                 self.logger.debug("Invoking LLM with inputs:\n%s", inputs)
                 ai_message = await self._invoke_llm(**inputs)
                 conversation_history.append(ai_message)
@@ -87,11 +89,11 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
                 tool_name = tool_call['name']
                 if tool_name == 'LoadSkill':
                     skill_name = tool_call['args'].get('skill_name')
-                    print("*************** SKILL:", skill_name)
                     skill_content = skills.load_skill(skill_name)
                     tool_msg = ToolMessage(content=skill_content, tool_call_id=tool_call['id'])
                     conversation_history.append(tool_msg)
                     self.logger.info(f"Loaded skill: {skill_name}. LLM is re-evaluating...")
+                    self.logger.debug(f"\n--- Skill Content Start ---\n{skill_content[:1000]}\n--- Skill Content End ---")
                     continue
                 parsed_data = self._parse_outputs(ai_message)
                 break
@@ -104,7 +106,7 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
         final_state = self._update_state(parsed_data, state)
         final_state = await self._post_process(state, final_state)
         if 'messages' in self.outputs:
-            final_state['messages'] = [ai_message]
+            final_state['messages'] = conversation_history
         final_state['communication_log'] = self.communication(ai_message.content)
         return final_state
 
