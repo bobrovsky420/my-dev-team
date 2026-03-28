@@ -1,14 +1,14 @@
 from logging import Logger
-from typing import Any
 from langchain_core.messages import HumanMessage
-from devteam.utils import sanitize_for_prompt
+from langgraph.graph.state import CompiledStateGraph
+from devteam.utils import sanitizer
 from .event_emitter import EventEmitter
 from .final_result import FinalResult
 
 class Execution(EventEmitter):
     """Mixin to manage asynchronous execution."""
 
-    app: Any # type: ignore
+    app: CompiledStateGraph
     logger: Logger
 
     async def _inject_feedback(self, config: dict, feedback: str, feedback_source: str = 'reviewer') -> dict:
@@ -47,7 +47,7 @@ class Execution(EventEmitter):
             self.emit_event('resume', thread_id, state_update=state_update)
             initial_state = None
         elif requirements:
-            safe_requirements = sanitize_for_prompt(requirements, ['requirements'])
+            safe_requirements = sanitizer.sanitize_for_prompt(requirements, ['requirements'])
             content = (
                 "Here are the new project requirements:\n\n"
                 "<requirements>\n"
@@ -70,11 +70,6 @@ class Execution(EventEmitter):
                 state_object = await self.app.aget_state(config)
                 full_state = state_object.values
                 self.emit_event('step', thread_id, state_update=state_update, full_state=full_state)
-                if full_state.get('error') is True:
-                    traceback_str = full_state.get('error_message', 'Unknown Error')
-                    self.logger.error("Workflow halted due to error:\n%s\n\nFix the issue and resume using: devteam --resume %s", traceback_str, thread_id)
-                    abort_requested = True
-                    break
                 if full_state.get('abort_requested'):
                     abort_requested = True
                     self.logger.debug("Abort requested during execution. Ending workflow.")

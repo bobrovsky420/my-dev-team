@@ -1,6 +1,7 @@
-from typing import Any
 from langchain_core.messages import RemoveMessage
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import StateGraph, START, END
+from langgraph.graph.state import CompiledStateGraph
 from devteam.state import ProjectState
 from devteam.utils import CommunicationLog, WithLogging
 from .planning_manager import PlanningManager
@@ -13,44 +14,59 @@ class ProjectManager(CommunicationLog, WithLogging, PlanningManager, ExecutionMa
     def __init__(self, agents: dict):
         self.agents = agents
 
-    def build_graph(self, memory: Any = None, interrupt_before: list[str] = None) -> StateGraph:
+    def build_graph(self, memory: BaseCheckpointSaver = None, interrupt_before: list[str] = None) -> CompiledStateGraph:
         workflow = StateGraph(ProjectState)
-        workflow.add_node('human', self.dummy_human_node)
-        workflow.add_node('manager', self.manager_node)
-        workflow.add_node('officer', self.officer_node)
+        workflow.add_node('human', self._dummy_human_node)
+        workflow.add_node('manager', self._manager_node)
+        workflow.add_node('officer', self._officer_node)
         for node_name, agent in self.agents.items():
             workflow.add_node(node_name, agent.process)
             workflow.add_edge(node_name, 'manager')
         workflow.add_edge('human', 'manager')
         workflow.add_edge(START, 'manager')
-        workflow.add_conditional_edges('manager', self.central_router)
-        workflow.add_conditional_edges('officer', self.central_router)
+        workflow.add_conditional_edges('manager', self._central_router)
+        workflow.add_conditional_edges('officer', self._central_router)
         return workflow.compile(checkpointer=memory, interrupt_before=interrupt_before or ['human'])
 
-    def manager_node(self, state: dict) -> dict:
+    def _handle_agent_error(self, state: ProjectState) -> dict:
+        if state.current_phase == 'development':
+            task_label = f"Task {state.current_task_index}: {state.current_task[:60].strip()}"
+            self.logger.warning("Agent error on '%s'. Skipping to next task.", task_label)
+            return {
+                'error': False,
+                'error_message': '',
+                'current_agent': 'officer',
+                'failed_tasks': [task_label],
+            }
+        self.logger.error("Agent error in '%s' phase. Halting workflow.", state.current_phase)
+        return {'abort_requested': True}
+
+    def _manager_node(self, state: ProjectState) -> dict:
+        if state.error:
+            return self._handle_agent_error(state)
         self.logger.debug("Project Manager is reviewing the project state...")
-        match state.get('current_phase', 'planning'):
+        match state.current_phase:
             case 'planning':
-                return self.planning_node(state)
+                return self._planning_node(state)
             case 'development':
-                return self.execution_node(state)
+                return self._execution_node(state)
             case 'integration':
-                return self.integration_node(state)
+                return self._integration_node(state)
         return {} # Sentinel - in theory should never happen
 
-    def central_router(self, state: dict) -> str:
-        if state.get('abort_requested'):
+    def _central_router(self, state: ProjectState) -> str:
+        if state.abort_requested:
             return END
-        match state.get('current_phase', 'planning'):
+        match state.current_phase:
             case 'planning':
-                return self.route_planning(state)
+                return self._route_planning(state)
             case 'development':
-                return self.route_execution(state)
+                return self._route_execution(state)
             case 'integration':
-                return self.route_integration(state)
+                return self._route_integration(state)
         return END # Sentinel - in theory should never happen
 
-    def dummy_human_node(self, state: dict) -> dict:
+    def _dummy_human_node(self, state: ProjectState) -> dict:
         self.logger.debug("Human input received. Resuming workflow...")
         return {'clarification_question': ''}
 

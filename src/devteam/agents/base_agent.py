@@ -1,20 +1,18 @@
 import asyncio
 from functools import cached_property
-from typing import Any, Generic, TypeVar
 import traceback
 import yaml
-from langchain_core.messages import ToolMessage
+from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables import Runnable
 from pydantic import BaseModel
 from devteam import settings
 from devteam.skills import skills
-from devteam.utils import LLMFactory, RateLimiter, WithLogging, CommunicationLog
-from devteam.utils.sanitizer import sanitize_for_prompt
+from devteam.state import ProjectState
+from devteam.utils import LLMFactory, RateLimiter, WithLogging, CommunicationLog, sanitizer
 from .schemas import LoadSkill
 
-T = TypeVar('T', bound=BaseModel)
-
-class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
+class BaseAgent[T: BaseModel](CommunicationLog, WithLogging):
     """Base agent that uses LLM tool calling to submit structured results."""
 
     model_category: str = 'reasoning'
@@ -35,10 +33,6 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
         self.model_category = config.get('model', self.model_category)
         self.temperature = config.get('temperature', self.temperature)
 
-    @staticmethod
-    def sanitize_for_prompt(content: str, tags: list[str] | str = None) -> str:
-        return sanitize_for_prompt(content, tags)
-
     @cached_property
     def inputs(self) -> list[str]:
         return self.config.get('inputs', [])
@@ -47,61 +41,76 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
     def outputs(self) -> list[str]:
         return self.config.get('outputs', [])
 
-    def _build_inputs(self, state: dict) -> dict:
+    def _build_inputs(self, state: ProjectState) -> dict:
         inputs = {}
         for key in self.inputs:
-            val = state.get(key, '')
             if key == 'messages': # Do not sanitize messages
-                inputs[key] = val
+                inputs[key] = state.messages
             elif key == 'skills':
-                inputs[key] = self.sanitize_for_prompt(self.skills_catalog, 'skills')
+                inputs[key] = sanitizer.sanitize_for_prompt(self._skills_catalog, 'skills')
             else:
-                inputs[key] = self.sanitize_for_prompt(str(val), key) if val else ''
+                val = getattr(state, key, '')
+                inputs[key] = sanitizer.sanitize_for_prompt(str(val), key) if val else ''
         return inputs
 
-    def _update_state(self, parsed_data: T, current_state: dict) -> dict:
-        return parsed_data.model_dump()
+    def _update_state(self, parsed_data: T, current_state: ProjectState) -> dict:
+        return parsed_data.model_dump(exclude_none=True)
 
-    async def _pre_process(self, state: dict) -> dict:
+    async def _pre_process(self, state: ProjectState) -> ProjectState:
         """Lifecycle Hook: performs actions BEFORE the LLM runs."""
         return state
 
-    async def _post_process(self, state: dict, final_state: dict) -> dict:
+    async def _post_process(self, state: ProjectState, final_state: dict) -> dict:
         """Lifecycle Hook: performs actions AFTER the LLM runs."""
         return final_state
 
-    async def process(self, state: dict) -> dict:
+    def _handle_intermediate_tools(self, tool_name: str, tool_args: dict) -> str | None:
+        """Handle intermediate tool calls that are not final outputs, e.g. LoadSkill."""
+        match tool_name:
+            case 'LoadSkill':
+                skill_name = tool_args.get('skill_name')
+                skill_content = skills.load_skill(skill_name)
+                self.logger.info("Loaded skill: %s. LLM is re-evaluating...", skill_name)
+                self.logger.debug("Skill Content:\n%s", skill_content[:1000])
+                return skill_content
+        return None
+
+    async def process(self, state: ProjectState) -> dict:
         """Invoke LLM and use tools to provide structured results."""
         self.logger.info("Executing...")
         state = await self._pre_process(state)
         inputs = self._build_inputs(state)
-        conversation_history = []
-        try:
-            while True: # The loop allows the agent to re-prompt if needed, e.g. after loading a skill
-                if conversation_history:
-                    inputs['messages'] = inputs.get('messages', []) + conversation_history
-                self.logger.debug("Invoking LLM with inputs:\n%s", inputs)
-                ai_message = await self._invoke_llm(**inputs)
-                conversation_history.append(ai_message)
-                if not ai_message.tool_calls:
-                    raise ValueError("The model did not call any tool.")
-                tool_call = ai_message.tool_calls[0]
-                tool_name = tool_call['name']
-                if tool_name == 'LoadSkill':
-                    skill_name = tool_call['args'].get('skill_name')
-                    skill_content = skills.load_skill(skill_name)
-                    tool_msg = ToolMessage(content=skill_content, tool_call_id=tool_call['id'])
-                    conversation_history.append(tool_msg)
-                    self.logger.info(f"Loaded skill: {skill_name}. LLM is re-evaluating...")
-                    self.logger.debug(f"\n--- Skill Content Start ---\n{skill_content[:1000]}\n--- Skill Content End ---")
-                    continue
-                parsed_data = self._parse_outputs(ai_message)
+        original_messages = list(state.messages)
+        last_error = ''
+        for attempt in range(self.max_retries + 1):
+            if attempt > 0:
+                self.logger.warning("LLM call failed. Retrying (attempt %d/%d)...", attempt + 1, self.max_retries + 1)
+                inputs['messages'] = list(original_messages)
+            conversation_history = []
+            try:
+                while True:
+                    if conversation_history:
+                        inputs['messages'] = original_messages + conversation_history
+                    self.logger.debug("Invoking LLM with inputs:\n%s", inputs)
+                    ai_message = await self._invoke_llm(**inputs)
+                    conversation_history.append(ai_message)
+                    if not ai_message.tool_calls:
+                        raise ValueError("The model did not call any tool.")
+                    tool_call = ai_message.tool_calls[0]
+                    if intermediate_result := self._handle_intermediate_tools(tool_call['name'], tool_call['args']):
+                        tool_msg = ToolMessage(content=intermediate_result, tool_call_id=tool_call['id'])
+                        conversation_history.append(tool_msg)
+                        continue
+                    parsed_data = self._parse_outputs(ai_message)
+                    break
                 break
-        except Exception: # pylint: disable=broad-exception-caught
-            full_traceback = traceback.format_exc()
+            except Exception: # pylint: disable=broad-exception-caught
+                last_error = traceback.format_exc()
+                self.logger.error("Attempt %d/%d failed:\n%s", attempt + 1, self.max_retries + 1, last_error)
+        else:
             return {
                 'error': True,
-                'error_message': full_traceback,
+                'error_message': last_error,
             }
         final_state = self._update_state(parsed_data, state)
         final_state = await self._post_process(state, final_state)
@@ -111,24 +120,24 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
         return final_state
 
     @cached_property
-    def skills_catalog(self) -> str:
+    def _skills_catalog(self) -> str:
         if catalog := skills.load_skills_catalog():
             return '\n'.join(f"- `{item['name']}`: {item['description']}" for item in catalog)
         return "No skills available."
 
     @cached_property
-    def all_tools(self) -> list[type[BaseModel]]:
+    def _all_tools(self) -> list[type[BaseModel]]:
         return [LoadSkill] + (self.tools or [])
 
     @cached_property
-    def llm(self) -> Any:
+    def _llm(self) -> Runnable:
         llm = self.llm_factory.create(
             category=self.model_category,
             temperature=self.temperature,
             node_name=self.node_name,
             json_mode=False
         )
-        return llm.bind_tools(self.all_tools)
+        return llm.bind_tools(self._all_tools)
 
     def _build_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
@@ -137,15 +146,15 @@ class BaseAgent(CommunicationLog, WithLogging, Generic[T]):
         ])
 
     @cached_property
-    def chain(self) -> Any:
-        return self._build_prompt() | self.llm
+    def _chain(self) -> Runnable:
+        return self._build_prompt() | self._llm
 
-    async def _invoke_llm(self, **kwargs) -> Any:
+    async def _invoke_llm(self, **kwargs) -> AIMessage:
         if self.rate_limiter:
             await self.rate_limiter.wait_if_needed()
         try:
             response = await asyncio.wait_for(
-                self.chain.ainvoke(kwargs), timeout=settings.llm_timeout
+                self._chain.ainvoke(kwargs), timeout=settings.llm_timeout
             )
         except asyncio.TimeoutError:
             raise TimeoutError(
