@@ -1,8 +1,9 @@
 import asyncio
 from functools import cached_property
+import json
 import traceback
 import yaml
-from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import Runnable
 from pydantic import BaseModel
@@ -72,6 +73,22 @@ class BaseAgent[T: BaseModel](CommunicationLog, WithLogging):
         """Lifecycle Hook: performs actions AFTER the LLM runs."""
         return final_state
 
+    @staticmethod
+    def _coerce_tool_calls(ai_message: AIMessage) -> AIMessage:
+        """If tool_calls is empty but content is a JSON tool call, synthesize the tool call."""
+        if ai_message.tool_calls or not ai_message.content:
+            return ai_message
+        try:
+            data = json.loads(ai_message.content)
+            name = data.get('name')
+            args = data.get('arguments') or data.get('args') or {}
+            if name and isinstance(args, dict):
+                tool_call = {'name': name, 'args': args, 'id': 'coerced_0', 'type': 'tool_call'}
+                return AIMessage(content='', tool_calls=[tool_call])
+        except (json.JSONDecodeError, AttributeError):
+            pass
+        return ai_message
+
     def _handle_intermediate_tools(self, tool_name: str, tool_args: dict) -> str | None:
         """Handle intermediate tool calls that are not final outputs, e.g. LoadSkill."""
         match tool_name:
@@ -92,10 +109,19 @@ class BaseAgent[T: BaseModel](CommunicationLog, WithLogging):
         inputs = self._build_inputs(state)
         original_messages = list(state.messages)
         last_error = ''
+        no_tool_call_retry = False
         for attempt in range(self.max_retries + 1):
             if attempt > 0:
                 self.logger.warning("LLM call failed. Retrying (attempt %d/%d)...", attempt + 1, self.max_retries + 1)
                 inputs['messages'] = list(original_messages)
+                if no_tool_call_retry:
+                    tool_names = ', '.join(t.__name__ for t in self._all_tools)
+                    inputs['messages'] = inputs['messages'] + [HumanMessage(content=(
+                        f"You must respond by calling one of the available tools: {tool_names}. "
+                        "Do not return plain text — use a tool call to submit your response."
+                    ))]
+                    self.logger.debug("Injected tool-call reminder into retry messages.")
+            no_tool_call_retry = False
             conversation_history = []
             try:
                 while True:
@@ -103,8 +129,10 @@ class BaseAgent[T: BaseModel](CommunicationLog, WithLogging):
                         inputs['messages'] = original_messages + conversation_history
                     self.logger.debug("Invoking LLM with inputs:\n%s", inputs)
                     ai_message = await self._invoke_llm(**inputs)
+                    ai_message = self._coerce_tool_calls(ai_message)
                     conversation_history.append(ai_message)
                     if not ai_message.tool_calls:
+                        no_tool_call_retry = True
                         raise ValueError("The model did not call any tool.")
                     tool_call = ai_message.tool_calls[0]
                     if intermediate_result := self._handle_intermediate_tools(tool_call['name'], tool_call['args']):
@@ -114,6 +142,9 @@ class BaseAgent[T: BaseModel](CommunicationLog, WithLogging):
                     parsed_data = self._parse_outputs(ai_message)
                     break
                 break
+            except ImportError as e:
+                self.logger.error("%s", e)
+                return {'error': True, 'error_message': str(e)}
             except Exception: # pylint: disable=broad-exception-caught
                 last_error = traceback.format_exc()
                 self.logger.error("Attempt %d/%d failed:\n%s", attempt + 1, self.max_retries + 1, last_error)
