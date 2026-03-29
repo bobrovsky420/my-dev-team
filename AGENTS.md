@@ -48,6 +48,10 @@ mydevteam/
 - Max line length is **190** characters (configured in `pyproject.toml` under `[tool.pylint.format]`).
 - Docstrings are minimal and optional ? `missing-docstring` is disabled in pylint. When present, use one-line triple-double-quote style: `"""Brief description."""`
 
+### Text Style
+
+- Use a hyphen-minus (`-`) as a dash in all written text. Never use an em dash (`—`) or en dash (`–`).
+
 ### Quoting Convention
 
 **Double quotes (`"..."`) are reserved exclusively for human-readable, meaningful strings:**
@@ -79,6 +83,10 @@ mydevteam/
 3. **Local/project** imports last.
 4. Use **relative imports** within the same package (`from .schemas import ...`, `from .base_agent import BaseAgent`).
 5. No extra blank lines between import groups ? keep imports compact.
+6. Within the **local/project** group, order imports from least to most specific:
+   - `from devteam import ...` (top-level package symbols, e.g. `settings`)
+   - `from devteam.utils import ...` (utility sub-package)
+   - `from devteam.utils.something import ...` (specific utility module)
 
 ### Naming
 
