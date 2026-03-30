@@ -18,7 +18,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--config', type=str, help='path to a custom configuration folder (overrides default one)')
     parser.add_argument('--verbose', action='store_true', help='enable debug logging')
     parser.add_argument('--resume', type=str, help='resume a specific thread ID')
-    parser.add_argument('--provider', type=str, default='ollama', choices=['groq', 'ollama', 'openai'], help='LLM provider to use (default: ollama)')
+    parser.add_argument('--provider', type=str, default='ollama', choices=['anthropic', 'free', 'groq', 'ollama', 'openai'], help='LLM provider to use (default: ollama)')
     parser.add_argument('--rpm', type=int, default=0, help='API requests per minute (default: 0 = none)')
     parser.add_argument('--feedback', type=str, help='human feedback to inject into the state when resuming')
     parser.add_argument('--as-node', type=str, default='reviewer', choices=['pm', 'architect', 'reviewer', 'qa'], help='which agent should deliver this feedback (forces graph routing)')
@@ -27,9 +27,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--timeout', type=int, default=120, help='maximum time (in seconds) to wait for an LLM response (default: 120)')
     parser.add_argument('--thinking', action='store_true', help='stream raw LLM thinking output to stderr')
     parser.add_argument('--no-docker', action='store_true', help='run QA engineer without Docker sandbox')
-    parallel_group = parser.add_mutually_exclusive_group()
-    parallel_group.add_argument('--parallel', action='store_true', help='run development tasks in parallel using fan-out' + ('' if settings.no_parallel else ' (default)'))
-    parallel_group.add_argument('--no-parallel', action='store_true', help='run development tasks sequentially, disabling parallel fan-out' + (' (default)' if settings.no_parallel else ''))
+    parser.add_argument('--ask-approval', action='store_true', help='pause after planning to review and approve the plan before development starts')
     return parser
 
 def _apply_config(custom_config_path: str):
@@ -76,10 +74,7 @@ def main():
     settings.llm_timeout = args.timeout
     settings.llm_streaming = args.thinking
     settings.no_docker = args.no_docker
-    if args.parallel:
-        settings.no_parallel = False
-    elif args.no_parallel:
-        settings.no_parallel = True
+    settings.ask_approval = args.ask_approval
     _validate_inputs(parser, args)
 
     if args.history:

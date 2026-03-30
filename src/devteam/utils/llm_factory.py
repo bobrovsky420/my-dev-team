@@ -36,17 +36,12 @@ class LLMFactory:
                 best_model = model
         return best_model
 
-    def create(self, capabilities: dict[str, float] | list[str], temperature: float, *, node_name: str, json_mode = True) -> BaseChatModel:
-        """Returns a configured LLM instance for the requested capabilities."""
+    def _instantiate(self, model: dict, provider: str, temperature: float, *, node_name: str, json_mode: bool) -> BaseChatModel:
+        """Instantiate a provider-specific LLM for the given model entry."""
         # pylint: disable=import-error,import-outside-toplevel
-        if isinstance(capabilities, list):
-            capabilities = {cap: 1.0 for cap in capabilities}
-        model = self._select_model(capabilities)
         model_name = model['id']
-        streaming = settings.llm_streaming
-        node_tag = f'node:{node_name}'
-        llm_tags = [node_tag]
-        match self.provider:
+        llm_tags = [f'node:{node_name}']
+        match provider:
             case 'ollama':
                 try:
                     from langchain_ollama import ChatOllama
@@ -56,11 +51,11 @@ class LLMFactory:
                 return ChatOllama(
                     model=model_name,
                     temperature=temperature,
-                    streaming=streaming,
+                    streaming=settings.llm_streaming,
                     callbacks=self.callbacks,
                     tags=llm_tags,
                     format='json' if json_mode else None,
-                    reasoning=thinking and streaming and not json_mode
+                    reasoning=thinking and settings.llm_streaming and not json_mode
                 )
             case 'groq':
                 try:
@@ -78,6 +73,18 @@ class LLMFactory:
                 if json_mode:
                     return llm.bind(response_format={'type': 'json_object'})
                 return llm
+            case 'anthropic':
+                try:
+                    from langchain_anthropic import ChatAnthropic
+                except ImportError:
+                    raise ImportError("Missing package for Anthropic provider. Install it with: pip install langchain-anthropic") from None
+                return ChatAnthropic(
+                    model=model_name,
+                    temperature=temperature,
+                    streaming=settings.llm_streaming,
+                    callbacks=self.callbacks,
+                    tags=llm_tags
+                )
             case 'openai':
                 try:
                     from langchain_openai import ChatOpenAI
@@ -91,4 +98,12 @@ class LLMFactory:
                     tags=llm_tags
                 )
             case _:
-                raise ValueError(f"Unsupported provider: {self.provider}")
+                raise ValueError(f"Unsupported provider: {provider}")
+
+    def create(self, capabilities: dict[str, float] | list[str], temperature: float, *, node_name: str, json_mode = True) -> BaseChatModel:
+        """Returns a configured LLM instance for the requested capabilities."""
+        if isinstance(capabilities, list):
+            capabilities = {cap: 1.0 for cap in capabilities}
+        model = self._select_model(capabilities)
+        provider = model.get('provider', self.provider)
+        return self._instantiate(model, provider, temperature, node_name=node_name, json_mode=json_mode)

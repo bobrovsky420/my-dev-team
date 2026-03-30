@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2026-03-30
+
+### 🚀 Added
+
+* **Anthropic Provider Support:** Added `anthropic` as a supported LLM provider. Requires `ANTHROPIC_API_KEY` and `pip install langchain-anthropic`.
+
+* **Compound Providers:** Introduced compound providers - pseudo-providers in `llms.yaml` whose individual model entries carry a `provider` field pointing to the real backend. The factory resolves the effective provider per-model at instantiation time, enabling a single `--provider` flag to transparently mix models from different backends.
+
+* **Plan Approval Mode:** Added an interactive approval gate to the planning phase. When enabled, the workflow pauses twice - once after the Product Manager produces the Technical Specification, and once after the System Architect produces the task plan - and prompts the user to review and either approve or request rework.
+
+### 🔧 Internal
+
+* **Removed parallel task execution:** The LangGraph `Send` fan-out mechanism has been removed. Tasks now always execute sequentially, one at a time. The `dependencies` field is retained in task definitions and is still used to determine execution order.
+
 ## [0.9.1] - 2026-03-29
 
 ### 🔧 Internal
