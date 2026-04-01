@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "my-dev-team"
-version = "0.9.3"
+version = "0.10.0"
 description = "An autonomous, LangGraph-powered AI development agency."
 authors = [
     { name="Alexander Bobrovsky", email="bobrovsky@seznam.cz" },
@@ -20,7 +20,7 @@ keywords = [
     "tdd",
     "code-generation",
     "development",
-    "streamlit"
+    "flask"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -45,7 +45,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-ui = ["streamlit>=1.55.0"]
+ui = ["flask>=3.0.0"]
 
 [project.urls]
 "Homepage" = "https://github.com/bobrovsky420/my-dev-team"
@@ -60,6 +60,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "devteam.config" = ["*", "**/*"]
+"devteam.gui" = ["dist/*", "dist/**/*"]
 
 [tool.pylint.messages_control]
 disable = [
