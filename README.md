@@ -42,6 +42,13 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 
 * **Python 3.10+**
 * **API Keys** set in your environment (e.g., `OPENAI_API_KEY`, `GROQ_API_KEY`), OR a local instance of **Ollama** running for free local models.
+* **LLM provider package** for your chosen backend - install only what you need:
+  ```sh
+  pip install langchain-ollama      # Ollama
+  pip install langchain-groq        # Groq
+  pip install langchain-anthropic   # Anthropic Claude
+  pip install langchain-openai      # OpenAI
+  ```
 
 **Optional Dependencies:**
 
@@ -147,6 +154,7 @@ devteam --resume web_scraper_cli_20260312_083500
 * `--thinking`: Stream raw LLM thinking output to stderr in real-time.
 * `--no-docker`: Useful if Docker is not installed or you want to use LLM-based QA only.
 * `--ask-approval`: Enable interactive plan approval after the Product Manager produces the Technical Specification and again after the System Architect produces the task plan.
+* `--rag-collection`: Collection name to use for RAG queries (e.g. `myproject`). Only needed when the MCP server is running without a locked-in `COLLECTION_NAME`.
 
 Note: Ensure you have the corresponding API keys (e.g., `GROQ_API_KEY`, `OPENAI_API_KEY`) set in your `.env` file, or ensure your local Ollama instance is running.
 
