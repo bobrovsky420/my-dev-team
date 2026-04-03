@@ -118,3 +118,11 @@ class LoadSkill(BaseModel):
     skill_name: str = Field(
         description="The exact name of the module to load, as listed in the <skills> section of your prompt (e.g. 'python-expert')."
     )
+
+class RetrieveContext(BaseModel):
+    """Retrieve relevant context from the knowledge base (documents, Jira tickets, Confluence pages, etc.)."""
+    query: str = Field(description="Natural language description of the information you need.")
+    source: str | None = Field(
+        default=None,
+        description="Restrict search to a specific source: 'jira', 'confluence', or 'files'. Omit to search all sources."
+    )
