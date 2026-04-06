@@ -12,7 +12,7 @@ class LLMFactory:
 
     @cached_property
     def llm_config(self) -> dict:
-        config_path = settings.config_dir / 'llms.yaml'
+        config_path = settings.tools_config_dir / 'llms.yaml'
         return yaml.safe_load(config_path.read_text(encoding='utf-8'))
 
     @cached_property
@@ -96,6 +96,56 @@ class LLMFactory:
                     streaming=settings.llm_streaming,
                     callbacks=self.callbacks,
                     tags=llm_tags
+                )
+            case 'google':
+                try:
+                    from langchain_google_genai import ChatGoogleGenerativeAI
+                except ImportError:
+                    raise ImportError("Missing package for Google provider. Install it with: pip install langchain-google-genai") from None
+                return ChatGoogleGenerativeAI(
+                    model=model_name,
+                    temperature=temperature,
+                    streaming=settings.llm_streaming,
+                    callbacks=self.callbacks,
+                    tags=llm_tags
+                )
+            case 'mistral':
+                try:
+                    from langchain_mistralai import ChatMistralAI
+                except ImportError:
+                    raise ImportError("Missing package for Mistral provider. Install it with: pip install langchain-mistralai") from None
+                return ChatMistralAI(
+                    model=model_name,
+                    temperature=temperature,
+                    streaming=settings.llm_streaming,
+                    callbacks=self.callbacks,
+                    tags=llm_tags
+                )
+            case 'deepseek':
+                try:
+                    from langchain_openai import ChatOpenAI
+                except ImportError:
+                    raise ImportError("Missing package for DeepSeek provider. Install it with: pip install langchain-openai") from None
+                return ChatOpenAI(
+                    model=model_name,
+                    temperature=temperature,
+                    streaming=settings.llm_streaming,
+                    callbacks=self.callbacks,
+                    tags=llm_tags,
+                    base_url='https://api.deepseek.com'
+                )
+            case 'grok':
+                try:
+                    from langchain_openai import ChatOpenAI
+                except ImportError:
+                    raise ImportError("Missing package for xAI/Grok provider. Install it with: pip install langchain-openai") from None
+                return ChatOpenAI(
+                    model=model_name,
+                    temperature=temperature,
+                    streaming=settings.llm_streaming,
+                    callbacks=self.callbacks,
+                    tags=llm_tags,
+                    base_url='https://api.x.ai/v1'
                 )
             case _:
                 raise ValueError(f"Unsupported provider: {provider}")

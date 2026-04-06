@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.3] - 2026-04-06
+
+### 🚀 Added
+
+* **Parallel tool calls:** Agents can now call multiple tools simultaneously in a single LLM response (e.g. `LoadSkill` + `RetrieveContext`). All intermediate tool calls are executed concurrently via `asyncio.gather`.
+
+* **Batched skill loading:** `LoadSkill` now accepts a `skill_names` list instead of a single `skill_name`, allowing agents to load multiple skills in one tool call.
+
+* **Source descriptions in `rag.yaml`:** Each source entry now supports an optional `description` field. Descriptions are embedded directly into the `RetrieveContext` tool schema so agents know what each source contains without an extra round-trip.
+
+* **Default `config/rag.yaml`:** A bundled default RAG config is loaded when no `rag.yaml` is present in the project directory. Resolution order: CWD `rag.yaml` → bundled `config/rag.yaml` → `settings.py` values.
+
+* **Tools configuration in agent's frontmatter:** Intermediate and final tools configuration for every agent is moved to the frontmatter of the agent's configuration file, for instance: `tools: [LoadSkill, RetrieveContext, AskClarification, SubmitSpecification]`.
+
+* **Custom tool registry:** End users can now register custom intermediate tools (or override built-ins) via the `tool_registry`. Register a Pydantic schema and an async handler, then add the tool name to any agent's `tools:` frontmatter list.
+
+* **`ReadFile` / `ListFiles` workspace tools:** Agents can now request workspace files on demand via `ReadFile` (read a single file by path) and `ListFiles` (list all available files). Files are resolved from in-memory state first, then from the live workspace folder on disk.
+
+* **`GlobFiles` / `GrepFiles` workspace tools:** Agents can now search the workspace with `GlobFiles` (find files by path pattern, e.g. `*.py`, `src/**/*.ts`) and `GrepFiles` (search file contents by regex with optional glob filter).
+
+### 🔧 Internal
+
+* **Prompt partials:** Agent prompt templates now support `{ include 'partials/file.md' }` syntax to share common sections across agents. Partials are resolved from `config/agents/` with path traversal protection.
+
+* **Config reorganization:** Moved `llms.yaml`, `rag.yaml` and `sandbox.yaml` into `config/tools/`. Added `settings.tools_config_dir` cached property to avoid repeating the path.
+
+## [0.11.2] - 2026-04-04
+
+### 🚀 Added
+
+* **Bundled RAG Docker image (`Dockerfile.mydevteam-rag`):** A single container image that runs both Qdrant and the MCP server. Replaces the previous two-terminal setup - one `docker run` starts the entire RAG stack with no WSL required.
+
 ## [0.11.1] - 2026-04-03
 
 ### 🚀 Added

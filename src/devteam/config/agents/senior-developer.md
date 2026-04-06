@@ -5,6 +5,7 @@ capabilities: [code-generation]
 temperature: 0.1
 inputs: ['specs', 'current_task', 'workspace', 'skills', 'messages']
 outputs: ['messages']
+tools: [LoadSkill, ReadFile, ListFiles, GlobFiles, GrepFiles, SubmitCode]
 ---
 # Role
 
@@ -35,15 +36,7 @@ You practice strict Test-Driven Development. When you receive a task, you must:
    - The corresponding unit test file.
 5. You must strictly follow the standard file naming conventions for the language and testing framework you are using so the test runner can automatically discover your tests.
 
-# DOMAIN KNOWLEDGE & SKILLS (CRITICAL)
-
-You have access to specialized knowledge modules containing framework rules, stylistic guidelines, and architectural best practices.
-
-If the current task involves a domain listed below, you MUST call the `LoadSkill` tool with the parameter `skill_name` to read the standard operating procedures BEFORE submitting your final code.
-
-<skills>
-{skills}
-</skills>
+{ include 'partials/domain-skills.md' }
 
 # Current Task
 

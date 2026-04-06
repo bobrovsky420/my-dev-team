@@ -24,7 +24,7 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 * **Local Git Versioning:** Every line of AI-generated code is automatically version-controlled.
 * **Cost & Token Optimization Analyzer:** Built-in telemetry tracks API costs down to the fraction of a cent and generates a diagnostic report at the end of every run, actively warning you if agents are stuck in loops or suffering from context bloat.
 * **SKILLs System:** Uses SKILLs - modular, reusable agent instructions and domain knowledge files. SKILLs can be attached to agents or workflows to extend capabilities, enforce coding standards, or inject project-specific expertise.
-* **RAG Knowledge Base:** Agents can retrieve context from an external knowledge base (documents, Jira tickets, Confluence pages, etc.) by any MCP-compatible vector store.
+* **RAG Knowledge Base:** Agents can retrieve context from an external knowledge base (documents, Jira tickets, Confluence pages, etc.) via any MCP-compatible vector store. A bundled Docker image starts the entire Qdrant + MCP stack in one command. Multi-source routing lets you combine Qdrant, Jira, Confluence and custom sources simultaneously.
 
 ### AI Agents
 
@@ -44,10 +44,12 @@ An autonomous, LangGraph-powered AI development agency. **My Dev Team** takes ra
 * **API Keys** set in your environment (e.g., `OPENAI_API_KEY`, `GROQ_API_KEY`), OR a local instance of **Ollama** running for free local models.
 * **LLM provider package** for your chosen backend - install only what you need:
   ```sh
-  pip install langchain-ollama      # Ollama
-  pip install langchain-groq        # Groq
-  pip install langchain-anthropic   # Anthropic Claude
-  pip install langchain-openai      # OpenAI
+  pip install langchain-ollama       # Ollama
+  pip install langchain-groq         # Groq
+  pip install langchain-anthropic    # Anthropic Claude
+  pip install langchain-openai       # OpenAI / DeepSeek / xAI Grok
+  pip install langchain-google-genai # Google Gemini
+  pip install langchain-mistralai    # Mistral
   ```
 
 **Optional Dependencies:**

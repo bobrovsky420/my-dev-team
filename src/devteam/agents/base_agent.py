@@ -1,6 +1,7 @@
 import asyncio
 from functools import cached_property
-import json
+from pathlib import Path
+import re
 import traceback
 import yaml
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
@@ -10,11 +11,11 @@ from pydantic import BaseModel
 from devteam import settings
 from devteam.skills import skills
 from devteam.state import ProjectState
-from devteam.tools import rag
+from devteam.tools.extractor import coerce_tool_calls
 from devteam.utils import LLMFactory, RateLimiter, WithLogging, CommunicationLog, sanitizer
-from .schemas import LoadSkill, RetrieveContext
+from .intermediate_tools import IntermediateTools
 
-class BaseAgent[T: BaseModel](CommunicationLog, WithLogging):
+class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
     """Base agent that uses LLM tool calling to submit structured results."""
 
     capabilities: dict[str, float]
@@ -22,7 +23,6 @@ class BaseAgent[T: BaseModel](CommunicationLog, WithLogging):
     max_retries: int = 2
     rate_limiter: RateLimiter = None
     output_schema: type[T]
-    tools: list[type[BaseModel]]
 
     def __init__(self, config: dict, prompt_template: str, node_name: str, llm_factory: LLMFactory = None, rate_limiter: RateLimiter = None):
         self.config = config
@@ -74,40 +74,6 @@ class BaseAgent[T: BaseModel](CommunicationLog, WithLogging):
         """Lifecycle Hook: performs actions AFTER the LLM runs."""
         return final_state
 
-    @staticmethod
-    def _coerce_tool_calls(ai_message: AIMessage) -> AIMessage:
-        """If tool_calls is empty but content is a JSON tool call, synthesize the tool call."""
-        if ai_message.tool_calls or not ai_message.content:
-            return ai_message
-        try:
-            data = json.loads(ai_message.content)
-            name = data.get('name')
-            args = data.get('arguments') or data.get('args') or {}
-            if name and isinstance(args, dict):
-                tool_call = {'name': name, 'args': args, 'id': 'coerced_0', 'type': 'tool_call'}
-                return AIMessage(content='', tool_calls=[tool_call])
-        except (json.JSONDecodeError, AttributeError):
-            pass
-        return ai_message
-
-    async def _handle_intermediate_tools(self, tool_name: str, tool_args: dict) -> str | None:
-        """Handle intermediate tool calls that are not final outputs, e.g. LoadSkill."""
-        match tool_name:
-            case LoadSkill.__name__:
-                skill_name = tool_args.get('skill_name')
-                skill_content = skills.load_skill(skill_name)
-                self.logger.info("Loaded skill: %s. LLM is re-evaluating...", skill_name)
-                self.logger.debug("Skill Content:\n%s", skill_content[:1000])
-                return skill_content
-            case RetrieveContext.__name__:
-                query = tool_args.get('query', '')
-                source = tool_args.get('source')
-                self.logger.info("Retrieving context for query: %s (source=%s)", query, source)
-                chunks = await rag.retrieve_context(query, source=source)
-                self.logger.debug("Retrieved context:\n%s", chunks[:500])
-                return chunks
-        return None
-
     async def process(self, state: ProjectState) -> dict:
         """Invoke LLM and use tools to provide structured results."""
         if isinstance(state, dict):
@@ -123,7 +89,7 @@ class BaseAgent[T: BaseModel](CommunicationLog, WithLogging):
                 self.logger.warning("LLM call failed. Retrying (attempt %d/%d)...", attempt + 1, self.max_retries + 1)
                 inputs['messages'] = list(original_messages)
                 if no_tool_call_retry:
-                    tool_names = ', '.join(t.__name__ for t in self._all_tools)
+                    tool_names = ', '.join(t.__name__ for t in self.tools)
                     inputs['messages'] = inputs['messages'] + [HumanMessage(content=(
                         f"You must respond by calling one of the available tools: {tool_names}. "
                         "Do not return plain text — use a tool call to submit your response."
@@ -137,15 +103,18 @@ class BaseAgent[T: BaseModel](CommunicationLog, WithLogging):
                         inputs['messages'] = original_messages + conversation_history
                     self.logger.debug("Invoking LLM with inputs:\n%s", inputs)
                     ai_message = await self._invoke_llm(**inputs)
-                    ai_message = self._coerce_tool_calls(ai_message)
+                    ai_message = coerce_tool_calls(ai_message)
                     conversation_history.append(ai_message)
                     if not ai_message.tool_calls:
                         no_tool_call_retry = True
                         raise ValueError("The model did not call any tool.")
-                    tool_call = ai_message.tool_calls[0]
-                    if intermediate_result := await self._handle_intermediate_tools(tool_call['name'], tool_call['args']):
-                        tool_msg = ToolMessage(content=intermediate_result, tool_call_id=tool_call['id'])
-                        conversation_history.append(tool_msg)
+                    intermediate_results = await asyncio.gather(
+                        *[self._handle_intermediate_tools(tc['name'], tc['args'], state) for tc in ai_message.tool_calls]
+                    )
+                    if any(r is not None for r in intermediate_results):
+                        for tc, result in zip(ai_message.tool_calls, intermediate_results):
+                            tool_msg = ToolMessage(content=result or '', tool_call_id=tc['id'])
+                            conversation_history.append(tool_msg)
                         continue
                     parsed_data = self._parse_outputs(ai_message)
                     break
@@ -177,11 +146,6 @@ class BaseAgent[T: BaseModel](CommunicationLog, WithLogging):
         return "No skills available."
 
     @cached_property
-    def _all_tools(self) -> list[type[BaseModel]]:
-        extra = [RetrieveContext] if self.config.get('rag') and settings.rag_enabled else []
-        return [LoadSkill] + extra + (self.tools or [])
-
-    @cached_property
     def _llm(self) -> Runnable:
         llm = self.llm_factory.create(
             capabilities=self.capabilities,
@@ -189,7 +153,7 @@ class BaseAgent[T: BaseModel](CommunicationLog, WithLogging):
             node_name=self.node_name,
             json_mode=False
         )
-        return llm.bind_tools(self._all_tools)
+        return llm.bind_tools(self.tools)
 
     def _build_prompt(self) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([
@@ -229,6 +193,20 @@ class BaseAgent[T: BaseModel](CommunicationLog, WithLogging):
         """Map a tool call to the agent's output schema."""
         return self.output_schema(**tool_args)
 
+    @staticmethod
+    def _resolve_includes(prompt: str, base_dir: Path) -> str:
+        base = base_dir.resolve()
+        def replacer(match):
+            filepath = match.group(1)
+            resolved = (base / filepath).resolve()
+            if not resolved.is_relative_to(base):
+                raise ValueError(f"Include path '{filepath}' escapes the base directory")
+            try:
+                return resolved.read_text(encoding='utf-8').strip()
+            except FileNotFoundError:
+                raise FileNotFoundError(f"Include '{filepath}' not found in {base}") from None
+        return re.sub(r"\{\s*include\s+'([^']+)'\s*\}", replacer, prompt)
+
     @classmethod
     def from_config(cls, node_name: str, config_path: str, *, llm_factory: LLMFactory = None, rate_limiter: RateLimiter = None, capabilities: dict[str, float] | list[str] = None, temperature: float = None):
         prompt_file = settings.config_dir / 'agents' / config_path
@@ -240,7 +218,7 @@ class BaseAgent[T: BaseModel](CommunicationLog, WithLogging):
         if len(parts) < 3:
             raise ValueError(f"Invalid format in {config_path}. Missing YAML frontmatter")
         config = yaml.safe_load(parts[1])
-        prompt = parts[2].strip()
+        prompt = cls._resolve_includes(parts[2].strip(), prompt_file.parent)
         if capabilities is not None:
             config['capabilities'] = capabilities
         if temperature is not None:
