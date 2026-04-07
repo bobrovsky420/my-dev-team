@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.5] - 2026-04-07
+
+### 🚀 Added
+
+* **Provider optional dependency groups:** Each LLM provider now has its own extras group - `anthropic`, `google`, `groq`, `mistral`, `ollama` and `openai`. Install only what you need: `pip install "my-dev-team[groq,ollama]"`.
+
+* **`rag` optional dependency group:** `pip install "my-dev-team[rag]"` now installs both `mcp` (agent context retrieval) and `vectorize-me` (document ingestion CLI).
+
+### 🗑️ Removed
+
+* **`mcp-ingest` CLI removed from `my-dev-team`:** Document ingestion is now provided by the standalone `vectorize-me` package, installed via `pip install "my-dev-team[rag]"`. The `mcp-ingest` command is unchanged - only its source location has moved.
+
+## [0.11.4] - 2026-04-06
+
+### 🔧 Internal
+
+* **Async extension hooks:** All `CrewExtension` lifecycle hooks (`on_start`, `on_resume`, `on_step`, `on_pause`, `on_finish`) are now `async def`.
+
+* **Extension error isolation:** Exceptions raised inside individual extension hooks are caught and logged as warnings instead of crashing the workflow. Execution continues with the remaining extensions.
+
+* **`critical` extension attribute:** `CrewExtension` now exposes a `critical: bool = False` class attribute. When set to `True`, exceptions from that extension's hooks are re-raised instead of swallowed, halting the workflow. `WorkspaceSaver` and `GitCommitter` are marked critical by default.
+
 ## [0.11.3] - 2026-04-06
 
 ### 🚀 Added
