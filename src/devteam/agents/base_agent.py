@@ -12,7 +12,7 @@ from devteam import settings
 from devteam.skills import skills
 from devteam.state import ProjectState
 from devteam.tools.extractor import coerce_tool_calls
-from devteam.utils import LLMFactory, RateLimiter, WithLogging, CommunicationLog, sanitizer
+from devteam.utils import LLMFactory, RateLimiter, WithLogging, CommunicationLog, sanitizer, workspace
 from .intermediate_tools import IntermediateTools
 
 class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
@@ -54,13 +54,21 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
     def _build_inputs(self, state: ProjectState) -> dict:
         inputs = {}
         for key in self.inputs:
-            if key == 'messages': # Do not sanitize messages
-                inputs[key] = state.messages
-            elif key == 'skills':
-                inputs[key] = sanitizer.sanitize_for_prompt(self._skills_catalog, 'skills')
-            else:
-                val = getattr(state, key, '')
-                inputs[key] = sanitizer.sanitize_for_prompt(str(val), key) if val else ''
+            match key:
+                case 'skills':
+                    inputs[key] = sanitizer.sanitize_for_prompt(self._skills_catalog, 'skills')
+                case 'workspace':
+                    if workspace_files := workspace.read_all_files(state.workspace_path):
+                        inputs[key] = workspace.workspace_str_from_files(workspace_files).strip()
+                    else:
+                        inputs[key] = "No files exist in the workspace."
+                case 'workspace_listing':
+                    inputs[key] = workspace.list_workspace_files(state.workspace_path)
+                case _:
+                    val = getattr(state, key, None)
+                    if val is None:
+                        val = getattr(state.task_context, key, '')
+                    inputs[key] = sanitizer.sanitize_for_prompt(str(val), key) if val else ''
         return inputs
 
     def _update_state(self, parsed_data: T, current_state: ProjectState) -> dict:
@@ -81,6 +89,8 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
         self.logger.info("Executing...")
         state = await self._pre_process(state)
         inputs = self._build_inputs(state)
+        if 'messages' not in inputs:
+            inputs['messages'] = list(state.messages)
         original_messages = list(state.messages)
         last_error = ''
         no_tool_call_retry = False
@@ -92,7 +102,7 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
                     tool_names = ', '.join(t.__name__ for t in self.tools)
                     inputs['messages'] = inputs['messages'] + [HumanMessage(content=(
                         f"You must respond by calling one of the available tools: {tool_names}. "
-                        "Do not return plain text — use a tool call to submit your response."
+                        "Do not return plain text - use a tool call to submit your response."
                     ))]
                     self.logger.debug("Injected tool-call reminder into retry messages.")
             no_tool_call_retry = False
@@ -155,11 +165,21 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
         )
         return llm.bind_tools(self.tools)
 
+    def _data_input_keys(self) -> list[str]:
+        """Input keys that become template variables in the human message (all inputs except messages)."""
+        return [k for k in self.inputs if k != 'messages']
+
     def _build_prompt(self) -> ChatPromptTemplate:
-        return ChatPromptTemplate.from_messages([
-            ('system', self.prompt_template),
-            MessagesPlaceholder(variable_name='messages', optional=True)
-        ])
+        data_keys = self._data_input_keys()
+        human_parts = []
+        for key in data_keys:
+            tag = 'workspace' if key == 'workspace_listing' else key
+            human_parts.append(f"<{tag}>\n{{{key}}}\n</{tag}>")
+        messages = [('system', self.prompt_template)]
+        if human_parts:
+            messages.append(('human', '\n\n'.join(human_parts)))
+        messages.append(MessagesPlaceholder(variable_name='messages'))
+        return ChatPromptTemplate.from_messages(messages)
 
     @cached_property
     def _chain(self) -> Runnable:

@@ -5,6 +5,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-04-12
+
+### 🚀 Added
+
+* **User config file (`config.yaml`):** Persistent defaults for all CLI flags can now be set in `./config.yaml` (project-level) or `~/.devteam/config.yaml` (global). Project-level overrides global; CLI flags override both. Pass `--settings <path>` to point to a different file.
+
+* **Lazy workspace loading for Developer:** The Senior Developer agent no longer receives full file contents in its initial prompt. Instead, it receives a file listing and uses `ReadFile`, `GlobFiles` and `GrepFiles` tools to read only the files relevant to the current task.
+
+* **Migration workflow (`--workflow migration`):** A new workflow mode for migrating existing codebases to a different language (e.g. COBOL to Java, PL/SQL to Python). Activated via the `--workflow` CLI flag.
+
+* **`CodeAnalyzer` agent:** Reads the source workspace, identifies structure and business logic, and outputs a `MigrationAnalysisResponse` - a full Migration Analysis document plus a parallel task backlog with one task per source unit.
+
+* **`Migrator` agent:** Translates individual source units to the target language, guided by the Migration Analysis. Produces idiomatic target-language code and equivalence tests for each translated unit.
+
+* **`EquivalenceChecker` agent:** Verifies that migrated code is behaviorally equivalent to the original, checking every branch, edge case and mapping decision defined in the Migration Analysis.
+
+* **`BaseManager` base class:** Extracted the shared graph-building, error-handling and phase-dispatch skeleton from `ProjectManager` into `BaseManager`. New managers only need to implement `_planning_node` and `_route_planning`.
+
+* **Azure OpenAI provider (`--provider azure-openai`):** Added `azure-openai` as a standalone provider backed by `AzureChatOpenAI` from `langchain-openai`. The deployment name defaults to the model `id` and can be overridden with `AZURE_OPENAI_DEPLOYMENT`. API version defaults to `2024-08-01-preview` and can be overridden with `AZURE_OPENAI_API_VERSION`. Requires `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_API_KEY`.
+
+* **Azure Anthropic Claude provider (`--provider azure-anthropic`):** Added `azure-anthropic` for Anthropic Claude 4.6 models deployed via Azure AI Foundry. Uses the OpenAI-compatible inference endpoint exposed by Azure AI Foundry. Includes `claude-opus-4-6`, `claude-sonnet-4-6` and `claude-haiku-4-5-20251001`. Requires `AZURE_ANTHROPIC_ENDPOINT` and `AZURE_ANTHROPIC_API_KEY`.
+
+### 🐛 Fixed
+
+* **`coerce_tool_calls` crashes on Gemini list-format content:** Google Gemini returns `AIMessage.content` as a list of typed blocks (`[{'type': 'text', 'text': '...', 'extras': {...}}]`) when extended thinking is active. `coerce_tool_calls` in `tools/extractor.py` passed this list directly to `_unwrap_fences`, which expected a string, causing a `TypeError`. A new `_extract_text` helper normalises list-of-blocks content to a plain string before processing. Verified with `gemini-3.1-flash-lite-preview` on 2026-04-12.
+
+* **`Reporter` agent returns plain text instead of calling `SubmitReport`:** The reporter prompt gave no explicit instruction to use the `SubmitReport` tool, so the model wrote the report as a plain-text response and exhausted all retries. Added "call `SubmitReport` with the complete Markdown text" to the agent prompt in `config/agents/reporter.md`.
+
+### ⚙️ Changed
+
+* **`messages` injected automatically in `BaseAgent.process()`:** `messages` from `state.messages` is now always added to the LLM input dict after `_build_inputs`, regardless of whether the agent declares `messages` in its `inputs:` frontmatter. The `messages` switch-case branch has been removed from `_build_inputs`. All agent config files updated to remove the now-redundant `messages` entry from their `inputs:` lists.
+
+* **TelemetryTracker cost resolution uses YAML aliases with wildcard support:** Aliases are read from the existing `aliases:` block in `config/tools/llms.yaml`. Added `'google_genai/*': 'gemini/*'` and `'google_vertexai/*': 'vertex_ai/*'` entries so all Google models resolve to the correct litellm prefix for cost tracking. The `groq/compound` alias for cost normalisation is also defined there.
+
+* **`--history` takes a thread ID directly:** `--history <thread_id>` now works as a standalone command without requiring `--resume`. The old `--resume <id> --history` pattern is no longer needed.
+
+* **`BaseAgent._build_inputs` handles `workspace` natively:** Agents that declare `workspace` in their `inputs:` frontmatter now get the full workspace content injected automatically, without needing to override `_build_inputs`. Removed redundant overrides from `FinalQAEngineer` and `CodeAnalyzer`.
+
+* **`AgentsFactory` exposes `load_crew_config` and `create_agents_from_config`:** Allows callers (e.g. `CrewFactory`) to load a crew config once and pass it to both manager resolution and agent instantiation, avoiding a double YAML parse.
+
+* **`ProjectManager` simplified:** Now a minimal two-mixin class (`BaseManager` + `PlanningManager`) with no duplicated logic.
+
+* **Skills directory:** Removed all built-in skills from the package configuration. By default, the app now searches for a `skills` sub-folder in the current working directory. This location can be overridden using the `--skills` CLI argument.
+
+### 🔧 Internal
+
+* **`TaskContext` state isolation:** Extracted all per-task fields from `ProjectState` into a new `TaskContext` Pydantic model. `ProjectState` now holds a single `task_context: TaskContext` field. This separation prepares the state model for future parallel task execution, where each task branch owns its own isolated context.
+
+* **Agent inputs delivered as a HumanMessage:** `BaseAgent._build_prompt` now auto-generates a `HumanMessagePromptTemplate` from the agent's declared `inputs:` frontmatter keys, rendering each as an XML-tagged section. `_build_inputs` returns a flat kwargs dict; LangChain handles substitution at invocation time. System prompts are now pure instruction text. Extra runtime inputs (`drafts` in `CodeJudge`, `history` in `Reporter`) are declared in the frontmatter and populated by `_build_inputs` overrides - no `_data_input_keys` override needed. This also fixes compatibility with providers (Google Gemini) that reject requests with no user turn. `StreamHandler.on_llm_new_token` now skips non-string tokens emitted by Gemini for tool-call chunks.
+
+## [0.11.6] - 2026-04-07
+
+### 🚀 Added
+
+* **Workspace hydrating (`--seed`):** Pass an existing local directory or `.zip` archive to pre-populate the workspace before agents run.
+
 ## [0.11.5] - 2026-04-07
 
 ### 🚀 Added
@@ -95,7 +151,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * **Flask backend (`src/devteam/server/`):** REST API and SSE streaming server. Manages project execution in background threads, buffers all events for reconnecting clients, and serves the built React app as static files. Entry point `devteam-ui` now starts the Flask server instead of Streamlit.
 
-* **Live execution dashboard:** Phase tracker (Planning → Development → Integration → Finished), interleaved Activity feed showing agent log entries (bold) and LLM thinking tokens (regular monospace) in chronological order, and a left panel with four tabs — Workspace files, Tasks, Specs, and Report — all updated in real time via SSE.
+* **Live execution dashboard:** Phase tracker (Planning → Development → Integration → Finished), interleaved Activity feed showing agent log entries (bold) and LLM thinking tokens (regular monospace) in chronological order, and a left panel with four tabs - Workspace files, Tasks, Specs, and Report - all updated in real time via SSE.
 
 * **Inline HITL input:** Clarification questions from the Product Manager and spec/plan approval prompts are now handled directly in the dashboard without interrupting the workflow. The HITL extension is always active (not just when approval mode is enabled), so PM clarification questions are handled correctly in all configurations.
 
@@ -133,7 +189,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * **Parallel Task Execution (Fan-Out):** Development tasks are now dispatched in parallel based on their `dependencies` field. Tasks with no unmet dependencies are fanned out simultaneously as independent LangGraph branches using the `Send` API, and each branch runs its full developer → reviewer → QA cycle concurrently. Tasks with dependencies are dispatched automatically once all prerequisites complete, enabling dependency-level pipelining across the entire backlog.
 
-* **Capability-Based LLM Routing:** Replaced the flat category-to-model mapping in `LLMFactory` with a capability scoring system. Each model in `llms.yaml` now declares a set of named capabilities with 0–1 proficiency scores. Agents request one or more capabilities — optionally with weights — and the factory selects the highest-scoring model by computing a weighted sum across all requested capabilities. This allows agents to express nuanced requirements (e.g., `code-generation: 0.7, reasoning: 0.3`) rather than a single fixed category, and makes it trivial to add new models without redefining routing rules.
+* **Capability-Based LLM Routing:** Replaced the flat category-to-model mapping in `LLMFactory` with a capability scoring system. Each model in `llms.yaml` now declares a set of named capabilities with 0–1 proficiency scores. Agents request one or more capabilities - optionally with weights - and the factory selects the highest-scoring model by computing a weighted sum across all requested capabilities. This allows agents to express nuanced requirements (e.g., `code-generation: 0.7, reasoning: 0.3`) rather than a single fixed category, and makes it trivial to add new models without redefining routing rules.
 
 * **New `planning` LLM capability:** Added a dedicated `planning` model category to `llms.yaml` for agents that perform task decomposition and architectural reasoning. This separates long-horizon planning workloads from deep code-focused `reasoning` tasks, allowing each provider to route them to the most suitable model. The System Architect's config was updated from `model: reasoning` to `model: planning`.
 

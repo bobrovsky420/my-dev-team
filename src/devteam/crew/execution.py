@@ -1,7 +1,6 @@
 from logging import Logger
-from langchain_core.messages import HumanMessage
 from langgraph.graph.state import CompiledStateGraph
-from devteam.utils import sanitizer
+from devteam.utils.workspace import read_all_files
 from .event_emitter import EventEmitter
 from .final_result import FinalResult
 
@@ -47,17 +46,9 @@ class Execution(EventEmitter):
             await self.emit_event('resume', thread_id, state_update=state_update)
             initial_state = None
         elif requirements:
-            safe_requirements = sanitizer.sanitize_for_prompt(requirements, ['requirements'])
-            content = (
-                "Here are the new project requirements:\n\n"
-                "<requirements>\n"
-                f"{safe_requirements}\n"
-                "</requirements>"
-            )
             initial_state = {
                 'requirements': requirements,
-                'current_phase': 'planning',
-                'messages': [HumanMessage(content=content)]
+                'current_phase': 'planning'
             }
             await self.emit_event('start', thread_id, initial_state=initial_state)
         else:
@@ -100,4 +91,5 @@ class Execution(EventEmitter):
             final_state['current_phase'] = 'complete'
         await self.emit_event('finish', thread_id, final_state=final_state)
         final_state['thread_id'] = thread_id
+        final_state['workspace_files'] = read_all_files(final_state.get('workspace_path', ''))
         return FinalResult(**final_state)

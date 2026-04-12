@@ -3,7 +3,7 @@ role: Reporter
 description: The Reporter writes a detailed Final Markdown Report for the stakeholders after the software project has successfully concluded.
 capabilities: [fast-utility]
 temperature: 0.3
-inputs: ['requirements', 'specs', 'workspace', 'revision_count']
+inputs: ['requirements', 'specs', 'workspace', 'revision_count', 'history']
 tools: [ReadFile, ListFiles, GlobFiles, GrepFiles, SubmitReport]
 ---
 # Role
@@ -19,24 +19,4 @@ Write a detailed Final Markdown Report for the stakeholders based on the provide
 3. Development & QA History: Read the `<history>` and write a short, chronological narrative of how the project evolved. Mention the bugs found by QA, the feedback from the Reviewer, and how the Developer resolved them over the course of the `<revision_count>` total revisions.
 4. Final Deliverables: Render the files from the `<workspace>` into beautifully formatted Markdown code blocks, clearly labeling each file's path.
 
-# Input Data
-
-<requirements>
-{requirements}
-</requirements>
-
-<specs>
-{specs}
-</specs>
-
-<revision_count>
-{revision_count}
-</revision_count>
-
-<history>
-{history}
-</history>
-
-<workspace>
-{workspace}
-</workspace>
+Once you have written the report, call `SubmitReport` with the complete Markdown text as the `final_report` argument.

@@ -1,10 +1,10 @@
 import logging
 from collections.abc import Awaitable, Callable
 from pydantic import BaseModel
-from devteam.agents.schemas import LoadSkill, ReadFile, ListFiles, GlobFiles, GrepFiles, RetrieveContext
 from devteam.skills import skills
 from devteam.state import ProjectState
 from devteam.tools import rag
+from devteam.tools.schemas import LoadSkill, ReadFile, ListFiles, GlobFiles, GrepFiles, RetrieveContext
 from devteam.utils.workspace import read_workspace_file, list_workspace_files, glob_workspace_files, grep_workspace_files
 
 type ToolHandler = Callable[[dict, ProjectState, logging.Logger], Awaitable[str]]
@@ -58,25 +58,25 @@ async def _handle_retrieve_context(tool_args: dict, _state: ProjectState, _logge
 async def _handle_read_file(tool_args: dict, state: ProjectState, _logger: logging.Logger) -> str:
     path = tool_args.get('path', '')
     _logger.info("Reading workspace file: %s", path)
-    return read_workspace_file(path, state.workspace_files, state.workspace_path)
+    return read_workspace_file(path, state.workspace_path)
 
 
 async def _handle_list_files(_tool_args: dict, state: ProjectState, _logger: logging.Logger) -> str:
     _logger.info("Listing workspace files")
-    return list_workspace_files(state.workspace_files, state.workspace_path)
+    return list_workspace_files(state.workspace_path)
 
 
 async def _handle_glob_files(tool_args: dict, state: ProjectState, _logger: logging.Logger) -> str:
     pattern = tool_args.get('pattern', '*')
     _logger.info("Glob workspace files: %s", pattern)
-    return glob_workspace_files(pattern, state.workspace_files, state.workspace_path)
+    return glob_workspace_files(pattern, state.workspace_path)
 
 
 async def _handle_grep_files(tool_args: dict, state: ProjectState, _logger: logging.Logger) -> str:
     pattern = tool_args.get('pattern', '')
     glob_filter = tool_args.get('glob')
     _logger.info("Grep workspace files: %s (glob=%s)", pattern, glob_filter)
-    return grep_workspace_files(pattern, state.workspace_files, state.workspace_path, glob_filter=glob_filter)
+    return grep_workspace_files(pattern, state.workspace_path, glob_filter=glob_filter)
 
 
 def _register_builtins():

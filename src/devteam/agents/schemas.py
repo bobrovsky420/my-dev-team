@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 from devteam.utils.sanitizer import normalize_workspace_content
+from devteam.tools.schemas import LoadSkill, RetrieveContext, ReadFile, ListFiles, GlobFiles, GrepFiles
 
 # pylint: disable=line-too-long
 
@@ -113,42 +114,29 @@ class ReporterResponse(BaseModel):
 class SubmitReport(ReporterResponse):
     """Submit the final stakeholder report after the project has concluded."""
 
-class LoadSkill(BaseModel):
-    """Call this tool to load specialized framework rules and architectural best practices before writing code. You can load multiple skills at once."""
-    skill_names: list[str] = Field(
+class MigrationTask(BaseModel):
+    task_name: str = Field(
+        description="A short name for the task (e.g. 'Translate CALC-PAY paragraph')."
+    )
+    description: str = Field(
+        description="What source unit to translate, what target file to produce and any key mapping decisions to apply."
+    )
+    acceptance_criteria: list[str] = Field(
         min_length=1,
-        description="The exact name(s) of the module(s) to load, as listed in the <skills> section of your prompt (e.g. ['python-expert'] or ['react-expert', 'tailwind-expert'])."
+        description="Specific, testable conditions the Migrator must satisfy (e.g. 'src/payroll.py exists', 'All edge cases covered by tests')."
+    )
+    dependencies: list[str] = Field(
+        default_factory=list,
+        description="task_name values that must complete before this task can start. Leave empty when no dependency exists."
     )
 
-class RetrieveContext(BaseModel):
-    """Retrieve relevant context from the knowledge base (documents, Jira tickets, Confluence pages, etc.)."""
-    query: str = Field(description="Natural language description of the information you need.")
-    source: str | None = Field(
-        default=None,
-        description="Restrict search to a specific source, e.g. 'jira', 'confluence', or 'files'. Sources with a dedicated MCP server are queried directly; others are used as a filter against the default knowledge base. Omit to search all sources."
+class MigrationAnalysisResponse(BaseModel):
+    runtime: str = Field(description="The target runtime environment for the migrated code (e.g. 'python', 'node', 'java')")
+    specs: str = Field(description="A detailed Migration Analysis document in Markdown covering: source language/structure, target language, mapping decisions, idiom translations, and known risks.")
+    pending_tasks: list[MigrationTask] = Field(
+        min_length=1,
+        description="A backlog of migration tasks, one per source unit (file, module, class or paragraph), designed for maximum parallel execution."
     )
 
-class ReadFile(BaseModel):
-    """Read the contents of a file from the project workspace. Use this when you need to see a file that is not shown in your current context."""
-    path: str = Field(
-        description="The relative path to the file in the workspace (e.g. 'src/main.py' or 'tests/test_main.py')."
-    )
-
-class ListFiles(BaseModel):
-    """List all files currently available in the project workspace."""
-
-class GlobFiles(BaseModel):
-    """Find workspace files matching a glob pattern (e.g. '*.py', 'src/**/*.test.js', 'config/*.yaml')."""
-    pattern: str = Field(
-        description="Glob pattern to match file paths against (e.g. '*.py', 'src/**/*.ts', 'tests/*')."
-    )
-
-class GrepFiles(BaseModel):
-    """Search workspace file contents for a regex pattern and return matching lines."""
-    pattern: str = Field(
-        description="Regex pattern to search for in file contents."
-    )
-    glob: str | None = Field(
-        default=None,
-        description="Optional glob pattern to filter which files to search (e.g. '*.py'). Omit to search all files."
-    )
+class SubmitMigrationPlan(MigrationAnalysisResponse):
+    """Submit the completed migration analysis and task backlog."""

@@ -1,11 +1,31 @@
 import asyncio
 from unittest.mock import AsyncMock
 import pytest
+from devteam.tools.extractor import coerce_tool_calls, _extract_text
 from devteam.utils.rate_limiter import RateLimiter
 from devteam.utils.sanitizer import sanitize_for_prompt
 from devteam.utils.status import is_approved, normalize_status
 from devteam.utils.tasks import task_to_markdown
 from devteam.utils.workspace import workspace_str_from_files
+
+def test_extract_text_passthrough_string():
+    assert _extract_text("hello world") == "hello world"
+
+def test_extract_text_list_of_blocks():
+    blocks = [{'type': 'text', 'text': 'hello'}, {'type': 'text', 'text': 'world'}]
+    assert _extract_text(blocks) == "hello\nworld"
+
+def test_extract_text_list_skips_non_text_blocks():
+    blocks = [{'type': 'image', 'data': 'xxx'}, {'type': 'text', 'text': 'hi'}]
+    assert _extract_text(blocks) == "hi"
+
+def test_coerce_tool_calls_handles_list_content():
+    from langchain_core.messages import AIMessage
+    blocks = [{'type': 'text', 'text': '{"name": "ApproveCode", "args": {}}'}]
+    msg = AIMessage(content=blocks)
+    result = coerce_tool_calls(msg)
+    assert len(result.tool_calls) == 1
+    assert result.tool_calls[0]['name'] == 'ApproveCode'
 
 def test_sanitize_for_prompt_handles_base64_nulls_and_spacing():
     raw = "line1\n\n\n\x00data:image/png;base64,AAAA\nline2\n"
@@ -71,6 +91,37 @@ def test_task_to_markdown_respects_existing_task_prefix():
     task = {"task_name": "Task 1: Existing", "user_story": "", "acceptance_criteria": []}
     markdown = task_to_markdown(task, 1)
     assert "## Task 1: Existing" in markdown
+
+def _make_tracker_with_aliases(aliases: dict):
+    from devteam.utils.telemetry import TelemetryTracker
+    tracker = TelemetryTracker()
+    # Override the cached property so tests don't need the real llms.yaml
+    tracker.__dict__['llm_aliases'] = aliases
+    return tracker
+
+def test_telemetry_resolve_alias_exact_match():
+    tracker = _make_tracker_with_aliases({'groq/compound': 'openai/gpt-oss-120b'})
+    assert tracker._resolve_alias('groq/compound') == 'openai/gpt-oss-120b'
+
+def test_telemetry_resolve_alias_wildcard():
+    tracker = _make_tracker_with_aliases({'google_genai/*': 'gemini/*'})
+    assert tracker._resolve_alias('google_genai/gemini-3.1-flash-lite-preview') == 'gemini/gemini-3.1-flash-lite-preview'
+
+def test_telemetry_resolve_alias_no_match_passthrough():
+    tracker = _make_tracker_with_aliases({'google_genai/*': 'gemini/*'})
+    assert tracker._resolve_alias('anthropic/claude-3-5-sonnet') == 'anthropic/claude-3-5-sonnet'
+
+def test_telemetry_calculate_cost_applies_alias(monkeypatch):
+    from devteam.utils.telemetry import TelemetryTracker
+    captured = {}
+    def fake_cost_per_token(model, prompt_tokens, completion_tokens):
+        captured['model'] = model
+        return (0.001, 0.002)
+    monkeypatch.setattr("devteam.utils.telemetry.cost_per_token", fake_cost_per_token)
+    tracker = _make_tracker_with_aliases({'google_genai/*': 'gemini/*'})
+    cost = tracker._calculate_cost('google_genai', 'gemini-3.1-flash-lite-preview', 100, 50)
+    assert captured['model'] == 'gemini/gemini-3.1-flash-lite-preview'
+    assert cost == 0.003
 
 def test_rate_limiter_noop_when_disabled():
     limiter = RateLimiter(requests_per_minute=0)

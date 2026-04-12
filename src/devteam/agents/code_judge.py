@@ -10,12 +10,12 @@ class CodeJudge(BaseAgent[CodeJudgeResponse]):
     def _build_inputs(self, state: dict) -> dict:
         inputs = super()._build_inputs(state)
         drafts = state.get('code_drafts', [])
-        drafts_formatted = ""
+        drafts_parts = []
         for idx, draft in enumerate(drafts):
             draft_idx = f"draft_{idx}"
             safe_draft = sanitizer.sanitize_for_prompt(draft, [draft_idx, 'drafts'])
-            drafts_formatted += f"<{draft_idx}>\n{safe_draft}\n</{draft_idx}>\n\n"
-        inputs['drafts'] = drafts_formatted
+            drafts_parts.append(f"<{draft_idx}>\n{safe_draft}\n</{draft_idx}>")
+        inputs['drafts'] = '\n\n'.join(drafts_parts)
         return inputs
 
     @override

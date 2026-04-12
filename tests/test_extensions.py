@@ -7,11 +7,7 @@ from devteam.extensions.console_logger import _format_value, ConsoleLogger
 from devteam.extensions.hitl_cli import HumanInTheLoop
 from devteam.extensions.hitl_gui import HumanInTheLoopGUI
 from devteam.extensions.workspace_saver import WorkspaceSaver
-
-def test_format_value_workspace_files_summary():
-    value = {"a.py": "print(1)", "b.py": "print(2)"}
-    formatted = _format_value("workspace_files", value)
-    assert formatted == "[2 file(s): a.py, b.py]"
+from devteam.state import TaskContext
 
 def test_format_value_pending_tasks_summary():
     value = [{"task_name": "Auth"}, {"task_name": "API"}]
@@ -32,7 +28,6 @@ def test_console_logger_on_step_skips_empty_values(monkeypatch):
     state_update = {
         "developer": {
             "specs": "",
-            "workspace_files": {},
             "current_task": "Implement auth",
         }
     }
@@ -50,7 +45,7 @@ def test_workspace_saver_target_dir_rules(tmp_path: Path):
     assert saver._get_target_dir({'current_phase': 'planning'}) == tmp_path / "00_planning"
     assert saver._get_target_dir({'current_phase': 'integration'}) == tmp_path / "90_integration"
     assert saver._get_target_dir({'current_phase': 'complete'}) == tmp_path / "90_integration"
-    assert saver._get_target_dir({'current_phase': 'development', 'current_task_index': 3}) == tmp_path / "03_task"
+    assert saver._get_target_dir({'current_phase': 'development', 'task_context': TaskContext(current_task_index=3)}) == tmp_path / "03_task"
     assert saver._get_target_dir({'current_phase': 'development'}) == tmp_path / "01_task"
     assert saver._get_target_dir({}) == tmp_path / "00_planning"
 
@@ -83,19 +78,19 @@ def test_workspace_saver_on_step_saves_all_outputs(tmp_path: Path):
                 ]
             },
         },
-        {"current_phase": "planning", "current_task_index": 0, "current_task": ""},
+        {"current_phase": "planning"},
     ))
 
     asyncio.run(saver.on_step(
         "thread-1",
         {
             "developer": {
-                "workspace_files": {"src/main.py": "print('ok')"},
+                "task_context": TaskContext(changed_files={"src/main.py": "print('ok')"}),
             },
-            "reviewer": {"review_feedback": "Looks good", "revision_count": 2},
-            "qa": {"test_results": "PASSED", "revision_count": 2},
+            "reviewer": {"task_context": TaskContext(review_feedback="Looks good")},
+            "qa": {"task_context": TaskContext(test_results="PASSED")},
         },
-        {"current_phase": "development", "current_task_index": 1, "current_task": "Task 1", "revision_count": 2},
+        {"current_phase": "development", "task_context": TaskContext(current_task_index=1, revision_count=2)},
     ))
 
     asyncio.run(saver.on_step(

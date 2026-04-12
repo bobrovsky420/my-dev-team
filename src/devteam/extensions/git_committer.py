@@ -52,10 +52,10 @@ class GitCommitter(CrewExtension):
                 continue
             if not isinstance(node_update, dict):
                 continue
-            workspace_files = node_update.get('workspace_files', {})
-            if not workspace_files:
+            task_context = node_update.get('task_context')
+            if not task_context or not task_context.changed_files:
                 continue
-            revision = node_update.get('revision_count', 0)
+            revision = task_context.revision_count
             task_index = len(full_state.get('completed_tasks', [])) + 1
             message = f"Task {task_index} - revision {revision}"
             self._commit(message)

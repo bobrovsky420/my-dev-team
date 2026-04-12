@@ -46,7 +46,7 @@ mydevteam/
 
 - **Target Python 3.10+.** Use modern syntax: `str | None` instead of `Optional[str]`, `list[str]` instead of `List[str]`, `match/case` for routing logic.
 - Max line length is **190** characters (configured in `pyproject.toml` under `[tool.pylint.format]`).
-- Docstrings are minimal and optional ? `missing-docstring` is disabled in pylint. When present, use one-line triple-double-quote style: `"""Brief description."""`
+- Docstrings are minimal and optional - `missing-docstring` is disabled in pylint. When present, use one-line triple-double-quote style: `"""Brief description."""`
 
 ### Text Style
 
@@ -112,6 +112,7 @@ mydevteam/
 - **Async execution** ? core loop uses `async/await` with `asyncio.run()` at the CLI boundary. Use `asyncio.wait_for()` for timeouts.
 - **Pydantic `BaseModel`** for all structured LLM outputs and tool-calling schemas. Use `field_validator` with `mode='before'` for input normalization.
 - **Agent config** is defined in Markdown files with YAML frontmatter (`---` delimiters) containing role, model category, temperature, and I/O field names.
+- **Workflow extensibility** - new workflows are added by creating a `config/crews/{name}.yaml` with a `manager:` field pointing to a `BaseManager` subclass, plus the corresponding agent entries. No changes to `CrewFactory` or CLI are required beyond the `choices=` list in `--workflow`.
 
 ### Error Handling
 

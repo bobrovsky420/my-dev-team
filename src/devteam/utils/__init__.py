@@ -7,6 +7,8 @@ from .stream_handler import StreamHandler
 from .telemetry import TelemetryTracker
 from .with_logging import WithLogging
 from .communication_log import CommunicationLog
+from .workspace import hydrate_workspace
+from .serializer_deserializer import create_serde
 
 __all__ = [
     'LLMFactory',
@@ -21,5 +23,7 @@ __all__ = [
     'add_file_handler',
     'remove_file_handler',
     'WithLogging',
-    'CommunicationLog'
+    'CommunicationLog',
+    'hydrate_workspace',
+    'create_serde'
 ]

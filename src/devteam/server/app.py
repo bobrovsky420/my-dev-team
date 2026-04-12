@@ -17,7 +17,8 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from devteam import settings
 from devteam.crew import CrewFactory
 from devteam.extensions import HumanInTheLoopGUI, StreamlitLogger
-from devteam.utils import LLMFactory, StreamHandler, generate_thread_id, parse_spec_from_string, setup_logging, add_file_handler, remove_file_handler
+from devteam.utils import LLMFactory, StreamHandler, generate_thread_id, parse_spec_from_string, setup_logging, add_file_handler, remove_file_handler, create_serde
+from devteam.utils.workspace import read_all_files
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +108,7 @@ def _run_crew_in_thread(
             extensions.append(hitl_extension)
 
         async with aiosqlite.connect(db_path) as conn:
-            checkpointer = AsyncSqliteSaver(conn)
+            checkpointer = AsyncSqliteSaver(conn, serde=create_serde())
             crew = crew_factory.create(project_folder, checkpointer=checkpointer, rpm=rpm, extensions=extensions)
             final_state = await crew.execute(thread_id=thread_id, requirements=requirements)
             result_holder['final_state'] = final_state
@@ -149,7 +150,7 @@ def _run_resume_in_thread(
         if hitl_extension:
             extensions.append(hitl_extension)
         async with aiosqlite.connect(db_path) as conn:
-            checkpointer = AsyncSqliteSaver(conn)
+            checkpointer = AsyncSqliteSaver(conn, serde=create_serde())
             crew = crew_factory.create(project_folder, checkpointer=checkpointer, extensions=extensions)
             final_state = await crew.execute(
                 thread_id=thread_id,
@@ -180,7 +181,7 @@ def _fetch_history(thread_id: str) -> list[dict]:
         db_path = settings.workspace_dir / thread_id / 'state.db'
         project_folder = settings.workspace_dir / thread_id
         async with aiosqlite.connect(db_path) as conn:
-            checkpointer = AsyncSqliteSaver(conn)
+            checkpointer = AsyncSqliteSaver(conn, serde=create_serde())
             crew_factory = CrewFactory()
             crew = crew_factory.create(project_folder, checkpointer=checkpointer)
             return await crew.get_history(thread_id)
@@ -205,7 +206,7 @@ def create_app(gui_dist: Path | None = None) -> Flask:
         gui_dist = Path(__file__).resolve().parent.parent / 'gui' / 'dist'
 
     # ------------------------------------------------------------------ #
-    # Static files — serve the React build                                 #
+    # Static files - serve the React build                                 #
     # ------------------------------------------------------------------ #
 
     @app.route('/', defaults={'path': ''})
@@ -252,7 +253,7 @@ def create_app(gui_dist: Path | None = None) -> Flask:
 
         event_queue: Queue = Queue()
         result_holder: dict = {}
-        # Always present — handles PM clarification questions regardless of ask_approval.
+        # Always present - handles PM clarification questions regardless of ask_approval.
         # ask_approval only controls graph routing (whether spec/plan review pauses happen).
         hitl_ext = HumanInTheLoopGUI(event_queue)
 
@@ -435,6 +436,8 @@ def _serialize_state(state) -> dict:
             safe[k] = {str(kk): str(vv) if not isinstance(vv, (str, int, float, bool, type(None))) else vv for kk, vv in v.items()}
         else:
             safe[k] = str(v)
+    if workspace_path := safe.get('workspace_path', ''):
+        safe['workspace_files'] = read_all_files(workspace_path)
     return safe
 
 
@@ -454,7 +457,7 @@ def run(host: str = '127.0.0.1', port: int = 5000, open_browser: bool = True):
     from dotenv import load_dotenv
     load_dotenv()
 
-    # File-only logging — no console output while GUI is running
+    # File-only logging - no console output while GUI is running
     setup_logging(console_level=None)
     logging.getLogger('werkzeug').propagate = True  # let it go to the file handler only
 

@@ -12,28 +12,35 @@ Runs the autonomous AI development workflow from the terminal.
 devteam [project_file] [options]
 ```
 
-Either `project_file` or `--resume` is required.
+Either `project_file` or `--resume` (or `--history`) is required.
 
 ### Arguments
 
 | Argument | Type | Default | Description |
 |---|---|---|---|
 | `project_file` | positional (optional) | - | Path to the requirements text file. Omit only when using `--resume`. |
-| `--provider` | choice | `ollama` | LLM backend. Options: `anthropic`, `free`, `groq`, `ollama`, `openai`. |
+| `--provider` | choice | `ollama` | LLM backend. Options: `anthropic`, `azure-anthropic`, `azure-openai`, `free`, `groq`, `ollama`, `openai`. See [LLM providers](llm.md) for model lists and required env vars. |
+| `--azure` | flag | off | Use the Azure-hosted variant of the selected provider. `--provider openai --azure` is equivalent to `--provider azure-openai`. Errors if the provider already has an `azure-` prefix. |
 | `--rpm` | int | `0` | API requests per minute. `0` disables rate limiting. |
 | `--timeout` | int | `120` | Maximum seconds to wait for an LLM response. Increase for slow local models. |
 | `--resume` | str | - | Resume an existing thread by ID (e.g. `web_scraper_cli_20260312_083500`). |
 | `--feedback` | str | - | Human feedback to inject into the state when resuming. |
 | `--as-node` | choice | `reviewer` | Which agent delivers the injected feedback. Options: `pm`, `architect`, `reviewer`, `qa`. Controls graph routing after injection. |
-| `--history` | flag | off | Print the checkpoint timeline for the given `--resume` thread and exit. |
+| `--history` | str | - | Print the checkpoint timeline for the given thread ID and exit (e.g. `--history web_scraper_cli_20260312_083500`). |
 | `--checkpoint` | str | - | Checkpoint ID to rewind to before resuming or injecting feedback. |
 | `--ask-approval` | flag | off | Pause after the PM produces the Technical Specification and again after the Architect produces the task plan, waiting for interactive approval before proceeding. |
 | `--thinking` | flag | off | Stream raw LLM thinking tokens to stderr in real time. |
 | `--no-docker` | flag | off | Run the QA Engineer without a Docker sandbox (LLM-based simulation only). |
 | `--rag-collection` | str | - | Vector store collection name for RAG queries. Only needed when the MCP server has no locked-in `COLLECTION_NAME`. |
 | `--no-rag` | flag | off | Disable RAG context retrieval entirely for all agents. |
+| `--seed` | str | - | Path to a local directory or `.zip` archive to copy into the workspace before agents run. Cannot be combined with `--resume`. |
 | `--config` | str | - | Path to a custom configuration directory, overriding the bundled `config/`. |
+| `--settings` | str | - | Path to a custom `config.yaml`, overriding the default lookup (`./config.yaml` then `~/.devteam/config.yaml`). |
 | `--verbose` | flag | off | Enable debug-level logging to the console. |
+
+### Persistent defaults
+
+Any flag can be set permanently in a `config.yaml` file so you don't have to repeat it on every run. See [Configuration file](config.md) for the full reference.
 
 ### Project file format
 
@@ -116,7 +123,7 @@ devteam --resume web_scraper_cli_20260312_083500 \
 
 **Print the checkpoint timeline for a thread:**
 ```sh
-devteam --resume web_scraper_cli_20260312_083500 --history
+devteam --history web_scraper_cli_20260312_083500
 ```
 
 **Query RAG with a specific collection name:**
@@ -127,6 +134,22 @@ devteam project.txt --rag-collection myproject
 **Disable RAG entirely:**
 ```sh
 devteam project.txt --no-rag
+```
+
+**Seed the workspace from an existing local project:**
+```sh
+devteam project.txt --seed /path/to/existing/code
+```
+
+**Seed from a ZIP archive:**
+```sh
+devteam project.txt --seed export.zip
+```
+
+**Use an Azure-hosted provider:**
+```sh
+devteam project.txt --provider openai --azure
+devteam project.txt --provider anthropic --azure
 ```
 
 ---

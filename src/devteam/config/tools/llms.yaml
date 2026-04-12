@@ -22,7 +22,7 @@ providers:
               thinking: true
               capabilities:
                   reasoning: 1.0
-                  planning: 0.5
+                  planning: 1.0
             - id: 'qwen2.5-coder:7b'
               thinking: false
               capabilities:
@@ -104,19 +104,13 @@ providers:
                   reasoning: 0.4
     google:
         models:
-            - id: 'gemini-3.0-pro'
-              capabilities:
-                  reasoning: 1.0
-                  planning: 0.9
-                  code-generation: 0.9
-                  code-analysis: 0.9
-            - id: 'gemini-3.0-flash'
-              capabilities:
-                  planning: 1.0
-                  code-generation: 1.0
-                  code-analysis: 1.0
-                  reasoning: 0.8
-            - id: 'gemini-3.0-flash-lite'
+#            - id: 'gemini-3.1-pro-preview'
+#              capabilities:
+#                  reasoning: 1.0
+#                  planning: 0.9
+#                  code-generation: 0.9
+#                  code-analysis: 0.9
+            - id: 'gemini-3.1-flash-lite-preview'
               capabilities:
                   fast-utility: 1.0
                   planning: 0.5
@@ -138,6 +132,42 @@ providers:
                   reasoning: 0.6
                   planning: 0.5
             - id: 'mistral-small-latest'
+              capabilities:
+                  fast-utility: 1.0
+                  planning: 0.5
+                  code-generation: 0.5
+                  code-analysis: 0.5
+                  reasoning: 0.4
+    azure-anthropic:
+        models:
+            - id: 'claude-opus-4-6'
+              capabilities:
+                  reasoning: 1.0
+                  planning: 0.9
+                  code-generation: 0.9
+                  code-analysis: 0.9
+            - id: 'claude-sonnet-4-6'
+              capabilities:
+                  planning: 1.0
+                  code-generation: 1.0
+                  code-analysis: 1.0
+                  reasoning: 0.8
+            - id: 'claude-haiku-4-5-20251001'
+              capabilities:
+                  fast-utility: 1.0
+                  planning: 0.5
+                  code-generation: 0.5
+                  code-analysis: 0.5
+                  reasoning: 0.4
+    azure-openai:
+        models:
+            - id: 'gpt-5.3-codex'
+              capabilities:
+                  code-generation: 1.0
+                  code-analysis: 1.0
+                  reasoning: 0.9
+                  planning: 0.8
+            - id: 'gpt-5.4-mini'
               capabilities:
                   fast-utility: 1.0
                   planning: 0.5
@@ -184,4 +214,6 @@ providers:
                   reasoning: 0.5
 
 aliases:
+    'google_genai/*': 'gemini/*'
+    'google_vertexai/*': 'vertex_ai/*'
     'groq/compound': 'openai/gpt-oss-120b'

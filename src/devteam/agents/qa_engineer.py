@@ -14,13 +14,8 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
     @override
     def _build_inputs(self, state: ProjectState) -> dict:
         inputs = super()._build_inputs(state)
-        if workspace_files := state.workspace_files:
-            workspace_str = workspace.workspace_str_from_files(workspace_files)
-            if state.raw_test_results:
-                inputs['test_results'] = sanitizer.sanitize_for_prompt(state.raw_test_results, ['test_results'])
-        else:
-            workspace_str = "No files exist in the workspace."
-        inputs['workspace'] = workspace_str.strip()
+        if state.task_context.raw_test_results:
+            inputs['test_results'] = sanitizer.sanitize_for_prompt(state.task_context.raw_test_results, ['test_results'])
         return inputs
 
     def _run_tests(self, state: ProjectState) -> str:
@@ -46,13 +41,13 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
             results = 'APPROVED'
         status_str = 'APPROVED' if results == 'APPROVED' else 'BUGS FOUND'
         return {
-            'test_results': results,
+            'task_context': current_state.task_context.model_copy(update={'test_results': results}),
             'communication_log': self.communication(f"{status_str}\n{results}")
         }
 
     async def _pre_process(self, state: ProjectState) -> ProjectState:
-        if self.sandbox and state.workspace_files:
-            state.raw_test_results = await asyncio.to_thread(self._run_tests, state)
+        if self.sandbox and workspace.live_paths(state.workspace_path):
+            state.task_context.raw_test_results = await asyncio.to_thread(self._run_tests, state)
         return state
 
     def with_sandbox(self, sandbox: DockerSandbox):
