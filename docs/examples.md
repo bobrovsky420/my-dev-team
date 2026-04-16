@@ -11,7 +11,7 @@ All examples live in the `examples/` folder. Each one is a ready-to-run project 
 The simplest possible project file. One sentence of requirements. Good for verifying that installation and LLM connectivity work before trying anything more complex.
 
 ```sh
-devteam examples/hello_world_python.txt --provider ollama
+devteam examples/hello_world_python.txt
 ```
 
 ---
@@ -23,7 +23,7 @@ A well-specified Python CLI calculator. The Product Manager receives enough deta
 Demonstrates: standard planning - development - integration pipeline.
 
 ```sh
-devteam examples/calc_app_python.txt --provider ollama
+devteam examples/calc_app_python.txt
 ```
 
 ---
@@ -35,7 +35,7 @@ The same calculator, but requirements are deliberately minimal ("Develop a calcu
 Demonstrates: the HITL clarification loop - the workflow pauses at the `human` node and waits for your answer before continuing.
 
 ```sh
-devteam examples/vague_reqs_python.txt --provider ollama
+devteam examples/vague_reqs_python.txt
 ```
 
 ---
@@ -47,7 +47,27 @@ The calculator brief with a `--seed` pointing at `examples/calc_app/`. The works
 Demonstrates: `--seed` for building on top of existing code.
 
 ```sh
-devteam examples/calc_app_python_seed.txt --provider ollama --seed examples/calc_app
+devteam examples/calc_app_python_seed.txt --seed examples/calc_app
+```
+
+---
+
+### Bookstore - BM25 retrieval tuning (`bookstore_retrieval_demo.txt`)
+
+A realistic 30-file Flask + SQLAlchemy bookstore backend (auth, models, api, services, utils, tests) paired with a focused task brief asking the crew to rate-limit the login endpoints against brute-force attacks. The codebase is large enough that BM25 top-k=10 meaningfully filters, and the task is narrow enough that the expected relevant files (`src/auth/*`, `src/api/auth_routes.py`, `tests/test_auth.py`) are predictable.
+
+Demonstrates: the `workspace_context` / `skills_context` retrieval flow in practice - task-scoped agents (QA, Equivalence Checker, Migrator) receive only relevant files in full, with the rest listed as paths for on-demand reading.
+
+```sh
+devteam examples/bookstore_retrieval_demo.txt --provider anthropic --seed examples/bookstore_flask
+```
+
+**Tuning the retriever:** `examples/retrieval_demo_preview.py` is a standalone harness that runs the same BM25 ranker against `examples/bookstore_flask/` without spinning up the full crew. It ships with five labelled queries plus expected-file sets and prints `precision@k` so you can measure the impact of tokenization or parameter changes on ranking quality.
+
+```sh
+python examples/retrieval_demo_preview.py
+python examples/retrieval_demo_preview.py --top-k 5
+python examples/retrieval_demo_preview.py --query "add two-factor enrollment endpoint"
 ```
 
 ---
@@ -118,5 +138,5 @@ A template RAG source configuration. Copy it to your project root and adjust the
 A sample SKILL that injects Python best-practice instructions (PEP 8, docstrings, error handling) into any agent that loads it. Pass `--skills examples/skills` to activate it.
 
 ```sh
-devteam examples/calc_app_python.txt --provider ollama --skills examples/skills
+devteam examples/calc_app_python.txt --skills examples/skills
 ```
