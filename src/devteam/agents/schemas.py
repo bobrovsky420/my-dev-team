@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
 from devteam.utils.sanitizer import normalize_workspace_content
-from devteam.tools.schemas import LoadSkill, RetrieveContext, ReadFile, ListFiles, GlobFiles, GrepFiles
 
 # pylint: disable=line-too-long
 
@@ -38,6 +37,9 @@ class DevelopmentTask(BaseModel):
     dependencies: list[str] = Field(
         default_factory=list,
         description="A list of task names that must be completed before this task can begin. Leave empty if this task has no dependencies."
+    )
+    complexity: str = Field(
+        description="Estimated complexity of this task. Must be exactly one of: 'low', 'medium', 'high'. 'low' = straightforward implementation with clear requirements and no ambiguity. 'medium' = moderate reasoning required, some design decisions or non-trivial logic. 'high' = significant architectural reasoning, complex algorithms, or high ambiguity requiring deep analysis."
     )
 
 class SystemArchitectResponse(BaseModel):
