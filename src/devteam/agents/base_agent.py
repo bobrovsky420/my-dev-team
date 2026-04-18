@@ -264,9 +264,11 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
             if not resolved.is_relative_to(base):
                 raise ValueError(f"Include path '{filepath}' escapes the base directory")
             try:
-                return resolved.read_text(encoding='utf-8').strip()
+                text = resolved.read_text(encoding='utf-8')
             except FileNotFoundError:
                 raise FileNotFoundError(f"Include '{filepath}' not found in {base}") from None
+            parts = text.split('---', 2)
+            return parts[2].strip() if len(parts) >= 3 else text.strip()
         return re.sub(r"\{\s*include\s+'([^']+)'\s*\}", replacer, prompt)
 
     @classmethod

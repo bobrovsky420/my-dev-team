@@ -10,4 +10,12 @@ class TaskContext(BaseModel):
     test_results: str = ''
     raw_test_results: str = ''
     revision_count: int = 0
-    changed_files: dict[str, str] = Field(default_factory=dict)
+    developer_drafts: dict[str, dict[str, str]] = Field(default_factory=dict)
+    winner_developer: str = ''
+
+    @property
+    def changed_files(self) -> dict[str, str]:
+        """Current working files: winner's draft in fan-out mode, or the single developer's draft."""
+        if self.winner_developer:
+            return self.developer_drafts.get(self.winner_developer, {})
+        return next(iter(self.developer_drafts.values()), {})

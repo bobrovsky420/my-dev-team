@@ -36,6 +36,7 @@ async def show_history(thread_id: str):
 
 WORKFLOW_CREW = {
     'development': 'basic.yaml',
+    'development-fanout': 'basic-fanout.yaml',
     'migration': 'migration.yaml',
 }
 

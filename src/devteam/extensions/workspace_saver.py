@@ -50,11 +50,10 @@ class WorkspaceSaver(CrewExtension):
         task_file = (target_dir or self._base_dir) / 'task.md'
         task_file.write_text(current_task, encoding='utf-8')
 
-    def _save_workspace(self, workspace_files: dict, current_rev: int):
+    def _save_workspace_to_dir(self, workspace_files: dict, revision_dir: str) -> None:
+        """Write files to a named revision directory only (no live workspace update)."""
         if not workspace_files:
             return
-        revision_dir = f'rev_{current_rev}'
-        self._live_dir.mkdir(parents=True, exist_ok=True)
         for filepath, content in workspace_files.items():
             relative_path = Path(filepath)
             if relative_path.is_absolute():
@@ -67,6 +66,22 @@ class WorkspaceSaver(CrewExtension):
                 continue
             full_file_path.parent.mkdir(parents=True, exist_ok=True)
             full_file_path.write_text(content, encoding='utf-8')
+
+    def _save_workspace_draft(self, workspace_files: dict, current_rev: int, suffix: str) -> None:
+        """Save a developer draft to rev_{rev}_{suffix} in the task dir. Does not update live workspace."""
+        self._save_workspace_to_dir(workspace_files, f'rev_{current_rev}_{suffix}')
+
+    def _save_workspace(self, workspace_files: dict, current_rev: int):
+        """Save files to rev_{rev} in the task dir AND update the live workspace."""
+        if not workspace_files:
+            return
+        revision_dir = f'rev_{current_rev}'
+        self._save_workspace_to_dir(workspace_files, revision_dir)
+        self._live_dir.mkdir(parents=True, exist_ok=True)
+        for filepath, content in workspace_files.items():
+            relative_path = Path(filepath)
+            if relative_path.is_absolute():
+                continue
             live_root = self._live_dir.resolve()
             live_file_path = (live_root / relative_path).resolve()
             if not live_file_path.is_relative_to(live_root):
@@ -109,7 +124,7 @@ class WorkspaceSaver(CrewExtension):
                     if pending := node_update.get('pending_tasks', []):
                         self._save_tasks(pending)
                 case 'officer':
-                    if task_context and task_context.current_agent == 'developer':
+                    if task_context and task_context.current_agent in ('developer', 'developer_a'):
                         task_name = task_context.current_task_name
                         pending_tasks = full_state.get('pending_tasks', [])
                         task = next((t for t in pending_tasks if t.get('task_name') == task_name), None)
@@ -123,6 +138,17 @@ class WorkspaceSaver(CrewExtension):
                 case 'developer':
                     if task_context:
                         self._save_workspace(task_context.changed_files, current_rev)
+                case 'code_judge':
+                    if task_context:
+                        self._save_workspace(task_context.changed_files, current_rev)
+                case 'developer_a' | 'developer_b':
+                    if task_context:
+                        if task_context.winner_developer:
+                            self._save_workspace(task_context.changed_files, current_rev)
+                        else: # Initial draft round
+                            suffix = node_name[-1]  # 'a' or 'b'
+                            draft_files = task_context.developer_drafts.get(node_name, {})
+                            self._save_workspace_draft(draft_files, current_rev, suffix)
                 case 'reviewer':
                     if task_context and (review_feedback := task_context.review_feedback):
                         self._save_code_review(review_feedback, current_rev)

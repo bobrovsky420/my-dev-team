@@ -48,7 +48,7 @@ class TestCodeReviewer:
         changed = {"src/main.py": sample_workspace_files["src/main.py"]}
         state = ProjectState(
             specs="spec",
-            task_context=TaskContext(current_task="task", changed_files=changed),
+            task_context=TaskContext(current_task="task", developer_drafts={'developer': changed}),
             workspace_path=workspace_dir,
         )
         inputs = agent._build_inputs(state)
@@ -150,7 +150,7 @@ class TestSeniorDeveloper:
         parsed = DeveloperResponse(workspace_files=[
             WorkspaceFile(path="new.py", content="new file"),
         ])
-        prior = ProjectState(task_context=TaskContext(changed_files={"old.py": "old"}))
+        prior = ProjectState(task_context=TaskContext(developer_drafts={'developer': {"old.py": "old"}}))
         result = agent._update_state(parsed, prior)
         # changed_files reflects only what the developer just wrote.
         assert result["task_context"].changed_files == {"new.py": "new file"}
