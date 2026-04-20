@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "my-dev-team"
-version = "0.12.2"
+version = "0.12.3"
 description = "An autonomous, LangGraph-powered AI development agency."
 authors = [
     { name="Alexander Bobrovsky", email="bobrovsky@seznam.cz" },
@@ -23,7 +23,7 @@ keywords = [
     "flask"
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Code Generators",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",

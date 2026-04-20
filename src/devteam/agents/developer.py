@@ -15,14 +15,16 @@ class SeniorDeveloper(BaseAgent[DeveloperResponse]):
 
     @override
     def _update_state(self, parsed_data: DeveloperResponse, current_state: ProjectState) -> dict:
-        changed_files: dict[str, str] = {f.path: f.content for f in parsed_data.workspace_files}
+        files: dict[str, str] = {f.path: f.content for f in parsed_data.workspace_files}
         files_modified = len(parsed_data.workspace_files)
         current_revision = current_state.task_context.revision_count
+        new_drafts = {**current_state.task_context.developer_drafts, self.node_name: files}
         return {
             'task_context': current_state.task_context.model_copy(update={
                 'review_feedback': '',
                 'test_results': '',
-                'changed_files': changed_files,
+                'developer_drafts': new_drafts,
             }),
             'communication_log': self.communication(f"Wrote/modified {files_modified} file(s)." + (f" (Revision: {current_revision})" if current_revision > 0 else ""))
         }
+

@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
 from devteam.utils.sanitizer import normalize_workspace_content
-from devteam.tools.schemas import LoadSkill, RetrieveContext, ReadFile, ListFiles, GlobFiles, GrepFiles
 
 # pylint: disable=line-too-long
 
@@ -13,6 +12,10 @@ class ProductManagerResponse(BaseModel):
         default=None,
         description="Provide detailed Technical Specifications ONLY if the requirements are clear. Must be formatted in clean Markdown with sections for architecture, features, acceptance criteria, constraints, and testing. MUST end with an '## Alignment Confirmation' section."
     )
+    complexity: str | None = Field(
+        default=None,
+        description="Overall project complexity. Must be exactly one of: 'low', 'medium', 'high'. 'low' = small scope, well-understood domain, no significant design decisions. 'medium' = moderate scope, some architectural decisions, multiple integrated components. 'high' = large scope, significant architectural complexity, novel requirements, or substantial ambiguity. Leave null if requirements are unclear (clarification needed)."
+    )
 
 class AskClarification(BaseModel):
     """Ask the stakeholder a clarifying question."""
@@ -22,6 +25,9 @@ class SubmitSpecification(BaseModel):
     """Submit the completed Technical Specifications document."""
     specs: str = Field(
         description="Detailed Technical Specifications in clean Markdown with sections for architecture, features, acceptance criteria, constraints, and testing. MUST end with an '## Alignment Confirmation' section."
+    )
+    complexity: str = Field(
+        description="Overall project complexity. Must be exactly one of: 'low', 'medium', 'high'. 'low' = small scope, well-understood domain, no significant design decisions. 'medium' = moderate scope, some architectural decisions, multiple integrated components. 'high' = large scope, significant architectural complexity, novel requirements, or substantial ambiguity."
     )
 
 class DevelopmentTask(BaseModel):
@@ -38,6 +44,9 @@ class DevelopmentTask(BaseModel):
     dependencies: list[str] = Field(
         default_factory=list,
         description="A list of task names that must be completed before this task can begin. Leave empty if this task has no dependencies."
+    )
+    complexity: str = Field(
+        description="Estimated complexity of this task. Must be exactly one of: 'low', 'medium', 'high'. 'low' = straightforward implementation with clear requirements and no ambiguity. 'medium' = moderate reasoning required, some design decisions or non-trivial logic. 'high' = significant architectural reasoning, complex algorithms, or high ambiguity requiring deep analysis."
     )
 
 class SystemArchitectResponse(BaseModel):

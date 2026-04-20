@@ -40,6 +40,11 @@ Two workflows are currently available, selected via `--workflow`:
 - `development` - Developer/Reviewer/QA loop per task
 - `integration` - Final QA then Reporter
 
+**Fan-out mode** (activated via `--fanout` flag or by appending `-fanout` to any workflow name, e.g. `--workflow development-fanout` or `--workflow migration-fanout`) - replaces the single Developer with a fan-out-fan-in pattern applied at runtime by `AgentsFactory.fanout_transform()`. No separate YAML file is needed; the transform works for any workflow:
+- Two `SeniorDeveloper` instances (`developer_a`, `developer_b`) are injected - `developer_b` gets `reasoning: 1.0` added to the base developer's capabilities
+- `CodeJudge` (`judge` node) compares both drafts and selects the winner
+- All subsequent revisions (after code review or QA rejection) use the winning developer only
+
 **`migration`** - `MigrationManager` extends `BaseManager`:
 - `planning` - CodeAnalyzer reads source workspace, produces Migration Analysis and task backlog
 - `development` - Migrator translates source units, EquivalenceChecker validates behavioral equivalence

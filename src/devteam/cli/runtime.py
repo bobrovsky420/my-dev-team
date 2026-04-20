@@ -36,10 +36,13 @@ async def show_history(thread_id: str):
 
 WORKFLOW_CREW = {
     'development': 'basic.yaml',
-    'migration': 'migration.yaml',
+    'migration': 'migration.yaml'
 }
 
-async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume_thread: str = None, feedback: str = None, feedback_source: str = 'reviewer', checkpoint_id: str = None, seed_path: str = None, workflow: str = 'development'):
+async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume_thread: str = None, feedback: str = None, feedback_source: str = 'reviewer', checkpoint_id: str = None, seed_path: str = None, workflow: str = 'development', fanout: bool = False):
+    if workflow.endswith('-fanout'):
+        workflow = workflow[:-7]
+        fanout = True
     if resume_thread:
         thread_id = resume_thread
         project_requirements = None
@@ -70,6 +73,7 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
                 rpm=rpm,
                 extensions=my_extensions(),
                 config_name=WORKFLOW_CREW.get(workflow, 'basic.yaml'),
+                fanout=fanout,
             )
             logging.info('🚀 Starting AI Dev Team...')
             logging.info('📁 Workspace: %s', project_folder.absolute())

@@ -85,7 +85,7 @@ def test_workspace_saver_on_step_saves_all_outputs(tmp_path: Path):
         "thread-1",
         {
             "developer": {
-                "task_context": TaskContext(changed_files={"src/main.py": "print('ok')"}),
+                "task_context": TaskContext(developer_drafts={'developer': {"src/main.py": "print('ok')"}}),
             },
             "reviewer": {"task_context": TaskContext(review_feedback="Looks good")},
             "qa": {"task_context": TaskContext(test_results="PASSED")},
