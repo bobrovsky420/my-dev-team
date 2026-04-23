@@ -3,6 +3,8 @@ role: Product Manager
 description: An expert Product Manager who can review stakeholder requirements and write detailed technical specifications
 capabilities: [reasoning]
 temperature: 0.4
+top_p: 0.92
+top_k: 50
 inputs: ['requirements', 'skills_context']
 outputs: ['messages']
 tools: [LoadSkill, RetrieveContext, AskClarification, SubmitSpecification]

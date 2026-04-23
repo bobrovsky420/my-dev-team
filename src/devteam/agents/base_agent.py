@@ -26,6 +26,8 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
 
     capabilities: dict[str, float]
     temperature: float = 0.2
+    top_k: int = None
+    top_p: float = None
     max_retries: int = 2
     rate_limiter: RateLimiter = None
     output_schema: type[T]
@@ -40,6 +42,8 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
         self.name = config.get('name', None)
         self.capabilities = self._resolve_capabilities(config)
         self.temperature = config.get('temperature', self.temperature)
+        self.top_k = config.get('top_k', self.top_k)
+        self.top_p = config.get('top_p', self.top_p)
         self.complexity_routing = bool(config.get('complexity_routing', False))
         self.complexity_overrides = config.get('complexity_overrides') or {}
         self._chain_cache: dict[str, Runnable] = {}
@@ -214,10 +218,18 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
     def _resolve_params(self, complexity: str) -> tuple[float, dict]:
         temperature = self.temperature
         extras: dict = {}
+        if self.top_k is not None:
+            extras['top_k'] = self.top_k
+        if self.top_p is not None:
+            extras['top_p'] = self.top_p
         if complexity and (override := self.complexity_overrides.get(complexity)):
             temperature = override.get('temperature', temperature)
             if 'thinking' in override:
                 extras['thinking'] = override['thinking']
+            if 'top_k' in override:
+                extras['top_k'] = override['top_k']
+            if 'top_p' in override:
+                extras['top_p'] = override['top_p']
         return temperature, extras
 
     def _get_llm(self, complexity: str) -> Runnable:
@@ -306,7 +318,7 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
         return prompt
 
     @classmethod
-    def from_config(cls, node_name: str, config_path: str, *, llm_factory: LLMFactory = None, rate_limiter: RateLimiter = None, capabilities: dict[str, float] | list[str] = None, temperature: float = None):
+    def from_config(cls, node_name: str, config_path: str, *, llm_factory: LLMFactory = None, rate_limiter: RateLimiter = None, capabilities: dict[str, float] | list[str] = None, temperature: float = None, top_k: int = None, top_p: float = None):
         prompt_file = settings.config_dir / 'agents' / config_path
         try:
             content = prompt_file.read_text(encoding='utf-8')
@@ -321,4 +333,8 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
             config['capabilities'] = capabilities
         if temperature is not None:
             config['temperature'] = temperature
+        if top_k is not None:
+            config['top_k'] = top_k
+        if top_p is not None:
+            config['top_p'] = top_p
         return cls(config, prompt, node_name, llm_factory=llm_factory, rate_limiter=rate_limiter)

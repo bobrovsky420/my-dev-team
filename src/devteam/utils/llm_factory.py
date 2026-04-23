@@ -52,7 +52,7 @@ class LLMFactory(WithLogging):
                 best_model = model
         return best_model
 
-    def _instantiate(self, model: dict, provider: str, temperature: float, *, node_name: str, json_mode: bool, thinking_override: bool = None) -> BaseChatModel:
+    def _instantiate(self, model: dict, provider: str, temperature: float, *, node_name: str, json_mode: bool, thinking_override: bool = None, top_k: int = None, top_p: float = None) -> BaseChatModel:
         """Instantiate a provider-specific LLM for the given model entry."""
         # pylint: disable=import-error,import-outside-toplevel
         model_name = model['id']
@@ -71,7 +71,9 @@ class LLMFactory(WithLogging):
                     callbacks=self.callbacks,
                     tags=llm_tags,
                     format='json' if json_mode else None,
-                    reasoning=thinking and settings.llm_streaming and not json_mode
+                    reasoning=thinking and settings.llm_streaming and not json_mode,
+                    **({'top_k': top_k} if top_k is not None else {}),
+                    **({'top_p': top_p} if top_p is not None else {}),
                 )
             case 'groq':
                 try:
@@ -84,7 +86,8 @@ class LLMFactory(WithLogging):
                     streaming=settings.llm_streaming,
                     callbacks=self.callbacks,
                     tags=llm_tags,
-                    max_retries=2
+                    max_retries=2,
+                    **({'top_p': top_p} if top_p is not None else {}),
                 )
                 if json_mode:
                     return llm.bind(response_format={'type': 'json_object'})
@@ -99,7 +102,9 @@ class LLMFactory(WithLogging):
                     temperature=temperature,
                     streaming=settings.llm_streaming,
                     callbacks=self.callbacks,
-                    tags=llm_tags
+                    tags=llm_tags,
+                    **({'top_k': top_k} if top_k is not None else {}),
+                    **({'top_p': top_p} if top_p is not None else {}),
                 )
             case 'openai':
                 try:
@@ -111,7 +116,8 @@ class LLMFactory(WithLogging):
                     temperature=temperature,
                     streaming=settings.llm_streaming,
                     callbacks=self.callbacks,
-                    tags=llm_tags
+                    tags=llm_tags,
+                    **({'top_p': top_p} if top_p is not None else {}),
                 )
             case 'google':
                 try:
@@ -123,7 +129,9 @@ class LLMFactory(WithLogging):
                     temperature=temperature,
                     streaming=settings.llm_streaming,
                     callbacks=self.callbacks,
-                    tags=llm_tags
+                    tags=llm_tags,
+                    **({'top_k': top_k} if top_k is not None else {}),
+                    **({'top_p': top_p} if top_p is not None else {}),
                 )
             case 'mistral':
                 try:
@@ -135,7 +143,8 @@ class LLMFactory(WithLogging):
                     temperature=temperature,
                     streaming=settings.llm_streaming,
                     callbacks=self.callbacks,
-                    tags=llm_tags
+                    tags=llm_tags,
+                    **({'top_p': top_p} if top_p is not None else {}),
                 )
             case 'deepseek':
                 try:
@@ -149,7 +158,8 @@ class LLMFactory(WithLogging):
                     callbacks=self.callbacks,
                     tags=llm_tags,
                     api_key=os.environ['DEEPSEEK_API_KEY'],
-                    base_url='https://api.deepseek.com'
+                    base_url='https://api.deepseek.com',
+                    **({'top_p': top_p} if top_p is not None else {}),
                 )
             case 'grok':
                 try:
@@ -163,7 +173,8 @@ class LLMFactory(WithLogging):
                     callbacks=self.callbacks,
                     tags=llm_tags,
                     api_key=os.environ['XAI_API_KEY'],
-                    base_url='https://api.x.ai/v1'
+                    base_url='https://api.x.ai/v1',
+                    **({'top_p': top_p} if top_p is not None else {}),
                 )
             case 'azure-openai':
                 try:
@@ -178,7 +189,8 @@ class LLMFactory(WithLogging):
                     temperature=temperature,
                     streaming=settings.llm_streaming,
                     callbacks=self.callbacks,
-                    tags=llm_tags
+                    tags=llm_tags,
+                    **({'top_p': top_p} if top_p is not None else {}),
                 )
             case 'azure-anthropic':
                 try:
@@ -192,14 +204,15 @@ class LLMFactory(WithLogging):
                     temperature=temperature,
                     streaming=settings.llm_streaming,
                     callbacks=self.callbacks,
-                    tags=llm_tags
+                    tags=llm_tags,
+                    **({'top_p': top_p} if top_p is not None else {}),
                 )
             case _:
                 raise ValueError(f"Unsupported provider: {provider}")
 
     def create(self, capabilities: dict[str, float] | list[str], temperature: float, *,
-               node_name: str, json_mode = True, complexity: str | None = None,
-               thinking: bool | None = None) -> BaseChatModel:
+               node_name: str, json_mode = True, complexity: str = None,
+               thinking: bool = None, top_k: int = None, top_p: float = None) -> BaseChatModel:
         """Returns a configured LLM instance for the requested capabilities."""
         if isinstance(capabilities, list):
             capabilities = {cap: 1.0 for cap in capabilities}
@@ -210,4 +223,4 @@ class LLMFactory(WithLogging):
                 "Complexity routing: node=%s complexity=%s -> provider=%s model=%s",
                 node_name, complexity, provider, model['id']
             )
-        return self._instantiate(model, provider, temperature, node_name=node_name, json_mode=json_mode, thinking_override=thinking)
+        return self._instantiate(model, provider, temperature, node_name=node_name, json_mode=json_mode, thinking_override=thinking, top_k=top_k, top_p=top_p)

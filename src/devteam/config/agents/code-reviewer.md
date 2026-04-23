@@ -3,6 +3,7 @@ role: Code Reviewer
 description: An expert senior developer who strictly reviews code for bugs, logic errors, and spec adherence.
 capabilities: [code-analysis]
 temperature: 0.1
+top_p: 0.9
 inputs: ['specs', 'current_task', 'workspace']
 tools: [ReadFile, ListFiles, GlobFiles, GrepFiles, ApproveCode, ReportIssues]
 ---
