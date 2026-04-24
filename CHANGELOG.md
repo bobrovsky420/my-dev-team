@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.5] - 2026-04-23
+
+### 🚀 Added
+
+* **`top_k` and `top_p` sampling parameters:** Agents now support `top_k` and `top_p` in their frontmatter YAML and in crew config overrides. Both parameters are forwarded to all providers (`top_p` universally; `top_k` on Ollama, Anthropic and Google which support it). Complexity overrides also accept them.
+
+### 🔧 Internal
+
+* **Cleaner console step panels:** `ConsoleLogger` now summarises noisy state fields instead of dumping raw Python reprs - `messages` shows a count plus the last message type, `developer_drafts` shows the file list, and `task_context` shows only meaningful sub-fields.
+
 ## [0.12.4] - 2026-04-21
 
 ### 🚀 Added
