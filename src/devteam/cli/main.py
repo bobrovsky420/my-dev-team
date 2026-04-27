@@ -12,8 +12,6 @@ from devteam.tools.rag import init_retrieve_context_tool
 from devteam.utils import setup_logging, get_valid_providers
 from .runtime import async_main, show_history
 
-_PROVIDERS = ['anthropic', 'free', 'groq', 'ollama', 'openai', 'google']
-
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='Run the AI Dev Team autonomous framework.')
     parser.add_argument('project_file', nargs='?', help='path to the text file containing your project requirements')
@@ -55,18 +53,15 @@ def _validate_inputs(parser: argparse.ArgumentParser, args):
     if args.history:
         path = settings.workspace_dir / args.history
         if not path.exists():
-            logging.error("❌ Error: Could not find workspace for thread '%s'", args.history)
-            sys.exit(1)
+            parser.error(f"could not find workspace for thread '{args.history}'")
         return
     if args.resume:
         path = settings.workspace_dir / args.resume
         if not path.exists():
-            logging.error("❌ Error: Could not find workspace for thread '%s'", args.resume)
-            sys.exit(1)
+            parser.error(f"could not find workspace for thread '{args.resume}'")
     elif args.project_file:
         if not Path(args.project_file).exists():
-            logging.error("❌ Error: Could not find project file '%s'", args.project_file)
-            sys.exit(1)
+            parser.error(f"could not find project file '{args.project_file}'")
     else:
         parser.error('You must provide either a project_file OR the --resume flag.')
     if args.seed:

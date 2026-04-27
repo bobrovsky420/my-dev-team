@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import aiosqlite
-from pathlib import Path
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from rich import print # pylint: disable=redefined-builtin
 from devteam import settings
@@ -9,6 +8,8 @@ from devteam.crew import CrewFactory
 from devteam.extensions import ConsoleLogger, HumanInTheLoop
 from devteam.utils import LLMFactory, StreamHandler, TelemetryTracker, generate_thread_id, load_project_spec, add_file_handler, remove_file_handler, create_serde
 from devteam.utils.workspace import hydrate_workspace
+
+logger = logging.getLogger(__name__)
 
 STATE_DB_FILE = 'state.db'
 
@@ -26,7 +27,7 @@ async def show_history(thread_id: str):
     async with aiosqlite.connect(db_path) as conn:
         checkpointer = AsyncSqliteSaver(conn, serde=create_serde())
         crew = crew_factory.create(project_folder, checkpointer=checkpointer)
-        logging.info("Fetching timeline history...")
+        logger.info("Fetching timeline history...")
         history_data = await crew.get_history(thread_id)
         for checkpoint in history_data:
             print(
@@ -46,11 +47,11 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
     if resume_thread:
         thread_id = resume_thread
         project_requirements = None
-        logging.info('🔄 Resuming existing project thread: %s', thread_id)
+        print(f"🔄 Resuming existing project thread: {thread_id}")
     else:
         project_name, project_requirements = load_project_spec(project_file_path)
         thread_id = generate_thread_id(project_name)
-        logging.info('🚀 Starting NEW project: %s', project_name)
+        print(f"🚀 Starting NEW project: {project_name}")
     project_folder = settings.workspace_dir / thread_id
     project_folder.mkdir(parents=True, exist_ok=True)
     if seed_path:
@@ -75,8 +76,8 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
                 config_name=WORKFLOW_CREW.get(workflow, 'basic.yaml'),
                 fanout=fanout,
             )
-            logging.info('🚀 Starting AI Dev Team...')
-            logging.info('📁 Workspace: %s', project_folder.absolute())
+            print("🚀 Starting AI Dev Team...")
+            print(f"📁 Workspace: {project_folder.absolute()}")
             final_state = await crew.execute(
                 thread_id=thread_id,
                 requirements=project_requirements,
@@ -85,28 +86,28 @@ async def async_main(project_file_path: str, provider: str, rpm: int = 0, resume
                 checkpoint_id=checkpoint_id,
             )
         if final_state.abort_requested:
-            logging.error('❌ Workflow aborted by user or validation failure.')
+            print("❌ Workflow aborted by user or validation failure.")
             return
         if final_state.failed_tasks:
-            logging.warning('⚠️  %d task(s) were skipped due to agent errors:', len(final_state.failed_tasks))
+            print(f"⚠️  {len(final_state.failed_tasks)} task(s) were skipped due to agent errors:")
             for t in final_state.failed_tasks:
-                print(f'   - {t}')
+                print(f"   - {t}")
         if final_state.success:
-            print('\n🎉 PROJECT COMPLETED SUCCESSFULLY!')
-            print(final_state.final_report or 'No report generated.')
+            print("\n🎉 PROJECT COMPLETED SUCCESSFULLY!")
+            print(final_state.final_report or "No report generated.")
             return
-        logging.error('🚨 RELEASE FAILED: Integration bugs found!')
+        print("🚨 RELEASE FAILED: Integration bugs found!")
         for bug in final_state.integration_bugs:
-            print(f' - {bug}')
-        print('\nNote: In a production system, these would be appended to the Phase 2 Backlog.')
+            print(f" - {bug}")
+        print("\nNote: In a production system, these would be appended to the Phase 2 Backlog.")
     except KeyboardInterrupt:
         print(
-            '\n\n🛑 Workflow interrupted by user (Ctrl+C)\n'
-            '💡 You can resume this exact state later by running:\n'
-            f'   devteam --resume {thread_id}'
+            "\n\n🛑 Workflow interrupted by user (Ctrl+C)\n"
+            "💡 You can resume this exact state later by running:\n"
+            f"   devteam --resume {thread_id}"
         )
     except asyncio.CancelledError:
-        logging.error('🛑 Async execution cancelled')
+        print("🛑 Async execution cancelled")
     finally:
         print()
         print(telemetry.get_receipt_panel())
