@@ -87,7 +87,7 @@ class LLMFactory(WithLogging):
                     callbacks=self.callbacks,
                     tags=llm_tags,
                     max_retries=2,
-                    **({'top_p': top_p} if top_p is not None else {}),
+                    **({'model_kwargs': {'top_p': top_p}} if top_p is not None else {}),
                 )
                 if json_mode:
                     return llm.bind(response_format={'type': 'json_object'})
