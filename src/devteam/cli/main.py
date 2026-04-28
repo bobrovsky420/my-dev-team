@@ -73,10 +73,17 @@ def _validate_inputs(parser: argparse.ArgumentParser, args):
         if not (seed_path.is_dir() or (seed_path.is_file() and seed_path.suffix == '.zip')):
             parser.error(f"--seed must be a directory or a .zip file, got: '{seed_path}'.")
 
+def _load_settings_from_argv() -> None:
+    """Pre-parse --settings from argv and load settings, allowing override of the default lookup."""
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument('--settings', type=str)
+    pre_args, _ = pre.parse_known_args()
+    settings.load(Path(pre_args.settings) if pre_args.settings else None)
+
 def main_ui():
     """Entry point for the devteam-ui command."""
     load_dotenv()
-    settings.load()
+    _load_settings_from_argv()
     init_retrieve_context_tool()
     from devteam.server import run as run_server  # pylint: disable=import-outside-toplevel
     try:
@@ -86,11 +93,7 @@ def main_ui():
 
 def main():
     load_dotenv()
-
-    pre = argparse.ArgumentParser(add_help=False)
-    pre.add_argument('--settings', type=str)
-    pre_args, _ = pre.parse_known_args()
-    settings.load(Path(pre_args.settings) if pre_args.settings else None)
+    _load_settings_from_argv()
 
     parser = _build_parser()
     args = parser.parse_args()

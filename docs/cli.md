@@ -168,10 +168,14 @@ devteam project.txt --provider anthropic --azure
 Starts the web dashboard (Flask + React). Requires `pip install "my-dev-team[ui]"` and a one-time frontend build.
 
 ```
-devteam-ui
+devteam-ui [--settings PATH]
 ```
 
-No arguments. The server reads host and port from environment variables (`HOST`, `PORT`). Loads `.env` automatically.
+| Flag | Type | Default | Notes |
+|------|------|---------|-------|
+| `--settings` | str | - | Path to a custom `config.yaml`, overriding the default lookup (`./config.yaml` then `~/.devteam/config.yaml`). |
+
+The server reads host and port from environment variables (`HOST`, `PORT`). Loads `.env` automatically.
 
 ```sh
 pip install "my-dev-team[ui]"
