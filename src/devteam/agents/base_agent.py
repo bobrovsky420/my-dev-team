@@ -16,6 +16,10 @@ from devteam.utils import LLMFactory, RateLimiter, WithLogging, CommunicationLog
 from devteam.utils import retrieve_workspace_context, retrieve_skills_context
 from .intermediate_tools import IntermediateTools
 
+class NoToolCallError(Exception):
+    """Raised when the LLM responds without calling any tool. Triggers a retry that injects a tool-call reminder into the next prompt."""
+
+
 def input_handler(tag):
     """Defines a prompt tag used to wrap the rendered value."""
     def deco(fn):
@@ -170,65 +174,67 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
         if complexity:
             self.logger.info("Routing on complexity=%s", complexity)
         inputs = self._build_inputs(state)
-        original_messages = self._repair_tool_call_messages(list(state.messages))
-        if 'messages' not in inputs:
-            inputs['messages'] = original_messages
+        base_messages = self._repair_tool_call_messages(list(state.messages))
         last_error = ''
-        no_tool_call_retry = False
+        inject_reminder = False
         for attempt in range(self.max_retries + 1):
             if attempt > 0:
                 self.logger.warning("LLM call failed. Retrying (attempt %d/%d)...", attempt + 1, self.max_retries + 1)
-                inputs['messages'] = list(original_messages)
-                if no_tool_call_retry:
-                    tool_names = ', '.join(t.__name__ for t in self.tools)
-                    inputs['messages'] = inputs['messages'] + [HumanMessage(content=(
-                        f"You must respond by calling one of the available tools: {tool_names}. "
-                        "Do not return plain text - use a tool call to submit your response."
-                    ))]
-                    self.logger.debug("Injected tool-call reminder into retry messages.")
-            no_tool_call_retry = False
-            conversation_history = []
+            messages = self._with_tool_reminder(base_messages) if inject_reminder else base_messages
+            inject_reminder = False
             try:
-                while True:
-                    if conversation_history:
-                        inputs['messages'] = original_messages + conversation_history
-                    self.logger.debug("Invoking LLM with inputs:\n%s", inputs)
-                    ai_message = await self._invoke_llm(complexity=complexity, **inputs)
-                    ai_message = coerce_tool_calls(ai_message)
-                    conversation_history.append(ai_message)
-                    if not ai_message.tool_calls:
-                        no_tool_call_retry = True
-                        raise ValueError("The model did not call any tool.")
-                    intermediate_results = await asyncio.gather(
-                        *[self._handle_intermediate_tools(tc['name'], tc['args'], state) for tc in ai_message.tool_calls]
-                    )
-                    if any(r is not None for r in intermediate_results):
-                        for tc, result in zip(ai_message.tool_calls, intermediate_results):
-                            tool_msg = ToolMessage(content=result or '', tool_call_id=tc['id'])
-                            conversation_history.append(tool_msg)
-                        continue
-                    parsed_data = self._parse_outputs(ai_message)
-                    break
+                parsed_data, conversation_history = await self._run_attempt(inputs, messages, complexity, state)
                 break
             except ImportError as e:
                 self.logger.exception("Import error")
                 return {'error': True, 'error_message': str(e)}
+            except NoToolCallError:
+                last_error = traceback.format_exc()
+                self.logger.exception("Attempt %d/%d failed - no tool call", attempt + 1, self.max_retries + 1)
+                inject_reminder = True
             except Exception as exc: # pylint: disable=broad-exception-caught
                 last_error = traceback.format_exc()
                 self.logger.exception("Attempt %d/%d failed", attempt + 1, self.max_retries + 1)
-                if 'attempted to call tool' in str(exc) or 'tool call validation' in str(exc):
-                    no_tool_call_retry = True
+                inject_reminder = self._is_tool_validation_error(exc)
         else:
-            return {
-                'error': True,
-                'error_message': last_error,
-            }
+            return {'error': True, 'error_message': last_error}
         final_state = self._update_state(parsed_data, state)
         final_state = await self._post_process(state, final_state)
         if 'messages' in self.outputs:
             final_state['messages'] = conversation_history
-        final_state['communication_log'] = self.communication(ai_message.content)
+        final_state['communication_log'] = self.communication(conversation_history[-1].content)
         return final_state
+
+    async def _run_attempt(self, inputs: dict, messages: list, complexity: str, state: ProjectState) -> tuple[T, list]:
+        conversation_history = []
+        while True:
+            attempt_inputs = {**inputs, 'messages': messages + conversation_history}
+            self.logger.debug("Invoking LLM with inputs:\n%s", attempt_inputs)
+            ai_message = coerce_tool_calls(await self._invoke_llm(complexity=complexity, **attempt_inputs))
+            conversation_history.append(ai_message)
+            if not ai_message.tool_calls:
+                raise NoToolCallError("The model did not call any tool.")
+            intermediate_results = await asyncio.gather(
+                *[self._handle_intermediate_tools(tc['name'], tc['args'], state) for tc in ai_message.tool_calls]
+            )
+            if any(r is not None for r in intermediate_results):
+                for tc, result in zip(ai_message.tool_calls, intermediate_results):
+                    conversation_history.append(ToolMessage(content=result or '', tool_call_id=tc['id']))
+                continue
+            return self._parse_outputs(ai_message), conversation_history
+
+    def _with_tool_reminder(self, messages: list) -> list:
+        tool_names = ', '.join(t.__name__ for t in self.tools)
+        self.logger.debug("Injected tool-call reminder into retry messages.")
+        return messages + [HumanMessage(content=(
+            f"You must respond by calling one of the available tools: {tool_names}. "
+            "Do not return plain text - use a tool call to submit your response."
+        ))]
+
+    @staticmethod
+    def _is_tool_validation_error(exc: Exception) -> bool:
+        msg = str(exc)
+        return 'attempted to call tool' in msg or 'tool call validation' in msg
 
     @cached_property
     def _skills_catalog(self) -> str:
@@ -313,10 +319,7 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
 
     def _parse_outputs(self, response) -> T:
         if not response.tool_calls:
-            raise ValueError(
-                "The model did not call any tool. "
-                "You MUST call one of the provided tools to submit your work."
-            )
+            raise NoToolCallError("The model did not call any tool.")
         tool_call = response.tool_calls[0]
         return self._map_tool_to_output(tool_call['name'], tool_call['args'])
 
