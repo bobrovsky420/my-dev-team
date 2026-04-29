@@ -32,7 +32,7 @@ def make_config(role="TestAgent", inputs=None):
 
 class TestCodeReviewer:
     def test_build_inputs_lists_other_files_when_nothing_changed(self, workspace_dir):
-        config = make_config("Code Reviewer", ["specs", "current_task"])
+        config = make_config("Code Reviewer", ["specs", "current_task", "workspace"])
         agent = CodeReviewer(config, "prompt {specs} {current_task} {workspace}", "reviewer")
         state = ProjectState(specs="spec", task_context=TaskContext(current_task="task"), workspace_path=workspace_dir)
         inputs = agent._build_inputs(state)
@@ -43,7 +43,7 @@ class TestCodeReviewer:
         assert "--- FILE:" not in inputs["workspace"]
 
     def test_build_inputs_splits_changed_and_other_files(self, workspace_dir, sample_workspace_files):
-        config = make_config("Code Reviewer", ["specs", "current_task"])
+        config = make_config("Code Reviewer", ["specs", "current_task", "workspace"])
         agent = CodeReviewer(config, "prompt {specs} {current_task} {workspace}", "reviewer")
         changed = {"src/main.py": sample_workspace_files["src/main.py"]}
         state = ProjectState(
@@ -62,7 +62,7 @@ class TestCodeReviewer:
         assert "--- FILE: tests/test_main.py ---" not in ws
 
     def test_build_inputs_no_workspace(self):
-        config = make_config("Code Reviewer", [])
+        config = make_config("Code Reviewer", ["workspace"])
         agent = CodeReviewer(config, "prompt {workspace}", "reviewer")
         state = ProjectState()
         inputs = agent._build_inputs(state)
@@ -114,14 +114,14 @@ class TestSeniorDeveloper:
         assert "'''Doc'''\n\ndef parse_number(x):\n    return float(x)\n" == file_obj.content
 
     def test_build_inputs_no_workspace(self):
-        config = make_config("Developer", ["specs", "current_task"])
+        config = make_config("Developer", ["specs", "current_task", "workspace"])
         agent = SeniorDeveloper(config, "prompt {specs} {current_task} {workspace}", "developer")
         state = ProjectState(specs="spec", task_context=TaskContext(current_task="build it"))
         inputs = agent._build_inputs(state)
         assert "No files in workspace" in inputs["workspace"]
 
     def test_build_inputs_with_workspace(self, workspace_dir):
-        config = make_config("Developer", ["specs", "current_task"])
+        config = make_config("Developer", ["specs", "current_task", "workspace"])
         agent = SeniorDeveloper(config, "prompt {specs} {current_task} {workspace}", "developer")
         state = ProjectState(specs="spec", task_context=TaskContext(current_task="task"), workspace_path=workspace_dir)
         inputs = agent._build_inputs(state)
@@ -227,7 +227,7 @@ class TestFinalQAEngineer:
 
 class TestReporter:
     def test_build_inputs_with_workspace(self, workspace_dir):
-        config = make_config("Reporter", ["specs", "workspace"])
+        config = make_config("Reporter", ["specs", "workspace", "history"])
         agent = Reporter(config, "prompt {specs} {workspace} {history}", "reporter")
         state = ProjectState(specs="spec", workspace_path=workspace_dir, communication_log=["Log entry 1", "Log entry 2"])
         inputs = agent._build_inputs(state)

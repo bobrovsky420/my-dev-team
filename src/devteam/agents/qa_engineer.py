@@ -11,12 +11,10 @@ class QAEngineer(BaseAgent[QAEngineerResponse]):
     output_schema = QAEngineerResponse
     sandbox: DockerSandbox = None
 
-    @override
-    def _build_inputs(self, state: ProjectState) -> dict:
-        inputs = super()._build_inputs(state)
+    def _input_test_results(self, state: ProjectState) -> str:
         if state.task_context.raw_test_results:
-            inputs['test_results'] = sanitizer.sanitize_for_prompt(state.task_context.raw_test_results, ['test_results'])
-        return inputs
+            return sanitizer.sanitize_for_prompt(state.task_context.raw_test_results, ['test_results'])
+        return self._input_state_attr(state, 'test_results')
 
     def _run_tests(self, state: ProjectState) -> str:
         target_runtime = state.runtime or 'auto'

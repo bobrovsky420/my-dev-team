@@ -7,9 +7,7 @@ from .base_agent import BaseAgent
 class CodeJudge(BaseAgent[CodeJudgeResponse]):
     output_schema = CodeJudgeResponse
 
-    @override
-    def _build_inputs(self, state: ProjectState) -> dict:
-        inputs = super()._build_inputs(state)
+    def _input_drafts(self, state: ProjectState) -> str:
         drafts = state.task_context.developer_drafts
         drafts_parts = []
         for idx, (dev_name, files) in enumerate(drafts.items()):
@@ -17,8 +15,7 @@ class CodeJudge(BaseAgent[CodeJudgeResponse]):
             draft_content = workspace.workspace_str_from_files(files)
             safe_draft = sanitizer.sanitize_for_prompt(draft_content, [draft_idx, 'drafts'])
             drafts_parts.append(f"<{draft_idx}>\n{safe_draft}\n</{draft_idx}>")
-        inputs['drafts'] = '\n\n'.join(drafts_parts)
-        return inputs
+        return '\n\n'.join(drafts_parts)
 
     @override
     def _update_state(self, parsed_data: CodeJudgeResponse, current_state: ProjectState) -> dict:
