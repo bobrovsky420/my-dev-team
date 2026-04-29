@@ -10,6 +10,7 @@ from .communication_log import CommunicationLog
 from .workspace import hydrate_workspace
 from .retriever import retrieve_workspace_context, retrieve_skills_context
 from .serializer_deserializer import create_serde
+from ..descriptors import Coerced, CoercedPath
 
 __all__ = [
     'LLMFactory',
@@ -29,5 +30,7 @@ __all__ = [
     'hydrate_workspace',
     'retrieve_workspace_context',
     'retrieve_skills_context',
-    'create_serde'
+    'create_serde',
+    'Coerced',
+    'CoercedPath',
 ]

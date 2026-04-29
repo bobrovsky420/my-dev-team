@@ -47,6 +47,7 @@ mydevteam/
 - **Target Python 3.10+.** Use modern syntax: `str | None` instead of `Optional[str]`, `list[str]` instead of `List[str]`, `match/case` for routing logic.
 - Max line length is **190** characters (configured in `pyproject.toml` under `[tool.pylint.format]`).
 - Docstrings are minimal and optional - `missing-docstring` is disabled in pylint. When present, use one-line triple-double-quote style: `"""Brief description."""`
+- Prefer `x or fallback` over `x if x is not None else fallback` when `x` cannot legitimately be a falsy non-None value (classes, instances, known-truthy objects). Keep the explicit `is not None` check when `0`, `False`, `''` or empty containers must pass through unchanged.
 
 ### Text Style
 

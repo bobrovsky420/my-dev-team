@@ -18,19 +18,52 @@ from .intermediate_tools import IntermediateTools
 
 _TAG_MAP = {'workspace_listing': 'workspace', 'workspace_context': 'workspace', 'skills_context': 'skills'}
 
+
 def _prompt_tag(key: str) -> str:
     return _TAG_MAP.get(key, key)
+
+
+def _resolve_capabilities(value) -> dict[str, float]:
+    if isinstance(value, list):
+        return {cap: 1.0 for cap in value}
+    return dict(value)
+
+
+class ConfigField:
+    """Non-data descriptor that lazily reads a value from `obj.config`."""
+
+    def __init__(self, default=None, transform=None):
+        self.default = default
+        self.transform = transform
+
+    def __set_name__(self, owner, name):
+        self.name = name
+
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        value = obj.config.get(self.name, self.default)
+        if self.transform is not None:
+            value = self.transform(value)
+        obj.__dict__[self.name] = value
+        return value
+
 
 class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
     """Base agent that uses LLM tool calling to submit structured results."""
 
-    capabilities: dict[str, float]
-    temperature: float = 0.2
-    top_k: int = None
-    top_p: float = None
     max_retries: int = 2
     rate_limiter: RateLimiter = None
     output_schema: type[T]
+
+    role = ConfigField(default='Agent')
+    name = ConfigField(default=None)
+    capabilities = ConfigField(transform=_resolve_capabilities)
+    temperature = ConfigField(default=0.2)
+    top_k = ConfigField(default=None)
+    top_p = ConfigField(default=None)
+    complexity_routing = ConfigField(default=False, transform=bool)
+    complexity_overrides = ConfigField(transform=lambda v: v or {})
 
     def __init__(self, config: dict, prompt_template: str, node_name: str, llm_factory: LLMFactory = None, rate_limiter: RateLimiter = None):
         self.config = config
@@ -38,23 +71,7 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
         self.node_name = node_name
         self.llm_factory = llm_factory
         self.rate_limiter = rate_limiter
-        self.role = config.get('role', 'Agent')
-        self.name = config.get('name', None)
-        self.capabilities = self._resolve_capabilities(config)
-        self.temperature = config.get('temperature', self.temperature)
-        self.top_k = config.get('top_k', self.top_k)
-        self.top_p = config.get('top_p', self.top_p)
-        self.complexity_routing = bool(config.get('complexity_routing', False))
-        self.complexity_overrides = config.get('complexity_overrides') or {}
         self._chain_cache: dict[str, Runnable] = {}
-
-    @staticmethod
-    def _resolve_capabilities(config: dict) -> dict[str, float]:
-        """Read capabilities from config."""
-        caps = config.get('capabilities')
-        if isinstance(caps, list):
-            return {cap: 1.0 for cap in caps}
-        return dict(caps)
 
     @cached_property
     def inputs(self) -> list[str]:
