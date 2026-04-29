@@ -1,6 +1,8 @@
 import logging
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from pydantic import BaseModel
+from devteam.agents.schemas import AskClarification
 from devteam.skills import skills
 from devteam.state import ProjectState
 from devteam.tools import rag
@@ -12,22 +14,37 @@ type ToolHandler = Callable[[dict, ProjectState, logging.Logger], Awaitable[str]
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class ToolEntry:
+    schema: type[BaseModel]
+    handler: ToolHandler  = None
+    enabled_when: Callable[..., bool] = None
+    disabled_message: str = None
+
+    def is_enabled(self, settings) -> bool:
+        return self.enabled_when is None or self.enabled_when(settings)
+
+
 class ToolRegistry:
-    """Registry mapping tool names to their Pydantic schema and async handler."""
+    """Registry mapping tool names to their schema, handler and capability policy."""
 
     def __init__(self):
-        self._entries: dict[str, tuple[type[BaseModel], ToolHandler]] = {}
+        self._entries: dict[str, ToolEntry] = {}
 
-    def register(self, name: str, schema: type[BaseModel], handler: ToolHandler):
-        self._entries[name] = (schema, handler)
+    def register(self, name: str, schema: type[BaseModel], handler: ToolHandler = None, *,
+                 enabled_when: Callable[..., bool] = None, disabled_message: str = None):
+        self._entries[name] = ToolEntry(schema, handler, enabled_when, disabled_message)
+
+    def get(self, name: str) -> ToolEntry:
+        return self._entries.get(name)
 
     def get_schema(self, name: str) -> type[BaseModel]:
         entry = self._entries.get(name)
-        return entry[0] if entry else None
+        return entry.schema if entry else None
 
     def get_handler(self, name: str) -> ToolHandler:
         entry = self._entries.get(name)
-        return entry[1] if entry else None
+        return entry.handler if entry else None
 
     def __contains__(self, name: str) -> bool:
         return name in self._entries
@@ -79,13 +96,24 @@ async def _handle_grep_files(tool_args: dict, state: ProjectState, _logger: logg
     return grep_workspace_files(pattern, state.workspace_path, glob_filter=glob_filter)
 
 
+_ASK_CLARIFICATION_DISABLED = (
+    "The `AskClarification` tool is DISABLED and MUST NOT be called. "
+    "Proceed with reasonable assumptions based on the information provided "
+    "and call your final output tool directly."
+)
+
+
 def _register_builtins():
     tool_registry.register(LoadSkill.__name__, LoadSkill, _handle_load_skill)
-    tool_registry.register(RetrieveContext.__name__, RetrieveContext, _handle_retrieve_context)
+    tool_registry.register(RetrieveContext.__name__, RetrieveContext, _handle_retrieve_context,
+                           enabled_when=lambda s: s.rag_enabled)
     tool_registry.register(ReadFile.__name__, ReadFile, _handle_read_file)
     tool_registry.register(ListFiles.__name__, ListFiles, _handle_list_files)
     tool_registry.register(GlobFiles.__name__, GlobFiles, _handle_glob_files)
     tool_registry.register(GrepFiles.__name__, GrepFiles, _handle_grep_files)
+    tool_registry.register(AskClarification.__name__, AskClarification,
+                           enabled_when=lambda s: not s.no_ask,
+                           disabled_message=_ASK_CLARIFICATION_DISABLED)
 
 
 _register_builtins()
