@@ -6,5 +6,6 @@ class WithLogging:
 
     @cached_property
     def logger(self) -> logging.Logger:
-        logger_name = f"{self.__class__.__name__}"
-        return logging.getLogger(logger_name)
+        cls_name = self.__class__.__name__
+        node = getattr(self, 'node_name', None)
+        return logging.getLogger(f"{cls_name}.{node}" if node else cls_name)
