@@ -251,20 +251,11 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
         return getattr(state, 'project_complexity', None)
 
     def _resolve_params(self, complexity: str) -> tuple[float, dict]:
+        extras = {k: v for k, v in {'top_k': self.top_k, 'top_p': self.top_p}.items() if v is not None}
         temperature = self.temperature
-        extras: dict = {}
-        if self.top_k is not None:
-            extras['top_k'] = self.top_k
-        if self.top_p is not None:
-            extras['top_p'] = self.top_p
         if complexity and (override := self.complexity_overrides.get(complexity)):
             temperature = override.get('temperature', temperature)
-            if 'thinking' in override:
-                extras['thinking'] = override['thinking']
-            if 'top_k' in override:
-                extras['top_k'] = override['top_k']
-            if 'top_p' in override:
-                extras['top_p'] = override['top_p']
+            extras.update({k: override[k] for k in ('thinking', 'top_k', 'top_p') if k in override})
         return temperature, extras
 
     def _get_llm(self, complexity: str) -> Runnable:
@@ -361,12 +352,7 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
             raise ValueError(f"Invalid format in {config_path}. Missing YAML frontmatter")
         config = yaml.safe_load(parts[1])
         prompt = cls._resolve_includes(parts[2].strip(), prompt_file.parent)
-        if capabilities is not None:
-            config['capabilities'] = capabilities
-        if temperature is not None:
-            config['temperature'] = temperature
-        if top_k is not None:
-            config['top_k'] = top_k
-        if top_p is not None:
-            config['top_p'] = top_p
+        config.update({k: v for k, v in {
+            'capabilities': capabilities, 'temperature': temperature, 'top_k': top_k, 'top_p': top_p,
+        }.items() if v is not None})
         return cls(config, prompt, node_name, llm_factory=llm_factory, rate_limiter=rate_limiter)
