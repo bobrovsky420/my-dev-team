@@ -1,4 +1,5 @@
-from typing import Annotated, Literal, Union
+from dataclasses import dataclass, field
+from typing import Annotated, Any, Literal, Union
 from pydantic import BaseModel, ConfigDict, Field
 
 class _BaseRunRequest(BaseModel):
@@ -11,7 +12,8 @@ class _BaseRunRequest(BaseModel):
 
 class StartRequest(_BaseRunRequest):
     kind: Literal['start'] = 'start'
-    project_file_path: str
+    project_name: str
+    requirements: str
     seed_path: str | None = None
 
 class ResumeRequest(_BaseRunRequest):
@@ -22,3 +24,8 @@ class ResumeRequest(_BaseRunRequest):
     checkpoint_id: str | None = None
 
 RunRequest = Annotated[Union[StartRequest, ResumeRequest], Field(discriminator='kind')]
+
+@dataclass
+class RunHooks:
+    callbacks: list[Any] = field(default_factory=list)
+    extensions: list[Any] = field(default_factory=list)

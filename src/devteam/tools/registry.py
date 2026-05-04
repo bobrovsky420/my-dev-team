@@ -2,7 +2,6 @@ import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from pydantic import BaseModel
-from devteam.agents.schemas import AskClarification
 from devteam.skills import skills
 from devteam.state import ProjectState
 from devteam.tools import rag
@@ -104,6 +103,8 @@ _ASK_CLARIFICATION_DISABLED = (
 
 
 def _register_builtins():
+    from devteam.agents.schemas import AskClarification # Deferred to avoid a circular import
+
     tool_registry.register(LoadSkill.__name__, LoadSkill, _handle_load_skill)
     tool_registry.register(RetrieveContext.__name__, RetrieveContext, _handle_retrieve_context,
                            enabled_when=lambda s: s.rag_enabled)

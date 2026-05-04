@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from rich import print # pylint: disable=redefined-builtin
 from devteam import settings
 from devteam.tools.rag import init_retrieve_context_tool
-from devteam.utils import setup_logging, get_valid_providers
+from devteam.utils import setup_logging, get_valid_providers, load_project_spec
 from .request import ResumeRequest, StartRequest
 from .runtime import async_main, show_history
 
@@ -88,12 +88,14 @@ def _build_request(args: argparse.Namespace):
             feedback_source=args.as_node,
             checkpoint_id=args.checkpoint,
         )
+    project_name, requirements = load_project_spec(args.project_file)
     return StartRequest(
         provider=args.provider,
         rpm=args.rpm,
         workflow=args.workflow,
         fanout=args.fanout,
-        project_file_path=args.project_file,
+        project_name=project_name,
+        requirements=requirements,
         seed_path=args.seed,
     )
 
