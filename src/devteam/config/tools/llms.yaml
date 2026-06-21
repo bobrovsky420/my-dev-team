@@ -43,7 +43,7 @@ providers:
               complexity_fit: {low: 1.0, medium: 0.4, high: 0.2}
     anthropic:
         models:
-            - id: 'claude-opus-4-6'
+            - id: 'claude-opus-4-8'
               capabilities:
                   reasoning: 1.0
                   planning: 0.9
@@ -67,12 +67,12 @@ providers:
               complexity_fit: {low: 1.0, medium: 0.6, high: 0.3}
     openai:
         models:
-            - id: 'o3'
+            - id: 'gpt-5.5'
               capabilities:
                   reasoning: 1.0
                   planning: 0.9
               complexity_fit: {low: 0.4, medium: 0.9, high: 1.0}
-            - id: 'codex-mini-latest'
+            - id: 'gpt-5.1-codex-mini'
               capabilities:
                   code-generation: 1.0
                   code-analysis: 1.0
@@ -96,21 +96,21 @@ providers:
               complexity_fit: {low: 1.0, medium: 0.6, high: 0.3}
     grok:
         models:
-            - id: 'grok-3'
+            - id: 'grok-4.3'
               capabilities:
                   reasoning: 1.0
                   planning: 0.9
                   code-generation: 0.9
                   code-analysis: 0.9
               complexity_fit: {low: 0.4, medium: 0.9, high: 1.0}
-            - id: 'grok-3-fast'
+            - id: 'grok-4.1-fast'
               capabilities:
                   planning: 1.0
                   code-generation: 1.0
                   code-analysis: 1.0
                   reasoning: 0.8
               complexity_fit: {low: 0.7, medium: 1.0, high: 0.8}
-            - id: 'grok-3-mini-fast'
+            - id: 'grok-code-fast-1'
               capabilities:
                   fast-utility: 1.0
                   planning: 0.5
@@ -127,7 +127,7 @@ providers:
 #                  code-generation: 0.9
 #                  code-analysis: 0.9
 #              complexity_fit: {low: 0.4, medium: 0.9, high: 1.0}
-            - id: 'gemini-3.1-flash-lite-preview'
+            - id: 'gemini-3.1-flash-lite'
               capabilities:
                   fast-utility: 1.0
                   planning: 0.5
@@ -137,7 +137,7 @@ providers:
               complexity_fit: {low: 1.0, medium: 0.6, high: 0.3}
     mistral:
         models:
-            - id: 'mistral-large-latest'
+            - id: 'mistral-medium-latest'
               capabilities:
                   reasoning: 0.9
                   planning: 1.0
@@ -161,7 +161,7 @@ providers:
               complexity_fit: {low: 1.0, medium: 0.6, high: 0.3}
     azure-anthropic:
         models:
-            - id: 'claude-opus-4-6'
+            - id: 'claude-opus-4-8'
               capabilities:
                   reasoning: 1.0
                   planning: 0.9
@@ -185,7 +185,7 @@ providers:
               complexity_fit: {low: 1.0, medium: 0.6, high: 0.3}
     azure-openai:
         models:
-            - id: 'gpt-5.3-codex'
+            - id: 'gpt-5.5'
               capabilities:
                   code-generation: 1.0
                   code-analysis: 1.0
@@ -202,12 +202,12 @@ providers:
               complexity_fit: {low: 1.0, medium: 0.6, high: 0.3}
     deepseek:
         models:
-            - id: 'deepseek-reasoner'
+            - id: 'deepseek-v4-pro'
               capabilities:
                   reasoning: 1.0
                   planning: 0.8
               complexity_fit: {low: 0.4, medium: 0.9, high: 1.0}
-            - id: 'deepseek-chat'
+            - id: 'deepseek-v4-flash'
               capabilities:
                   planning: 1.0
                   code-generation: 1.0

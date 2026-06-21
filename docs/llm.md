@@ -54,7 +54,7 @@ Pass `--no-complexity-routing` on the CLI (or set `no_complexity_routing: true` 
 Each model in `llms.yaml` may declare a `complexity_fit` block:
 
 ```yaml
-- id: 'claude-opus-4-6'
+- id: 'claude-opus-4-8'
   capabilities:
       reasoning: 1.0
       planning: 0.9
@@ -106,7 +106,7 @@ When complexity routing kicks in, `BaseAgent.process()` logs `Routing on complex
 
 | Model | Best for | Verified |
 |---|---|---|
-| `claude-opus-4-6` | reasoning, planning, code | |
+| `claude-opus-4-8` | reasoning, planning, code | |
 | `claude-sonnet-4-6` | planning, code generation, code analysis | |
 | `claude-haiku-4-5-20251001` | fast utility tasks | |
 
@@ -126,7 +126,7 @@ Claude models deployed via Azure AI Foundry expose an OpenAI-compatible REST API
 
 | Model | Best for | Verified |
 |---|---|---|
-| `claude-opus-4-6` | reasoning, planning, code | |
+| `claude-opus-4-8` | reasoning, planning, code | |
 | `claude-sonnet-4-6` | planning, code generation, code analysis | |
 | `claude-haiku-4-5-20251001` | fast utility tasks | |
 
@@ -146,7 +146,7 @@ By default the deployment name is assumed to match the model `id` in `llms.yaml`
 
 | Model | Best for | Verified |
 |---|---|---|
-| `gpt-5.3-codex` | code generation, code analysis | |
+| `gpt-5.5` | code generation, code analysis | |
 | `gpt-5.4-mini` | fast utility tasks | |
 
 ---
@@ -158,8 +158,8 @@ By default the deployment name is assumed to match the model `id` in `llms.yaml`
 
 | Model | Best for | Verified |
 |---|---|---|
-| `o3` | reasoning, planning | |
-| `codex-mini-latest` | code generation, code analysis | |
+| `gpt-5.5` | reasoning, planning | |
+| `gpt-5.1-codex-mini` | code generation, code analysis | |
 | `gpt-4.1` | planning, code generation | |
 | `gpt-4.1-mini` | fast utility tasks | |
 
@@ -203,7 +203,7 @@ LangChain reports this provider as `google_genai`. The alias `'google_genai/*': 
 
 | Model | Best for | Verified |
 |---|---|---|
-| `gemini-3.1-flash-lite-preview` | fast utility tasks | 2026-04-12 |
+| `gemini-3.1-flash-lite` | fast utility tasks | |
 | `gemini-3.1-pro-preview` | reasoning, planning, code | |
 
 Note: `gemini-3.1-pro-preview` is commented out in `llms.yaml` by default. Uncomment to enable it.
@@ -217,7 +217,7 @@ Note: `gemini-3.1-pro-preview` is commented out in `llms.yaml` by default. Uncom
 
 | Model | Best for | Verified |
 |---|---|---|
-| `mistral-large-latest` | planning, code generation, code analysis | |
+| `mistral-medium-latest` | planning, code generation, code analysis | |
 | `codestral-latest` | code generation, code analysis | |
 | `mistral-small-latest` | fast utility tasks | |
 
@@ -230,8 +230,8 @@ Note: `gemini-3.1-pro-preview` is commented out in `llms.yaml` by default. Uncom
 
 | Model | Best for | Verified |
 |---|---|---|
-| `deepseek-reasoner` | reasoning, planning | |
-| `deepseek-chat` | planning, code generation, code analysis | |
+| `deepseek-v4-pro` | reasoning, planning | |
+| `deepseek-v4-flash` | planning, code generation, code analysis | |
 
 ---
 
@@ -242,9 +242,9 @@ Note: `gemini-3.1-pro-preview` is commented out in `llms.yaml` by default. Uncom
 
 | Model | Best for | Verified |
 |---|---|---|
-| `grok-3` | reasoning, planning, code | |
-| `grok-3-fast` | planning, code generation, code analysis | |
-| `grok-3-mini-fast` | fast utility tasks | |
+| `grok-4.3` | reasoning, planning, code | |
+| `grok-4.1-fast` | planning, code generation, code analysis | |
+| `grok-code-fast-1` | fast utility tasks | |
 
 ---
 
