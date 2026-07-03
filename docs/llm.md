@@ -2,6 +2,15 @@
 
 This page lists all providers and models configured in `config/tools/llms.yaml`.
 
+`llms.yaml` is a **generated file**: the source of truth is the shared model
+registry `models.yaml` in the sibling `my-dev-team-config` repository, which
+also generates the model catalogue of `my-dev-team-vs-code`. To add or change
+a model, edit the registry there and run `python scripts/sync_models.py` - see
+that repo's README for the schema. Never edit `llms.yaml` by hand. A committed
+pre-commit hook (`.githooks/pre-commit`, activate once with
+`git config core.hooksPath .githooks`) blocks commits while the generated file
+is stale; it skips silently on machines without the config checkout.
+
 The **Verified** column is updated manually when integration tests pass for that model. A blank cell means the model has not yet been tested end-to-end.
 
 ---
@@ -56,10 +65,10 @@ Each model in `llms.yaml` may declare a `complexity_fit` block:
 ```yaml
 - id: 'claude-opus-4-8'
   capabilities:
-      reasoning: 1.0
-      planning: 0.9
-      code-generation: 0.9
-      code-analysis: 0.9
+      reasoning: 0.98
+      code-generation: 0.97
+      code-analysis: 0.97
+      planning: 0.97
   complexity_fit: {low: 0.3, medium: 0.8, high: 1.0}
 ```
 
@@ -146,7 +155,7 @@ By default the deployment name is assumed to match the model `id` in `llms.yaml`
 
 | Model | Best for | Verified |
 |---|---|---|
-| `gpt-5.5` | code generation, code analysis | |
+| `gpt-5.5` | reasoning, planning, code | |
 | `gpt-5.4-mini` | fast utility tasks | |
 
 ---
@@ -188,9 +197,13 @@ Models with `thinking: true` in `llms.yaml` have the reasoning stream enabled (r
 
 | Model | Thinking | Best for | Verified |
 |---|---|---|---|
-| `qwen3:8b` | yes | reasoning | 2026-03-28 |
-| `qwen2.5-coder:7b` | no | planning, code generation, code analysis | 2026-03-28 |
+| `qwen3:8b` | yes | classification, structured output, fast utility tasks | 2026-03-28 |
+| `qwen3:14b` | yes | reasoning, planning | |
+| `qwen3-coder:30b` | no | code generation, code analysis, long context | |
 | `gemma3:4b` | no | fast utility tasks | 2026-03-28 |
+
+Note: `qwen2.5-coder:7b` was retired from the registry in favour of
+`qwen3-coder:30b` when the model lists of the two apps were reconciled.
 
 ---
 
@@ -203,10 +216,9 @@ LangChain reports this provider as `google_genai`. The alias `'google_genai/*': 
 
 | Model | Best for | Verified |
 |---|---|---|
+| `gemini-3.1-pro-preview` | reasoning, planning, code, long context | |
+| `gemini-3.5-flash` | balanced all-round work, long context | |
 | `gemini-3.1-flash-lite` | fast utility tasks | |
-| `gemini-3.1-pro-preview` | reasoning, planning, code | |
-
-Note: `gemini-3.1-pro-preview` is commented out in `llms.yaml` by default. Uncomment to enable it.
 
 ---
 
@@ -256,15 +268,15 @@ The `free` provider is a compound provider - each model entry carries a `provide
 
 | Model | Backend | Best for |
 |---|---|---|
-| `qwen/qwen3-32b` | groq | reasoning |
-| `openai/gpt-oss-120b` | groq | planning, code generation, code analysis |
+| `qwen/qwen3-32b` | groq | balanced all-round work |
+| `openai/gpt-oss-120b` | groq | reasoning, planning, code |
 | `llama-3.1-8b-instant` | groq | fast utility tasks |
-| `qwen2.5-coder:7b` | ollama | code generation, code analysis |
+| `qwen3-coder:30b` | ollama | code generation, code analysis |
 
 ---
 
 ## Adding models
 
-To add a model, append an entry under the relevant provider in `config/tools/llms.yaml` with its `capabilities` scores and, optionally, a `complexity_fit` block (see [Complexity-aware routing](#complexity-aware-routing)). Then add a row to the table above with an empty Verified cell. Mark Verified once integration tests confirm the model works end-to-end with the full agent workflow.
+`llms.yaml` is generated - do not edit it by hand. To add a model, add an entry to `models.yaml` in the `my-dev-team-config` repository (unified capability scores plus a `complexity_fit` block, see that repo's README) and run `python scripts/sync_models.py` there. Then add a row to the table above with an empty Verified cell. Mark Verified once integration tests confirm the model works end-to-end with the full agent workflow.
 
-To add an entirely new provider, add a `case` block in `LLMFactory._instantiate()` in `src/devteam/utils/llm_factory.py` and a new section on this page.
+To add an entirely new provider, add a `case` block in `LLMFactory._instantiate()` in `src/devteam/utils/llm_factory.py`, add the provider to `DEVTEAM_PROVIDERS` in the sync script, and add a new section on this page.

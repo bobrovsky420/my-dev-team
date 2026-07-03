@@ -1,249 +1,441 @@
+# GENERATED FILE - do not edit by hand.
+# Source of truth: my-dev-team-config/models.yaml (the shared model registry).
+# Regenerate with: python scripts/sync_models.py (run in my-dev-team-config).
 providers:
     groq:
         models:
-            - id: 'qwen/qwen3-32b'
-              capabilities:
-                  reasoning: 1.0
-                  planning: 0.5
-              complexity_fit: {low: 0.4, medium: 0.9, high: 1.0}
             - id: 'openai/gpt-oss-120b'
+              context_window: 131072
               capabilities:
-                  planning: 1.0
-                  code-generation: 1.0
-                  code-analysis: 1.0
-                  reasoning: 0.7
-              complexity_fit: {low: 0.7, medium: 1.0, high: 0.9}
+                  reasoning: 0.86
+                  code-generation: 0.83
+                  code-analysis: 0.83
+                  classification: 0.86
+                  planning: 0.84
+                  fast-utility: 0.92
+                  structured-output: 0.86
+                  long-context: 0.75
+              complexity_fit: {low: 0.6, medium: 0.9, high: 1.0}
+            - id: 'qwen/qwen3-32b'
+              context_window: 131072
+              capabilities:
+                  reasoning: 0.82
+                  code-generation: 0.8
+                  code-analysis: 0.8
+                  classification: 0.82
+                  planning: 0.8
+                  fast-utility: 0.93
+                  structured-output: 0.8
+                  long-context: 0.75
+              complexity_fit: {low: 0.5, medium: 1.0, high: 0.8}
             - id: 'llama-3.1-8b-instant'
+              context_window: 131072
               capabilities:
-                  fast-utility: 1.0
-                  reasoning: 0.3
-                  code-generation: 0.3
+                  reasoning: 0.45
+                  code-generation: 0.45
+                  code-analysis: 0.45
+                  classification: 0.75
+                  planning: 0.4
+                  fast-utility: 0.98
+                  structured-output: 0.65
+                  long-context: 0.6
               complexity_fit: {low: 1.0, medium: 0.5, high: 0.2}
     ollama:
         models:
             - id: 'qwen3:8b'
               thinking: true
+              context_window: 40960
               capabilities:
-                  reasoning: 1.0
-                  planning: 1.0
-              complexity_fit: {low: 0.5, medium: 0.9, high: 1.0}
-            - id: 'qwen2.5-coder:7b'
+                  reasoning: 0.6
+                  code-generation: 0.5
+                  code-analysis: 0.5
+                  classification: 0.8
+                  planning: 0.6
+                  fast-utility: 0.8
+                  structured-output: 0.8
+                  long-context: 0.35
+              complexity_fit: {low: 1.0, medium: 0.7, high: 0.4}
+            - id: 'qwen3:14b'
+              thinking: true
+              context_window: 40960
+              capabilities:
+                  reasoning: 0.75
+                  code-generation: 0.6
+                  code-analysis: 0.6
+                  classification: 0.85
+                  planning: 0.8
+                  fast-utility: 0.6
+                  structured-output: 0.8
+                  long-context: 0.35
+              complexity_fit: {low: 0.6, medium: 1.0, high: 0.7}
+            - id: 'qwen3-coder:30b'
               thinking: false
+              context_window: 262144
               capabilities:
-                  planning: 0.5
-                  code-generation: 1.0
-                  code-analysis: 1.0
-                  reasoning: 0.5
-              complexity_fit: {low: 0.9, medium: 0.8, high: 0.5}
+                  reasoning: 0.7
+                  code-generation: 0.9
+                  code-analysis: 0.9
+                  classification: 0.6
+                  planning: 0.7
+                  fast-utility: 0.5
+                  structured-output: 0.7
+                  long-context: 0.9
+              complexity_fit: {low: 0.5, medium: 0.8, high: 1.0}
             - id: 'gemma3:4b'
               thinking: false
+              context_window: 128000
               capabilities:
-                  fast-utility: 1.0
                   reasoning: 0.3
+                  code-generation: 0.3
+                  code-analysis: 0.3
+                  classification: 0.6
+                  planning: 0.3
+                  fast-utility: 1
+                  structured-output: 0.5
+                  long-context: 0.75
               complexity_fit: {low: 1.0, medium: 0.4, high: 0.2}
     anthropic:
         models:
             - id: 'claude-opus-4-8'
+              context_window: 200000
               capabilities:
-                  reasoning: 1.0
-                  planning: 0.9
-                  code-generation: 0.9
-                  code-analysis: 0.9
+                  reasoning: 0.98
+                  code-generation: 0.97
+                  code-analysis: 0.97
+                  classification: 0.9
+                  planning: 0.97
+                  fast-utility: 0.4
+                  structured-output: 0.95
+                  long-context: 0.85
               complexity_fit: {low: 0.3, medium: 0.8, high: 1.0}
             - id: 'claude-sonnet-4-6'
+              context_window: 200000
               capabilities:
-                  planning: 1.0
-                  code-generation: 1.0
-                  code-analysis: 1.0
-                  reasoning: 0.8
+                  reasoning: 0.9
+                  code-generation: 0.92
+                  code-analysis: 0.92
+                  classification: 0.9
+                  planning: 0.9
+                  fast-utility: 0.7
+                  structured-output: 0.92
+                  long-context: 0.85
               complexity_fit: {low: 0.7, medium: 1.0, high: 0.8}
             - id: 'claude-haiku-4-5-20251001'
+              context_window: 200000
               capabilities:
-                  fast-utility: 1.0
-                  planning: 0.5
-                  code-generation: 0.5
-                  code-analysis: 0.5
-                  reasoning: 0.4
+                  reasoning: 0.72
+                  code-generation: 0.72
+                  code-analysis: 0.72
+                  classification: 0.85
+                  planning: 0.7
+                  fast-utility: 0.9
+                  structured-output: 0.85
+                  long-context: 0.85
               complexity_fit: {low: 1.0, medium: 0.6, high: 0.3}
     openai:
         models:
             - id: 'gpt-5.5'
               capabilities:
-                  reasoning: 1.0
-                  planning: 0.9
+                  reasoning: 0.98
+                  code-generation: 0.95
+                  code-analysis: 0.95
+                  classification: 0.9
+                  planning: 0.96
+                  fast-utility: 0.4
+                  structured-output: 0.95
+                  long-context: 0.85
               complexity_fit: {low: 0.4, medium: 0.9, high: 1.0}
             - id: 'gpt-5.1-codex-mini'
               capabilities:
-                  code-generation: 1.0
-                  code-analysis: 1.0
-                  reasoning: 0.9
-                  planning: 0.8
+                  reasoning: 0.85
+                  code-generation: 0.92
+                  code-analysis: 0.9
+                  classification: 0.8
+                  planning: 0.82
+                  fast-utility: 0.75
+                  structured-output: 0.9
+                  long-context: 0.85
               complexity_fit: {low: 0.7, medium: 1.0, high: 0.9}
             - id: 'gpt-4.1'
+              context_window: 1047576
               capabilities:
-                  planning: 1.0
+                  reasoning: 0.9
                   code-generation: 0.9
                   code-analysis: 0.9
-                  reasoning: 0.8
+                  classification: 0.88
+                  planning: 0.88
+                  fast-utility: 0.75
+                  structured-output: 0.92
+                  long-context: 1.0
               complexity_fit: {low: 0.7, medium: 1.0, high: 0.8}
             - id: 'gpt-4.1-mini'
+              context_window: 1047576
               capabilities:
-                  fast-utility: 1.0
-                  planning: 0.5
-                  code-generation: 0.5
-                  code-analysis: 0.5
-                  reasoning: 0.4
+                  reasoning: 0.7
+                  code-generation: 0.7
+                  code-analysis: 0.7
+                  classification: 0.82
+                  planning: 0.68
+                  fast-utility: 0.88
+                  structured-output: 0.85
+                  long-context: 0.95
               complexity_fit: {low: 1.0, medium: 0.6, high: 0.3}
     grok:
         models:
             - id: 'grok-4.3'
               capabilities:
-                  reasoning: 1.0
-                  planning: 0.9
-                  code-generation: 0.9
-                  code-analysis: 0.9
+                  reasoning: 0.97
+                  code-generation: 0.94
+                  code-analysis: 0.94
+                  classification: 0.9
+                  planning: 0.95
+                  fast-utility: 0.45
+                  structured-output: 0.92
+                  long-context: 0.85
               complexity_fit: {low: 0.4, medium: 0.9, high: 1.0}
             - id: 'grok-4.1-fast'
+              context_window: 2000000
               capabilities:
-                  planning: 1.0
-                  code-generation: 1.0
-                  code-analysis: 1.0
-                  reasoning: 0.8
+                  reasoning: 0.88
+                  code-generation: 0.9
+                  code-analysis: 0.9
+                  classification: 0.87
+                  planning: 0.87
+                  fast-utility: 0.85
+                  structured-output: 0.88
+                  long-context: 0.95
               complexity_fit: {low: 0.7, medium: 1.0, high: 0.8}
             - id: 'grok-code-fast-1'
+              context_window: 256000
               capabilities:
-                  fast-utility: 1.0
-                  planning: 0.5
-                  code-generation: 0.5
-                  code-analysis: 0.5
-                  reasoning: 0.4
+                  reasoning: 0.7
+                  code-generation: 0.8
+                  code-analysis: 0.78
+                  classification: 0.75
+                  planning: 0.68
+                  fast-utility: 0.92
+                  structured-output: 0.8
+                  long-context: 0.75
               complexity_fit: {low: 1.0, medium: 0.6, high: 0.3}
     google:
         models:
-#            - id: 'gemini-3.1-pro-preview'
-#              capabilities:
-#                  reasoning: 1.0
-#                  planning: 0.9
-#                  code-generation: 0.9
-#                  code-analysis: 0.9
-#              complexity_fit: {low: 0.4, medium: 0.9, high: 1.0}
-            - id: 'gemini-3.1-flash-lite'
+            - id: 'gemini-3.1-pro-preview'
+              context_window: 1048576
               capabilities:
-                  fast-utility: 1.0
-                  planning: 0.5
-                  code-generation: 0.5
-                  code-analysis: 0.5
-                  reasoning: 0.3
+                  reasoning: 0.96
+                  code-generation: 0.93
+                  code-analysis: 0.93
+                  classification: 0.9
+                  planning: 0.94
+                  fast-utility: 0.45
+                  structured-output: 0.93
+                  long-context: 0.97
+              complexity_fit: {low: 0.4, medium: 0.9, high: 1.0}
+            - id: 'gemini-3.5-flash'
+              context_window: 1048576
+              capabilities:
+                  reasoning: 0.85
+                  code-generation: 0.85
+                  code-analysis: 0.85
+                  classification: 0.88
+                  planning: 0.83
+                  fast-utility: 0.85
+                  structured-output: 0.88
+                  long-context: 0.95
+              complexity_fit: {low: 0.7, medium: 1.0, high: 0.8}
+            - id: 'gemini-3.1-flash-lite'
+              context_window: 1048576
+              capabilities:
+                  reasoning: 0.6
+                  code-generation: 0.6
+                  code-analysis: 0.6
+                  classification: 0.82
+                  planning: 0.6
+                  fast-utility: 0.95
+                  structured-output: 0.82
+                  long-context: 0.9
               complexity_fit: {low: 1.0, medium: 0.6, high: 0.3}
     mistral:
         models:
             - id: 'mistral-medium-latest'
+              context_window: 128000
               capabilities:
-                  reasoning: 0.9
-                  planning: 1.0
-                  code-generation: 1.0
-                  code-analysis: 1.0
+                  reasoning: 0.88
+                  code-generation: 0.9
+                  code-analysis: 0.9
+                  classification: 0.86
+                  planning: 0.88
+                  fast-utility: 0.7
+                  structured-output: 0.88
+                  long-context: 0.75
               complexity_fit: {low: 0.5, medium: 1.0, high: 0.9}
             - id: 'codestral-latest'
+              context_window: 256000
               capabilities:
-                  code-generation: 1.0
-                  code-analysis: 1.0
-                  reasoning: 0.6
-                  planning: 0.5
+                  reasoning: 0.72
+                  code-generation: 0.9
+                  code-analysis: 0.88
+                  classification: 0.7
+                  planning: 0.65
+                  fast-utility: 0.85
+                  structured-output: 0.8
+                  long-context: 0.8
               complexity_fit: {low: 0.8, medium: 1.0, high: 0.7}
             - id: 'mistral-small-latest'
+              context_window: 128000
               capabilities:
-                  fast-utility: 1.0
-                  planning: 0.5
-                  code-generation: 0.5
-                  code-analysis: 0.5
-                  reasoning: 0.4
+                  reasoning: 0.65
+                  code-generation: 0.65
+                  code-analysis: 0.65
+                  classification: 0.8
+                  planning: 0.62
+                  fast-utility: 0.9
+                  structured-output: 0.8
+                  long-context: 0.75
               complexity_fit: {low: 1.0, medium: 0.6, high: 0.3}
     azure-anthropic:
         models:
             - id: 'claude-opus-4-8'
+              context_window: 200000
               capabilities:
-                  reasoning: 1.0
-                  planning: 0.9
-                  code-generation: 0.9
-                  code-analysis: 0.9
+                  reasoning: 0.98
+                  code-generation: 0.97
+                  code-analysis: 0.97
+                  classification: 0.9
+                  planning: 0.97
+                  fast-utility: 0.4
+                  structured-output: 0.95
+                  long-context: 0.85
               complexity_fit: {low: 0.3, medium: 0.8, high: 1.0}
             - id: 'claude-sonnet-4-6'
+              context_window: 200000
               capabilities:
-                  planning: 1.0
-                  code-generation: 1.0
-                  code-analysis: 1.0
-                  reasoning: 0.8
+                  reasoning: 0.9
+                  code-generation: 0.92
+                  code-analysis: 0.92
+                  classification: 0.9
+                  planning: 0.9
+                  fast-utility: 0.7
+                  structured-output: 0.92
+                  long-context: 0.85
               complexity_fit: {low: 0.7, medium: 1.0, high: 0.8}
             - id: 'claude-haiku-4-5-20251001'
+              context_window: 200000
               capabilities:
-                  fast-utility: 1.0
-                  planning: 0.5
-                  code-generation: 0.5
-                  code-analysis: 0.5
-                  reasoning: 0.4
+                  reasoning: 0.72
+                  code-generation: 0.72
+                  code-analysis: 0.72
+                  classification: 0.85
+                  planning: 0.7
+                  fast-utility: 0.9
+                  structured-output: 0.85
+                  long-context: 0.85
               complexity_fit: {low: 1.0, medium: 0.6, high: 0.3}
     azure-openai:
         models:
             - id: 'gpt-5.5'
               capabilities:
-                  code-generation: 1.0
-                  code-analysis: 1.0
-                  reasoning: 0.9
-                  planning: 0.8
-              complexity_fit: {low: 0.7, medium: 1.0, high: 0.9}
+                  reasoning: 0.98
+                  code-generation: 0.95
+                  code-analysis: 0.95
+                  classification: 0.9
+                  planning: 0.96
+                  fast-utility: 0.4
+                  structured-output: 0.95
+                  long-context: 0.85
+              complexity_fit: {low: 0.4, medium: 0.9, high: 1.0}
             - id: 'gpt-5.4-mini'
               capabilities:
-                  fast-utility: 1.0
-                  planning: 0.5
-                  code-generation: 0.5
-                  code-analysis: 0.5
-                  reasoning: 0.4
+                  reasoning: 0.75
+                  code-generation: 0.75
+                  code-analysis: 0.75
+                  classification: 0.84
+                  planning: 0.72
+                  fast-utility: 0.9
+                  structured-output: 0.86
+                  long-context: 0.85
               complexity_fit: {low: 1.0, medium: 0.6, high: 0.3}
     deepseek:
         models:
             - id: 'deepseek-v4-pro'
+              context_window: 1048576
               capabilities:
-                  reasoning: 1.0
-                  planning: 0.8
-              complexity_fit: {low: 0.4, medium: 0.9, high: 1.0}
+                  reasoning: 0.95
+                  code-generation: 0.92
+                  code-analysis: 0.92
+                  classification: 0.9
+                  planning: 0.94
+                  fast-utility: 0.45
+                  structured-output: 0.88
+                  long-context: 0.9
+              complexity_fit: {low: 0.6, medium: 1.0, high: 0.9}
             - id: 'deepseek-v4-flash'
+              context_window: 1048576
               capabilities:
-                  planning: 1.0
-                  code-generation: 1.0
-                  code-analysis: 1.0
-                  reasoning: 0.8
-              complexity_fit: {low: 0.7, medium: 1.0, high: 0.85}
+                  reasoning: 0.88
+                  code-generation: 0.9
+                  code-analysis: 0.9
+                  classification: 0.88
+                  planning: 0.87
+                  fast-utility: 0.78
+                  structured-output: 0.88
+                  long-context: 0.9
+              complexity_fit: {low: 1.0, medium: 0.8, high: 0.6}
     free:  # compound: groq free tier + ollama local models
         models:
             - id: 'qwen/qwen3-32b'
               provider: groq
+              context_window: 131072
               capabilities:
-                  reasoning: 1.0
-                  planning: 0.5
-              complexity_fit: {low: 0.4, medium: 0.9, high: 1.0}
+                  reasoning: 0.82
+                  code-generation: 0.8
+                  code-analysis: 0.8
+                  classification: 0.82
+                  planning: 0.8
+                  fast-utility: 0.93
+                  structured-output: 0.8
+                  long-context: 0.75
+              complexity_fit: {low: 0.5, medium: 1.0, high: 0.8}
             - id: 'openai/gpt-oss-120b'
               provider: groq
+              context_window: 131072
               capabilities:
-                  planning: 1.0
-                  code-generation: 1.0
-                  code-analysis: 1.0
-                  reasoning: 0.7
-              complexity_fit: {low: 0.7, medium: 1.0, high: 0.9}
+                  reasoning: 0.86
+                  code-generation: 0.83
+                  code-analysis: 0.83
+                  classification: 0.86
+                  planning: 0.84
+                  fast-utility: 0.92
+                  structured-output: 0.86
+                  long-context: 0.75
+              complexity_fit: {low: 0.6, medium: 0.9, high: 1.0}
             - id: 'llama-3.1-8b-instant'
               provider: groq
+              context_window: 131072
               capabilities:
-                  fast-utility: 1.0
-                  reasoning: 0.3
+                  reasoning: 0.45
+                  code-generation: 0.45
+                  code-analysis: 0.45
+                  classification: 0.75
+                  planning: 0.4
+                  fast-utility: 0.98
+                  structured-output: 0.65
+                  long-context: 0.6
               complexity_fit: {low: 1.0, medium: 0.5, high: 0.2}
-            - id: 'qwen2.5-coder:7b'
+            - id: 'qwen3-coder:30b'
               provider: ollama
               thinking: false
+              context_window: 262144
               capabilities:
-                  code-generation: 1.0
-                  code-analysis: 1.0
-                  reasoning: 0.5
-              complexity_fit: {low: 0.9, medium: 0.8, high: 0.5}
+                  reasoning: 0.7
+                  code-generation: 0.9
+                  code-analysis: 0.9
+                  classification: 0.6
+                  planning: 0.7
+                  fast-utility: 0.5
+                  structured-output: 0.7
+                  long-context: 0.9
+              complexity_fit: {low: 0.5, medium: 0.8, high: 1.0}
 
 aliases:
     'google_genai/*': 'gemini/*'
