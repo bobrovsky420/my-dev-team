@@ -11,11 +11,59 @@ LOG_BACKUP_COUNT = 3
 NOISY_LOGGERS = [
     'aiosqlite',
     'asyncio',
+    'flask',
     'httpx',
     'httpcore',
     'LiteLLM',
     'urllib3.connectionpool',
+    'werkzeug',
 ]
+
+_MESSAGE_ICONS = (
+    ("Starting new project",  "🚀"),
+    ("Resuming existing",     "🔄"),
+    ("Starting AI Dev Team",  "🚀"),
+    ("Workspace:",            "📁"),
+    ("Executing",             "🔄"),
+    ("Routing on complexity", "🔀"),
+    ("Rate limit reached",    "⏳"),
+    ("Starting task:",        "📋"),
+    ("LLM call failed",       "🔁"),
+    ("failed",                "❌"),
+    ("not found",             "🔔"),
+    ("Import error",          "🚨"),
+)
+
+_LEVEL_ICONS = {
+    logging.WARNING:  "🔔",
+    logging.ERROR:    "❌",
+    logging.CRITICAL: "🚨",
+}
+
+
+def _wildcard_match(pattern: str, text: str) -> bool:
+    pattern, text = pattern.lower(), text.lower()
+    parts = pattern.split('*')
+    if len(parts) == 1:
+        return pattern in text
+    pos = 0
+    for part in parts:
+        if not part:
+            continue
+        found = text.find(part, pos)
+        if found == -1:
+            return False
+        pos = found + len(part)
+    return True
+
+
+def _icon_for(record: logging.LogRecord) -> str:
+    msg = record.getMessage()
+    for pattern, icon in _MESSAGE_ICONS:
+        if _wildcard_match(pattern, msg):
+            return icon
+    return _LEVEL_ICONS.get(record.levelno, "")
+
 
 class ConsoleDispatchFormatter(logging.Formatter):
     """Custom formatter for console output."""
@@ -28,7 +76,10 @@ class ConsoleDispatchFormatter(logging.Formatter):
     def format(self, record):
         if record.name == 'root':
             return self.root_formatter.format(record)
-        return self.default_formatter.format(record)
+        icon = _icon_for(record)
+        formatted = self.default_formatter.format(record)
+        return f"{icon} {formatted}" if icon else formatted
+
 
 def setup_file_handler(file_name: str | Path, file_level = logging.DEBUG, do_rollover = False) -> logging.Handler:
     file_handler = RotatingFileHandler(
@@ -47,6 +98,7 @@ def setup_file_handler(file_name: str | Path, file_level = logging.DEBUG, do_rol
     file_handler.setFormatter(file_formatter)
     return file_handler
 
+
 def setup_logging(*, file_level=logging.DEBUG, console_level=logging.INFO):
     file_handler = setup_file_handler(file_name=LOG_FILE_NAME, file_level=file_level, do_rollover=True)
     handlers = [file_handler]
@@ -60,10 +112,12 @@ def setup_logging(*, file_level=logging.DEBUG, console_level=logging.INFO):
     for noisy_logger in NOISY_LOGGERS:
         logging.getLogger(noisy_logger).setLevel(logging.WARNING)
 
+
 def add_file_handler(file_name: str | Path, file_level = logging.DEBUG, do_rollover = False) -> logging.Handler:
     file_handler = setup_file_handler(file_name=file_name, file_level=file_level, do_rollover=do_rollover)
     logging.getLogger().addHandler(file_handler)
     return file_handler
+
 
 def remove_file_handler(handler: logging.Handler):
     logging.getLogger().removeHandler(handler)

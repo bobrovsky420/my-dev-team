@@ -1,6 +1,11 @@
+import argparse
 from pathlib import Path
 import pytest
-from devteam.cli.runtime import my_extensions
+from pydantic import ValidationError
+from devteam.cli.extensions import build_extensions
+from devteam.cli.main import _build_request
+from devteam.cli.request import ResumeRequest, StartRequest
+from devteam.cli.runtime import resolve_thread_id
 from devteam.utils import project_spec
 
 def test_parse_spec_from_string_extracts_subject_name():
@@ -35,11 +40,18 @@ def test_generate_thread_id_slugifies_name_and_adds_timestamp(monkeypatch):
     thread_id = project_spec.generate_thread_id("My Cool! Project")
     assert thread_id == "my_cool_project_20260317_123456"
 
-def test_my_extensions_returns_expected_extensions(tmp_path: Path):
-    extensions = my_extensions()
-    assert len(extensions) == 2
-    assert extensions[0].__class__.__name__ == "ConsoleLogger"
-    assert extensions[1].__class__.__name__ == "HumanInTheLoop"
+def test_build_extensions_includes_hitl_by_default():
+    extensions = build_extensions()
+    names = [e.__class__.__name__ for e in extensions]
+    assert "HumanInTheLoop" in names
+    assert "ConsoleLogger" not in names
+
+def test_build_extensions_includes_console_logger_when_enabled(monkeypatch):
+    from devteam import settings
+    monkeypatch.setattr(settings, "console", True)
+    names = [e.__class__.__name__ for e in build_extensions()]
+    assert "ConsoleLogger" in names
+    assert "HumanInTheLoop" in names
 
 @pytest.mark.parametrize(
     "source, expected",
@@ -58,3 +70,54 @@ def test_generate_thread_id_normalization_variants(monkeypatch, source, expected
             return FakeNow()
     monkeypatch.setattr(project_spec, "datetime", FakeDatetime)
     assert project_spec.generate_thread_id(source) == expected
+
+def _args(**overrides) -> argparse.Namespace:
+    base = dict(
+        project_file=None, resume=None, provider='ollama', rpm=0,
+        workflow='development', fanout=False, feedback=None,
+        as_node='reviewer', checkpoint=None, seed=None,
+    )
+    base.update(overrides)
+    return argparse.Namespace(**base)
+
+def test_build_request_returns_start_for_fresh_run(tmp_path: Path):
+    spec_file = tmp_path / "project.txt"
+    spec_file.write_text("Subject: NEW PROJECT: My App\n\nBuild it.", encoding="utf-8")
+    req = _build_request(_args(project_file=str(spec_file), seed='/seed'))
+    assert isinstance(req, StartRequest)
+    assert req.project_name == 'My App'
+    assert req.requirements == 'Build it.'
+    assert req.seed_path == '/seed'
+    assert req.provider == 'ollama'
+    assert req.workflow == 'development'
+
+def test_build_request_routes_resume_fields_to_resume_request():
+    req = _build_request(_args(
+        resume='thread_42', feedback='try again', as_node='qa', checkpoint='ckpt_1', rpm=60,
+    ))
+    assert isinstance(req, ResumeRequest)
+    assert req.resume_thread == 'thread_42'
+    assert req.feedback == 'try again'
+    assert req.feedback_source == 'qa'
+    assert req.checkpoint_id == 'ckpt_1'
+    assert req.rpm == 60
+
+def test_resume_request_rejects_start_only_seed_path():
+    with pytest.raises(ValidationError):
+        ResumeRequest(provider='ollama', resume_thread='t', seed_path='/seed')
+
+def test_resolve_thread_id_returns_resume_thread_verbatim():
+    req = ResumeRequest(provider='ollama', resume_thread='thread_xyz')
+    assert resolve_thread_id(req) == 'thread_xyz'
+
+def test_resolve_thread_id_generates_new_id_for_start(monkeypatch):
+    class FakeNow:
+        def strftime(self, _fmt: str) -> str:
+            return "20260317_123456"
+    class FakeDatetime:
+        @staticmethod
+        def now():
+            return FakeNow()
+    monkeypatch.setattr(project_spec, "datetime", FakeDatetime)
+    req = StartRequest(provider='ollama', project_name='My App', requirements='Build it.')
+    assert resolve_thread_id(req) == 'my_app_20260317_123456'

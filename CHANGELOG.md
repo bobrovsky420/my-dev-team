@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.2] - 2026-07-07
+
+### 🚀 Added
+
+* **429 retry with provider-suggested delays:** A rate-limited LLM call (HTTP 429) no longer fails the step outright (ported from my-dev-team-vs-code): the call is retried after the delay the provider suggests - the `retry-after`/`retry-after-ms` response headers or Groq's "try again in Ns" message hint, exponential backoff otherwise - up to 5 attempts with each wait capped at 60 seconds. A 429 that persists past the cap fails the step as before, where checkpoint resume still applies. See [LLM Providers and Models](docs/llm.md#rate-limiting-and-429-retries).
+
+* **Per-provider rate-limit budgets:** The `--rpm` throttle now keeps a rolling one-minute window per real backend instead of one global window, so the `free` compound provider's local Ollama calls no longer spend the Groq budget. Providers can carry a default budget in the shared model registry - Groq seeds 30 RPM (its free tier) - so a plain `--provider groq` run stays under quota out of the box.
+
+### ⚙️ Changed
+
+* **`--rpm` semantics:** Setting `--rpm` (> 0) now overrides every provider's budget; leaving it unset (`0`) keeps the registry's per-provider defaults instead of disabling rate limiting entirely. Providers without a registry default remain unthrottled.
+
+## [0.13.1] - 2026-07-07
+
+### 🚀 Added
+
+* **Per-model prompt steering:** The routed model's capability scores now derive a "Model-specific guidance" section appended to the agent's system prompt (ported from my-dev-team-vs-code): a model scoring low on `structured-output` gets a strict tool-call reminder, low `reasoning` gets step-by-step instructions and low `code-generation` gets "do not invent paths/APIs - verify with a tool". Frontier models clear every threshold and keep an unchanged prompt; the small local Ollama models collect most of the lines. No per-model configuration - the shared registry's scores decide automatically. See [LLM Providers and Models](docs/llm.md#per-model-prompt-steering).
+
+## [0.13.0] - 2026-07-03
+
+### 🚀 Added
+
+* **Prompt-injection guard in every agent prompt:** All twelve agent configs now embed the shared `untrusted-data` partial - workspace files, RAG documents, test logs, skills and drafts are framed as data, never instructions - each with a role-specific tail (the Developer and Migrator note an injection attempt in their submission, the Reviewer and QA agents flag it via `ReportIssues`, the Code Judge penalizes a self-praising draft). Complements the `utils/sanitizer.py` wrapping.
+
+* **Shared prompt partials library:** Cross-cutting prompt rules now live in the sibling `my-dev-team-config` repo (`partials/*.md`) and are generated into `config/agents/partials/` by `scripts/sync_partials.py`, shared verbatim with my-dev-team-vs-code. Six partials ship: `untrusted-data`, `clarify-guidance` (the Product Manager's "ask sparingly" bar when `--no-ask` is off), `scope-discipline` and `tdd` (extracted from the Senior Developer prompt), `code-style` (new rules for the Developer and Migrator: match the surrounding style, no narration comments, check the manifest before assuming a dependency, never hardcode secrets) and `faithful-reporting` (QA agents and the Reporter). The pre-commit drift hook now guards partials as well as models.
+
+### 🔧 Internal
+
+* **Unified include syntax:** Agent prompts now use the `{{ include <name> }}` directive shared with my-dev-team-vs-code (name normalised: a leading path and a trailing `.md` are stripped; resolved against `config/agents/partials/`, then `config/agents/` for prompt inheritance). The conditional clause supports negation: `{{ include clarify-guidance if not no_ask }}`. Nested includes are capped to reject cycles; the old `{ include 'path' }` syntax is gone.
+
+* **System Architect capability typo fixed:** `reasosning` -> `reasoning`, so the architect's second capability weight actually matches registry scores again.
+
+* **Unified prompt-body placeholders:** `from_config` now strips the `{{tools}}`, `{{skills}}` and `{{environment}}` placeholders of the unified agent config format (this loader has no renderer for them - tools are bound natively, skills and workspace content ride `inputs:`), so a prompt body shared with my-dev-team-vs-code renders here unchanged.
+
+### 🚀 Added
+
+* **`top_k` and `top_p` sampling parameters:** Agents now support `top_k` and `top_p` in their frontmatter YAML and in crew config overrides. Both parameters are forwarded to all providers (`top_p` universally; `top_k` on Ollama, Anthropic and Google which support it). Complexity overrides also accept them.
+
+### 🔧 Internal
+
+* **Cleaner console step panels:** `ConsoleLogger` now summarises noisy state fields instead of dumping raw Python reprs - `messages` shows a count plus the last message type, `developer_drafts` shows the file list, and `task_context` shows only meaningful sub-fields.
+
 ## [0.12.4] - 2026-04-21
 
 ### 🚀 Added

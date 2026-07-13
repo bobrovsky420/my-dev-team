@@ -110,8 +110,8 @@ class TelemetryTracker(BaseCallbackHandler, CostOptimization, WithLogging):
                 completion_tokens=output_tokens
             )
             return p_cost + c_cost
-        except Exception as e: # pylint: disable=broad-exception-caught
-            self.logger.error("Cost calculation failed for %s/%s: %s", model_provider, model_name, e)
+        except Exception: # pylint: disable=broad-exception-caught
+            self.logger.exception("Cost calculation failed for %s/%s", model_provider, model_name)
             return 0
 
     def get_receipt_panel(self, panel_width: int = 75) -> Panel:

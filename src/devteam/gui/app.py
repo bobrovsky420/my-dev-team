@@ -15,9 +15,11 @@ from flask import Flask, Response, jsonify, request, send_from_directory, stream
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from devteam import settings
+from devteam.cli.request import ResumeRequest, RunHooks, RunRequest, StartRequest
+from devteam.cli.runtime import resolve_thread_id, run
 from devteam.crew import CrewFactory
 from devteam.extensions import HumanInTheLoopGUI, StreamlitLogger
-from devteam.utils import LLMFactory, StreamHandler, generate_thread_id, parse_spec_from_string, setup_logging, add_file_handler, remove_file_handler, create_serde
+from devteam.utils import StreamHandler, parse_spec_from_string, setup_logging, add_file_handler, remove_file_handler, create_serde
 from devteam.utils.workspace import read_all_files
 
 logger = logging.getLogger(__name__)
@@ -72,19 +74,17 @@ def _register_project(ctx: ProjectContext):
 def get_providers_from_config() -> list[str]:
     config_path = settings.tools_config_dir / 'llms.yaml'
     if not config_path.exists():
-        return ['ollama', 'groq', 'openai', 'anthropic', 'google', 'mistral', 'deepseek', 'grok']
+        return ['ollama', 'groq', 'openai', 'anthropic', 'google', 'mistral', 'deepseek', 'zai', 'grok']
     try:
         data = yaml.safe_load(config_path.read_text(encoding='utf-8'))
         return list(data['providers'].keys())
     except Exception:  # pylint: disable=broad-exception-caught
-        return ['ollama', 'groq', 'openai', 'anthropic', 'google', 'mistral', 'deepseek', 'grok']
+        return ['ollama', 'groq', 'openai', 'anthropic', 'google', 'mistral', 'deepseek', 'zai', 'grok']
 
 
-def _run_crew_in_thread(
+def _run_in_thread(
+    request: RunRequest,
     thread_id: str,
-    requirements: str,
-    provider: str,
-    rpm: int,
     event_queue: Queue,
     result_holder: dict,
     hitl_extension: HumanInTheLoopGUI | None = None,
@@ -92,27 +92,17 @@ def _run_crew_in_thread(
 ):
     """Async crew execution inside a dedicated thread / event loop."""
     async def _inner():
-        project_folder = settings.workspace_dir / thread_id
-        project_folder.mkdir(parents=True, exist_ok=True)
-        db_path = project_folder / 'state.db'
-
         callbacks = []
         settings.llm_streaming = thinking
         if thinking:
             callbacks.append(StreamHandler(queue=event_queue))
-
-        llm_factory = LLMFactory(provider=provider, callbacks=callbacks)
-        crew_factory = CrewFactory(llm_factory=llm_factory)
         extensions = [StreamlitLogger(event_queue)]
         if hitl_extension:
             extensions.append(hitl_extension)
-
-        async with aiosqlite.connect(db_path) as conn:
-            checkpointer = AsyncSqliteSaver(conn, serde=create_serde())
-            crew = crew_factory.create(project_folder, checkpointer=checkpointer, rpm=rpm, extensions=extensions)
-            final_state = await crew.execute(thread_id=thread_id, requirements=requirements)
-            result_holder['final_state'] = final_state
-            result_holder['thread_id'] = thread_id
+        hooks = RunHooks(callbacks=callbacks, extensions=extensions)
+        final_state = await run(request, thread_id, hooks)
+        result_holder['final_state'] = final_state
+        result_holder['thread_id'] = thread_id
 
     project_folder = settings.workspace_dir / thread_id
     project_folder.mkdir(parents=True, exist_ok=True)
@@ -123,51 +113,6 @@ def _run_crew_in_thread(
     except Exception as exc:  # pylint: disable=broad-exception-caught
         msg = str(exc)
         logger.exception("Worker thread failed: %s", msg)
-        result_holder['error'] = msg
-        event_queue.put({'type': 'error', 'ts': time.time(),
-                         'state': {'error': True, 'error_message': msg}})
-    finally:
-        loop.close()
-        remove_file_handler(exec_log_handler)
-
-
-def _run_resume_in_thread(
-    thread_id: str,
-    feedback: str,
-    feedback_source: str,
-    checkpoint_id: str | None,
-    event_queue: Queue,
-    result_holder: dict,
-    hitl_extension: HumanInTheLoopGUI | None = None,
-):
-    """Resume an existing crew execution in a dedicated thread."""
-    async def _inner():
-        project_folder = settings.workspace_dir / thread_id
-        db_path = project_folder / 'state.db'
-        llm_factory = LLMFactory()
-        crew_factory = CrewFactory(llm_factory=llm_factory)
-        extensions = [StreamlitLogger(event_queue)]
-        if hitl_extension:
-            extensions.append(hitl_extension)
-        async with aiosqlite.connect(db_path) as conn:
-            checkpointer = AsyncSqliteSaver(conn, serde=create_serde())
-            crew = crew_factory.create(project_folder, checkpointer=checkpointer, extensions=extensions)
-            final_state = await crew.execute(
-                thread_id=thread_id,
-                feedback=feedback,
-                feedback_source=feedback_source,
-                checkpoint_id=checkpoint_id,
-            )
-            result_holder['final_state'] = final_state
-            result_holder['thread_id'] = thread_id
-
-    exec_log_handler = add_file_handler(settings.workspace_dir / thread_id / 'execution.log')
-    loop = asyncio.new_event_loop()
-    try:
-        loop.run_until_complete(_inner())
-    except Exception as exc:  # pylint: disable=broad-exception-caught
-        msg = str(exc)
-        logger.exception("Resume thread failed: %s", msg)
         result_holder['error'] = msg
         event_queue.put({'type': 'error', 'ts': time.time(),
                          'state': {'error': True, 'error_message': msg}})
@@ -203,7 +148,7 @@ def create_app(gui_dist: Path | None = None) -> Flask:
 
     if gui_dist is None:
         # Bundled inside the installed package (built by: cd gui && npm run build)
-        gui_dist = Path(__file__).resolve().parent.parent / 'gui' / 'dist'
+        gui_dist = Path(__file__).resolve().parent / 'dist'
 
     # ------------------------------------------------------------------ #
     # Static files - serve the React build                                 #
@@ -243,13 +188,23 @@ def create_app(gui_dist: Path | None = None) -> Flask:
         rpm = int(data.get('rpm', 0))
         timeout = int(data.get('timeout', 120))
         thinking = bool(data.get('thinking', False))
-        ask_approval = bool(data.get('ask_approval', False))
+        no_docker = bool(data.get('no_docker', False))
+        ask_all = bool(data.get('ask_all', False))
+        ask_approval = bool(data.get('ask_approval', False)) and not ask_all
 
         settings.llm_timeout = timeout
+        settings.no_docker = no_docker
         settings.ask_approval = ask_approval
+        settings.ask_all = ask_all
 
         project_name, requirements = parse_spec_from_string(requirements)
-        thread_id = generate_thread_id(project_name)
+        run_request = StartRequest(
+            provider=provider,
+            rpm=rpm,
+            project_name=project_name,
+            requirements=requirements,
+        )
+        thread_id = resolve_thread_id(run_request)
 
         event_queue: Queue = Queue()
         result_holder: dict = {}
@@ -258,8 +213,8 @@ def create_app(gui_dist: Path | None = None) -> Flask:
         hitl_ext = HumanInTheLoopGUI(event_queue)
 
         worker = threading.Thread(
-            target=_run_crew_in_thread,
-            args=(thread_id, requirements, provider, rpm, event_queue, result_holder, hitl_ext, thinking),
+            target=_run_in_thread,
+            args=(run_request, thread_id, event_queue, result_holder, hitl_ext, thinking),
             daemon=True,
         )
         worker.start()
@@ -281,7 +236,10 @@ def create_app(gui_dist: Path | None = None) -> Flask:
         feedback = data.get('feedback', '')
         feedback_source = data.get('feedback_source', 'reviewer')
         checkpoint_id = data.get('checkpoint_id') or None
-        ask_approval = bool(data.get('ask_approval', False))
+        ask_all = bool(data.get('ask_all', False))
+        ask_approval = bool(data.get('ask_approval', False)) and not ask_all
+        settings.ask_approval = ask_approval
+        settings.ask_all = ask_all
 
         workspace_path = settings.workspace_dir / thread_id
         if not workspace_path.exists():
@@ -290,10 +248,17 @@ def create_app(gui_dist: Path | None = None) -> Flask:
         event_queue: Queue = Queue()
         result_holder: dict = {}
         hitl_ext = HumanInTheLoopGUI(event_queue)
+        run_request = ResumeRequest(
+            provider=settings.provider,
+            resume_thread=thread_id,
+            feedback=feedback,
+            feedback_source=feedback_source,
+            checkpoint_id=checkpoint_id,
+        )
 
         worker = threading.Thread(
-            target=_run_resume_in_thread,
-            args=(thread_id, feedback, feedback_source, checkpoint_id, event_queue, result_holder, hitl_ext),
+            target=_run_in_thread,
+            args=(run_request, thread_id, event_queue, result_holder, hitl_ext),
             daemon=True,
         )
         worker.start()
@@ -452,16 +417,17 @@ def _msg_to_dict(msg) -> dict:
 # Entry point
 # ---------------------------------------------------------------------------
 
-def run(host: str = '127.0.0.1', port: int = 5000, open_browser: bool = True):
+def run_server(host: str = '127.0.0.1', port: int = 5000, open_browser: bool = True):
     """Start the Flask server."""
     from dotenv import load_dotenv
+    import flask.cli
     load_dotenv()
 
     # File-only logging - no console output while GUI is running
     setup_logging(console_level=None)
-    logging.getLogger('werkzeug').propagate = True  # let it go to the file handler only
+    flask.cli.show_server_banner = lambda *a, **kw: None
 
-    gui_dist = Path(__file__).resolve().parent.parent / 'gui' / 'dist'
+    gui_dist = Path(__file__).resolve().parent / 'dist'
     if not gui_dist.exists():
         print(f"⚠  React build not found at {gui_dist}")
         print("   Run: cd gui && npm install && npm run build")

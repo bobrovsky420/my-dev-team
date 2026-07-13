@@ -32,7 +32,7 @@ def make_config(role="TestAgent", inputs=None):
 
 class TestCodeReviewer:
     def test_build_inputs_lists_other_files_when_nothing_changed(self, workspace_dir):
-        config = make_config("Code Reviewer", ["specs", "current_task"])
+        config = make_config("Code Reviewer", ["specs", "current_task", "workspace"])
         agent = CodeReviewer(config, "prompt {specs} {current_task} {workspace}", "reviewer")
         state = ProjectState(specs="spec", task_context=TaskContext(current_task="task"), workspace_path=workspace_dir)
         inputs = agent._build_inputs(state)
@@ -43,7 +43,7 @@ class TestCodeReviewer:
         assert "--- FILE:" not in inputs["workspace"]
 
     def test_build_inputs_splits_changed_and_other_files(self, workspace_dir, sample_workspace_files):
-        config = make_config("Code Reviewer", ["specs", "current_task"])
+        config = make_config("Code Reviewer", ["specs", "current_task", "workspace"])
         agent = CodeReviewer(config, "prompt {specs} {current_task} {workspace}", "reviewer")
         changed = {"src/main.py": sample_workspace_files["src/main.py"]}
         state = ProjectState(
@@ -62,7 +62,7 @@ class TestCodeReviewer:
         assert "--- FILE: tests/test_main.py ---" not in ws
 
     def test_build_inputs_no_workspace(self):
-        config = make_config("Code Reviewer", [])
+        config = make_config("Code Reviewer", ["workspace"])
         agent = CodeReviewer(config, "prompt {workspace}", "reviewer")
         state = ProjectState()
         inputs = agent._build_inputs(state)
@@ -114,14 +114,14 @@ class TestSeniorDeveloper:
         assert "'''Doc'''\n\ndef parse_number(x):\n    return float(x)\n" == file_obj.content
 
     def test_build_inputs_no_workspace(self):
-        config = make_config("Developer", ["specs", "current_task"])
+        config = make_config("Developer", ["specs", "current_task", "workspace"])
         agent = SeniorDeveloper(config, "prompt {specs} {current_task} {workspace}", "developer")
         state = ProjectState(specs="spec", task_context=TaskContext(current_task="build it"))
         inputs = agent._build_inputs(state)
         assert "No files in workspace" in inputs["workspace"]
 
     def test_build_inputs_with_workspace(self, workspace_dir):
-        config = make_config("Developer", ["specs", "current_task"])
+        config = make_config("Developer", ["specs", "current_task", "workspace"])
         agent = SeniorDeveloper(config, "prompt {specs} {current_task} {workspace}", "developer")
         state = ProjectState(specs="spec", task_context=TaskContext(current_task="task"), workspace_path=workspace_dir)
         inputs = agent._build_inputs(state)
@@ -227,7 +227,7 @@ class TestFinalQAEngineer:
 
 class TestReporter:
     def test_build_inputs_with_workspace(self, workspace_dir):
-        config = make_config("Reporter", ["specs", "workspace"])
+        config = make_config("Reporter", ["specs", "workspace", "history"])
         agent = Reporter(config, "prompt {specs} {workspace} {history}", "reporter")
         state = ProjectState(specs="spec", workspace_path=workspace_dir, communication_log=["Log entry 1", "Log entry 2"])
         inputs = agent._build_inputs(state)
@@ -299,6 +299,60 @@ class TestBaseAgentRetry:
         assert agent._invoke_llm.call_count == 2  # 1 attempt + 1 retry
         assert result.get('error') is True
         assert 'persistent failure' in result.get('error_message', '')
+
+
+class TestBaseAgentToolCallLogging:
+    def _make_agent(self):
+        config = make_config("Test Agent", [])
+        return CodeReviewer(config, "prompt", "reviewer")
+
+    def test_format_tool_call_short_args(self):
+        agent = self._make_agent()
+        formatted = agent._format_tool_call({'name': 'ReadFile', 'args': {'path': 'src/foo.py'}})
+        assert formatted == "ReadFile(path='src/foo.py')"
+
+    def test_format_tool_call_truncates_long_args(self):
+        agent = self._make_agent()
+        long_value = 'x' * 200
+        formatted = agent._format_tool_call({'name': 'GrepFiles', 'args': {'pattern': long_value}})
+        assert formatted.startswith("GrepFiles(pattern='")
+        assert '...' in formatted
+        assert len(formatted) < 120
+
+    def test_format_tool_call_handles_no_args(self):
+        agent = self._make_agent()
+        formatted = agent._format_tool_call({'name': 'ListFiles', 'args': {}})
+        assert formatted == "ListFiles()"
+
+    def test_collect_tool_call_log_skips_final_output_call(self):
+        agent = self._make_agent()
+        intermediate = MagicMock()
+        intermediate.tool_calls = [{'name': 'ReadFile', 'args': {'path': 'a.py'}}]
+        tool_msg = MagicMock(spec=[])
+        final = MagicMock()
+        final.tool_calls = [{'name': 'ApproveCode', 'args': {}}]
+        history = [intermediate, tool_msg, final]
+        entries = agent._collect_tool_call_log(history)
+        assert entries == ["**[CodeReviewer]** uses ReadFile(path='a.py')"]
+
+    def test_run_logs_intermediate_tool_calls_in_communication_log(self):
+        agent = self._make_agent()
+        intermediate = MagicMock()
+        intermediate.content = ''
+        intermediate.tool_calls = [{'name': 'ReadFile', 'args': {'path': 'a.py'}, 'id': 'tc1'}]
+        final = MagicMock()
+        final.content = 'Approving the change'
+        final.tool_calls = [{'name': 'ApproveCode', 'args': {'feedback': 'lgtm'}, 'id': 'tc2'}]
+        agent._invoke_llm = AsyncMock(side_effect=[intermediate, final])
+
+        async def fake_handler(name, args, state):
+            return 'file contents' if name == 'ReadFile' else None
+        agent._handle_intermediate_tools = fake_handler
+
+        result = asyncio.run(agent.process(ProjectState()))
+        log = result['communication_log']
+        assert log[0] == "**[CodeReviewer]** uses ReadFile(path='a.py')"
+        assert log[-1] == "**[CodeReviewer]**: Approving the change"
 
 # --- ProjectManager Error Recovery Tests ---
 

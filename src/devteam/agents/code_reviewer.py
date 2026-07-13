@@ -8,13 +8,11 @@ class CodeReviewer(BaseAgent[CodeReviewerResponse]):
     output_schema = CodeReviewerResponse
 
     @override
-    def _build_inputs(self, state: ProjectState) -> dict:
-        inputs = super()._build_inputs(state)
+    def _input_workspace(self, state: ProjectState) -> str:
         changed = state.task_context.changed_files
         all_paths = workspace.live_paths(state.workspace_path)
         if not all_paths and not changed:
-            inputs['workspace'] = "No files exist in the workspace."
-            return inputs
+            return "No files exist in the workspace."
         sections: list[str] = []
         if changed:
             sections.append("## Files changed in this revision (full content)\n\n"
@@ -27,8 +25,7 @@ class CodeReviewer(BaseAgent[CodeReviewerResponse]):
                 f"Use the `ReadFile` tool to fetch the content of any file below that you need "
                 f"to verify imports, integration points or context.\n\n{listing}"
             )
-        inputs['workspace'] = '\n\n'.join(sections).strip() or "No files exist in the workspace."
-        return inputs
+        return '\n\n'.join(sections).strip() or "No files exist in the workspace."
 
     @override
     def _map_tool_to_output(self, tool_name: str, tool_args: dict) -> CodeReviewerResponse:

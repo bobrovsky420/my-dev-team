@@ -13,22 +13,63 @@ from devteam.skills import skills
 from devteam.state import ProjectState
 from devteam.tools.extractor import coerce_tool_calls
 from devteam.utils import LLMFactory, RateLimiter, WithLogging, CommunicationLog, sanitizer, workspace
-from devteam.utils import retrieve_workspace_context, retrieve_skills_context
+from devteam.utils import retrieve_workspace_context, retrieve_skills_context, retry_delay, steering_for
+from devteam.utils.rate_limiter import MAX_RATE_LIMIT_RETRIES
 from .intermediate_tools import IntermediateTools
 
-_TAG_MAP = {'workspace_listing': 'workspace', 'workspace_context': 'workspace', 'skills_context': 'skills'}
+class NoToolCallError(Exception):
+    """Raised when the LLM responds without calling any tool. Triggers a retry that injects a tool-call reminder into the next prompt."""
 
-def _prompt_tag(key: str) -> str:
-    return _TAG_MAP.get(key, key)
+
+def input_handler(tag):
+    """Defines a prompt tag used to wrap the rendered value."""
+    def deco(fn):
+        fn.tag = tag
+        return fn
+    return deco
+
+
+def _resolve_capabilities(value) -> dict[str, float]:
+    if isinstance(value, list):
+        return {cap: 1.0 for cap in value}
+    return dict(value)
+
+
+class ConfigField:
+    """Non-data descriptor that lazily reads a value from `obj.config`."""
+
+    def __init__(self, default=None, transform=None):
+        self.default = default
+        self.transform = transform
+
+    def __set_name__(self, owner, name):
+        self.name = name
+
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        value = obj.config.get(self.name, self.default)
+        if self.transform is not None:
+            value = self.transform(value)
+        obj.__dict__[self.name] = value
+        return value
+
 
 class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
     """Base agent that uses LLM tool calling to submit structured results."""
 
-    capabilities: dict[str, float]
-    temperature: float = 0.2
     max_retries: int = 2
     rate_limiter: RateLimiter = None
     output_schema: type[T]
+
+    role = ConfigField(default='Agent')
+    name = ConfigField(default=None)
+    capabilities = ConfigField(transform=_resolve_capabilities)
+    temperature = ConfigField(default=0.2)
+    top_k = ConfigField(default=None)
+    top_p = ConfigField(default=None)
+    complexity_routing = ConfigField(default=False, transform=bool)
+    complexity_overrides = ConfigField(transform=lambda v: v or {})
 
     def __init__(self, config: dict, prompt_template: str, node_name: str, llm_factory: LLMFactory = None, rate_limiter: RateLimiter = None):
         self.config = config
@@ -36,21 +77,8 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
         self.node_name = node_name
         self.llm_factory = llm_factory
         self.rate_limiter = rate_limiter
-        self.role = config.get('role', 'Agent')
-        self.name = config.get('name', None)
-        self.capabilities = self._resolve_capabilities(config)
-        self.temperature = config.get('temperature', self.temperature)
-        self.complexity_routing = bool(config.get('complexity_routing', False))
-        self.complexity_overrides = config.get('complexity_overrides') or {}
         self._chain_cache: dict[str, Runnable] = {}
-
-    @staticmethod
-    def _resolve_capabilities(config: dict) -> dict[str, float]:
-        """Read capabilities from config."""
-        caps = config.get('capabilities')
-        if isinstance(caps, list):
-            return {cap: 1.0 for cap in caps}
-        return dict(caps)
+        self._chain_providers: dict[str, str] = {}
 
     @cached_property
     def inputs(self) -> list[str]:
@@ -63,34 +91,45 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
     def _build_inputs(self, state: ProjectState) -> dict:
         inputs = {}
         for key in self.inputs:
-            match key:
-                case 'skills':
-                    inputs[key] = sanitizer.sanitize_for_prompt(self._skills_catalog, 'skills')
-                case 'skills_context':
-                    catalog = skills.load_skills_catalog()
-                    query = getattr(state.task_context, 'current_task', '') or getattr(state, 'specs', '')
-                    inputs[key] = sanitizer.sanitize_for_prompt(
-                        retrieve_skills_context(catalog, query), 'skills'
-                    )
-                case 'workspace':
-                    if workspace_files := workspace.read_all_files(state.workspace_path):
-                        inputs[key] = workspace.workspace_str_from_files(workspace_files).strip()
-                    else:
-                        inputs[key] = "No files exist in the workspace."
-                case 'workspace_context':
-                    query = getattr(state.task_context, 'current_task', '') or getattr(state, 'specs', '')
-                    if workspace.live_paths(state.workspace_path):
-                        inputs[key] = retrieve_workspace_context(state.workspace_path, query)
-                    else:
-                        inputs[key] = "No files exist in the workspace."
-                case 'workspace_listing':
-                    inputs[key] = workspace.list_workspace_files(state.workspace_path)
-                case _:
-                    val = getattr(state, key, None)
-                    if val is None:
-                        val = getattr(state.task_context, key, '')
-                    inputs[key] = sanitizer.sanitize_for_prompt(str(val), key) if val else ''
+            if handler := getattr(self, f'_input_{key}', None):
+                inputs[key] = handler(state)
+            else:
+                inputs[key] = self._input_state_attr(state, key)
         return inputs
+
+    def _input_skills(self, state: ProjectState) -> str:
+        return sanitizer.sanitize_for_prompt(self._skills_catalog, 'skills')
+
+    @input_handler(tag='skills')
+    def _input_skills_context(self, state: ProjectState) -> str:
+        catalog = skills.load_skills_catalog()
+        return sanitizer.sanitize_for_prompt(retrieve_skills_context(catalog, self._task_query(state)), 'skills')
+
+    def _input_workspace(self, state: ProjectState) -> str:
+        if files := workspace.read_all_files(state.workspace_path):
+            return workspace.workspace_str_from_files(files).strip()
+        return "No files exist in the workspace."
+
+    @input_handler(tag='workspace')
+    def _input_workspace_context(self, state: ProjectState) -> str:
+        if not workspace.live_paths(state.workspace_path):
+            return "No files exist in the workspace."
+        return retrieve_workspace_context(state.workspace_path, self._task_query(state))
+
+    @input_handler(tag='workspace')
+    def _input_workspace_listing(self, state: ProjectState) -> str:
+        return workspace.list_workspace_files(state.workspace_path)
+
+    def _input_state_attr(self, state: ProjectState, key: str) -> str:
+        val = getattr(state, key, None) or getattr(state.task_context, key, '')
+        return sanitizer.sanitize_for_prompt(str(val), key) if val else ''
+
+    @staticmethod
+    def _task_query(state: ProjectState) -> str:
+        return getattr(state.task_context, 'current_task', '') or getattr(state, 'specs', '')
+
+    def _prompt_tag(self, key: str) -> str:
+        return getattr(getattr(self, f'_input_{key}', None), 'tag', key)
 
     def _update_state(self, parsed_data: T, current_state: ProjectState) -> dict:
         return parsed_data.model_dump(exclude_none=True)
@@ -137,65 +176,95 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
         if complexity:
             self.logger.info("Routing on complexity=%s", complexity)
         inputs = self._build_inputs(state)
-        original_messages = self._repair_tool_call_messages(list(state.messages))
-        if 'messages' not in inputs:
-            inputs['messages'] = original_messages
+        base_messages = self._repair_tool_call_messages(list(state.messages))
         last_error = ''
-        no_tool_call_retry = False
+        inject_reminder = False
         for attempt in range(self.max_retries + 1):
             if attempt > 0:
                 self.logger.warning("LLM call failed. Retrying (attempt %d/%d)...", attempt + 1, self.max_retries + 1)
-                inputs['messages'] = list(original_messages)
-                if no_tool_call_retry:
-                    tool_names = ', '.join(t.__name__ for t in self.tools)
-                    inputs['messages'] = inputs['messages'] + [HumanMessage(content=(
-                        f"You must respond by calling one of the available tools: {tool_names}. "
-                        "Do not return plain text - use a tool call to submit your response."
-                    ))]
-                    self.logger.debug("Injected tool-call reminder into retry messages.")
-            no_tool_call_retry = False
-            conversation_history = []
+            messages = self._with_tool_reminder(base_messages) if inject_reminder else base_messages
+            inject_reminder = False
             try:
-                while True:
-                    if conversation_history:
-                        inputs['messages'] = original_messages + conversation_history
-                    self.logger.debug("Invoking LLM with inputs:\n%s", inputs)
-                    ai_message = await self._invoke_llm(complexity=complexity, **inputs)
-                    ai_message = coerce_tool_calls(ai_message)
-                    conversation_history.append(ai_message)
-                    if not ai_message.tool_calls:
-                        no_tool_call_retry = True
-                        raise ValueError("The model did not call any tool.")
-                    intermediate_results = await asyncio.gather(
-                        *[self._handle_intermediate_tools(tc['name'], tc['args'], state) for tc in ai_message.tool_calls]
-                    )
-                    if any(r is not None for r in intermediate_results):
-                        for tc, result in zip(ai_message.tool_calls, intermediate_results):
-                            tool_msg = ToolMessage(content=result or '', tool_call_id=tc['id'])
-                            conversation_history.append(tool_msg)
-                        continue
-                    parsed_data = self._parse_outputs(ai_message)
-                    break
+                parsed_data, conversation_history = await self._run_attempt(inputs, messages, complexity, state)
                 break
             except ImportError as e:
-                self.logger.error("%s", e)
+                self.logger.exception("Import error")
                 return {'error': True, 'error_message': str(e)}
+            except NoToolCallError:
+                last_error = traceback.format_exc()
+                self.logger.exception("Attempt %d/%d failed - no tool call", attempt + 1, self.max_retries + 1)
+                inject_reminder = True
             except Exception as exc: # pylint: disable=broad-exception-caught
                 last_error = traceback.format_exc()
-                self.logger.error("Attempt %d/%d failed:\n%s", attempt + 1, self.max_retries + 1, last_error)
-                if 'attempted to call tool' in str(exc) or 'tool call validation' in str(exc):
-                    no_tool_call_retry = True
+                self.logger.exception("Attempt %d/%d failed", attempt + 1, self.max_retries + 1)
+                inject_reminder = self._is_tool_validation_error(exc)
         else:
-            return {
-                'error': True,
-                'error_message': last_error,
-            }
+            return {'error': True, 'error_message': last_error}
         final_state = self._update_state(parsed_data, state)
         final_state = await self._post_process(state, final_state)
         if 'messages' in self.outputs:
             final_state['messages'] = conversation_history
-        final_state['communication_log'] = self.communication(ai_message.content)
+        tool_log = self._collect_tool_call_log(conversation_history)
+        text_log = self.communication(conversation_history[-1].content)
+        final_state['communication_log'] = tool_log + text_log
         return final_state
+
+    async def _run_attempt(self, inputs: dict, messages: list, complexity: str, state: ProjectState) -> tuple[T, list]:
+        conversation_history = []
+        while True:
+            attempt_inputs = {**inputs, 'messages': messages + conversation_history}
+            self.logger.debug("Invoking LLM with inputs:\n%s", attempt_inputs)
+            ai_message = coerce_tool_calls(await self._invoke_llm(complexity=complexity, **attempt_inputs))
+            conversation_history.append(ai_message)
+            if not ai_message.tool_calls:
+                raise NoToolCallError("The model did not call any tool.")
+            for tc in ai_message.tool_calls:
+                self.logger.info("Tool call: %s", self._format_tool_call(tc))
+            intermediate_results = await asyncio.gather(
+                *[self._handle_intermediate_tools(tc['name'], tc['args'], state) for tc in ai_message.tool_calls]
+            )
+            if any(r is not None for r in intermediate_results):
+                for tc, result in zip(ai_message.tool_calls, intermediate_results):
+                    conversation_history.append(ToolMessage(content=result or '', tool_call_id=tc['id']))
+                continue
+            return self._parse_outputs(ai_message), conversation_history
+
+    _TOOL_ARG_MAX_LEN: int = 60
+
+    @classmethod
+    def _format_tool_arg(cls, value) -> str:
+        text = repr(value) if isinstance(value, str) else str(value)
+        if len(text) > cls._TOOL_ARG_MAX_LEN:
+            text = text[:cls._TOOL_ARG_MAX_LEN] + '...'
+        return text
+
+    @classmethod
+    def _format_tool_call(cls, tool_call: dict) -> str:
+        name = tool_call.get('name', 'tool')
+        args = tool_call.get('args') or {}
+        parts = [f"{key}={cls._format_tool_arg(value)}" for key, value in args.items()]
+        return f"{name}({', '.join(parts)})"
+
+    def _collect_tool_call_log(self, conversation_history: list) -> list[str]:
+        """Build communication-log entries describing every intermediate tool call (excludes the final output tool)."""
+        entries: list[str] = []
+        for msg in conversation_history[:-1]:
+            for tc in getattr(msg, 'tool_calls', None) or ():
+                entries.append(f"**[{self.__class__.__name__}]** uses {self._format_tool_call(tc)}")
+        return entries
+
+    def _with_tool_reminder(self, messages: list) -> list:
+        tool_names = ', '.join(t.__name__ for t in self.tools)
+        self.logger.debug("Injected tool-call reminder into retry messages.")
+        return messages + [HumanMessage(content=(
+            f"You must respond by calling one of the available tools: {tool_names}. "
+            "Do not return plain text - use a tool call to submit your response."
+        ))]
+
+    @staticmethod
+    def _is_tool_validation_error(exc: Exception) -> bool:
+        msg = str(exc)
+        return 'attempted to call tool' in msg or 'tool call validation' in msg
 
     @cached_property
     def _skills_catalog(self) -> str:
@@ -212,15 +281,14 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
         return getattr(state, 'project_complexity', None)
 
     def _resolve_params(self, complexity: str) -> tuple[float, dict]:
+        extras = {k: v for k, v in {'top_k': self.top_k, 'top_p': self.top_p}.items() if v is not None}
         temperature = self.temperature
-        extras: dict = {}
         if complexity and (override := self.complexity_overrides.get(complexity)):
             temperature = override.get('temperature', temperature)
-            if 'thinking' in override:
-                extras['thinking'] = override['thinking']
+            extras.update({k: override[k] for k in ('thinking', 'top_k', 'top_p') if k in override})
         return temperature, extras
 
-    def _get_llm(self, complexity: str) -> Runnable:
+    def _get_llm(self, complexity: str, model: dict = None) -> Runnable:
         temperature, extras = self._resolve_params(complexity)
         llm = self.llm_factory.create(
             capabilities=self.capabilities,
@@ -228,6 +296,7 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
             node_name=self.node_name,
             json_mode=False,
             complexity=complexity,
+            model=model,
             **extras,
         )
         return llm.bind_tools(self.tools)
@@ -235,47 +304,71 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
     def _get_chain(self, complexity: str) -> Runnable:
         cache_key = complexity or '_default'
         if cache_key not in self._chain_cache:
-            self._chain_cache[cache_key] = self._build_prompt() | self._get_llm(complexity)
+            model = self.llm_factory.select_model(self.capabilities, complexity=complexity)
+            # The real backend of the routed model: a compound provider's
+            # entries carry their own provider field, so a `free` run charges
+            # its Groq calls to the Groq budget, not the Ollama one.
+            self._chain_providers[cache_key] = model.get('provider', self.llm_factory.provider)
+            steering = steering_for(model.get('capabilities', {}))
+            if steering:
+                self.logger.debug("Steering for model %s:\n%s", model.get('id'), steering)
+            self._chain_cache[cache_key] = self._build_prompt(steering) | self._get_llm(complexity, model)
         return self._chain_cache[cache_key]
 
     def _data_input_keys(self) -> list[str]:
         """Input keys that become template variables in the human message (all inputs except messages)."""
         return [k for k in self.inputs if k != 'messages']
 
-    def _build_prompt(self) -> ChatPromptTemplate:
+    def _build_prompt(self, steering: str = '') -> ChatPromptTemplate:
         data_keys = self._data_input_keys()
         human_parts = []
         for key in data_keys:
-            tag = _prompt_tag(key)
+            tag = self._prompt_tag(key)
             human_parts.append(f"<{tag}>\n{{{key}}}\n</{tag}>")
-        messages = [('system', self.prompt_template)]
+        system = self.prompt_template
+        if steering:
+            # The system prompt is a LangChain template - escape the appended
+            # text so a brace in a steering line can never break every agent.
+            system += '\n\n' + steering.replace('{', '{{').replace('}', '}}')
+        messages = [('system', system)]
         if human_parts:
             messages.append(('human', '\n\n'.join(human_parts)))
         messages.append(MessagesPlaceholder(variable_name='messages'))
         return ChatPromptTemplate.from_messages(messages)
 
     async def _invoke_llm(self, complexity: str = None, **kwargs) -> AIMessage:
-        if self.rate_limiter:
-            await self.rate_limiter.wait_if_needed()
         chain = self._get_chain(complexity)
-        try:
-            response = await asyncio.wait_for(
-                chain.ainvoke(kwargs), timeout=settings.llm_timeout
-            )
-        except asyncio.TimeoutError:
-            raise TimeoutError(
-                f"LLM call timed out after {settings.llm_timeout} seconds"
-            ) from None
+        provider = self._chain_providers.get(complexity or '_default')
+        for attempt in range(MAX_RATE_LIMIT_RETRIES + 1):
+            # The throttle slot is re-acquired per attempt, so retries also
+            # stay within the provider's budget.
+            if self.rate_limiter:
+                await self.rate_limiter.wait_if_needed(provider)
+            try:
+                response = await asyncio.wait_for(
+                    chain.ainvoke(kwargs), timeout=settings.llm_timeout
+                )
+                break
+            except asyncio.TimeoutError:
+                raise TimeoutError(
+                    f"LLM call timed out after {settings.llm_timeout} seconds"
+                ) from None
+            except Exception as exc: # pylint: disable=broad-exception-caught
+                delay = retry_delay(exc, attempt)
+                if delay is None or attempt >= MAX_RATE_LIMIT_RETRIES:
+                    raise
+                self.logger.warning(
+                    "%s rate limited (429); retrying in %.1fs (attempt %d/%d)...",
+                    provider or 'Provider', delay, attempt + 1, MAX_RATE_LIMIT_RETRIES,
+                )
+                await asyncio.sleep(delay)
         self.logger.debug("Raw Response Content:\n%s", response.content)
         self.logger.debug("Tool Calls:\n%s", response.tool_calls)
         return response
 
     def _parse_outputs(self, response) -> T:
         if not response.tool_calls:
-            raise ValueError(
-                "The model did not call any tool. "
-                "You MUST call one of the provided tools to submit your work."
-            )
+            raise NoToolCallError("The model did not call any tool.")
         tool_call = response.tool_calls[0]
         return self._map_tool_to_output(tool_call['name'], tool_call['args'])
 
@@ -283,30 +376,47 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
         """Map a tool call to the agent's output schema."""
         return self.output_schema(**tool_args)
 
-    @staticmethod
-    def _resolve_includes(prompt: str, base_dir: Path) -> str:
-        base = base_dir.resolve()
-        def replacer(match):
-            filepath = match.group(1)
-            condition = match.group(2)
-            if condition and not getattr(settings, condition, False):
-                return ''
-            resolved = (base / filepath).resolve()
-            if not resolved.is_relative_to(base):
-                raise ValueError(f"Include path '{filepath}' escapes the base directory")
-            try:
-                text = resolved.read_text(encoding='utf-8')
-            except FileNotFoundError:
-                raise FileNotFoundError(f"Include '{filepath}' not found in {base}") from None
-            parts = text.split('---', 2)
-            return parts[2].strip() if len(parts) >= 3 else text.strip()
-        pattern = re.compile(r"\{\s*include\s+'([^']+)'(?:\s+if\s+(\w+))?\s*\}")
-        while pattern.search(prompt):
-            prompt = pattern.sub(replacer, prompt)
-        return prompt
+    _MAX_INCLUDE_DEPTH: int = 10
+    _INCLUDE_PATTERN = re.compile(r"\{\{\s*include\s+([\w./-]+?)(?:\s+if\s+(not\s+)?(\w+))?\s*\}\}")
+    # The unified prompt-body conventions (TODO 1.3) allow a shared body to
+    # carry these placeholders for the loader that renders them. This loader
+    # has no renderer (tools are bound natively, skills and workspace content
+    # ride the `inputs:` sections), so they are stripped - a shared body still
+    # renders here, and a stray brace never reaches the LangChain template.
+    _PLACEHOLDER_PATTERN = re.compile(r'\{\{\s*(tools|skills|environment)\s*\}\}')
 
     @classmethod
-    def from_config(cls, node_name: str, config_path: str, *, llm_factory: LLMFactory = None, rate_limiter: RateLimiter = None, capabilities: dict[str, float] | list[str] = None, temperature: float = None):
+    def _resolve_includes(cls, prompt: str, base_dir: Path) -> str:
+        """Replace `{{ include <name> [if [not] <setting>] }}` with the named file's body.
+
+        The unified include syntax shared with my-dev-team-vs-code: the name is
+        normalised (a leading path and a trailing .md are stripped) and resolved
+        against `partials/` first, then base_dir itself (so a config can inherit a
+        full agent prompt). The optional `if <setting>` / `if not <setting>` clause
+        includes the block only when the named settings flag is truthy / falsy.
+        Frontmatter of the included file is stripped; includes may nest up to
+        _MAX_INCLUDE_DEPTH levels, which rejects cycles.
+        """
+        base = base_dir.resolve()
+        def replacer(match):
+            arg, negate, condition = match.groups()
+            if condition and bool(getattr(settings, condition, False)) == bool(negate):
+                return ''
+            name = re.sub(r'\.md$', '', arg).split('/')[-1]
+            for candidate in (base / 'partials' / f'{name}.md', base / f'{name}.md'):
+                if candidate.exists():
+                    text = candidate.read_text(encoding='utf-8')
+                    parts = text.split('---', 2)
+                    return parts[2].strip() if len(parts) >= 3 else text.strip()
+            raise FileNotFoundError(f"Include '{arg}': no partial '{name}.md' in {base / 'partials'} or {base}")
+        for _ in range(cls._MAX_INCLUDE_DEPTH):
+            if not cls._INCLUDE_PATTERN.search(prompt):
+                return prompt
+            prompt = cls._INCLUDE_PATTERN.sub(replacer, prompt)
+        raise ValueError(f"Include nesting exceeded {cls._MAX_INCLUDE_DEPTH} levels - most likely a cyclic include")
+
+    @classmethod
+    def from_config(cls, node_name: str, config_path: str, *, llm_factory: LLMFactory = None, rate_limiter: RateLimiter = None, capabilities: dict[str, float] | list[str] = None, temperature: float = None, top_k: int = None, top_p: float = None):
         prompt_file = settings.config_dir / 'agents' / config_path
         try:
             content = prompt_file.read_text(encoding='utf-8')
@@ -317,8 +427,8 @@ class BaseAgent[T: BaseModel](CommunicationLog, IntermediateTools, WithLogging):
             raise ValueError(f"Invalid format in {config_path}. Missing YAML frontmatter")
         config = yaml.safe_load(parts[1])
         prompt = cls._resolve_includes(parts[2].strip(), prompt_file.parent)
-        if capabilities is not None:
-            config['capabilities'] = capabilities
-        if temperature is not None:
-            config['temperature'] = temperature
+        prompt = cls._PLACEHOLDER_PATTERN.sub('', prompt)
+        config.update({k: v for k, v in {
+            'capabilities': capabilities, 'temperature': temperature, 'top_k': top_k, 'top_p': top_p,
+        }.items() if v is not None})
         return cls(config, prompt, node_name, llm_factory=llm_factory, rate_limiter=rate_limiter)

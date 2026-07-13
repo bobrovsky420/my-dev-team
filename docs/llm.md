@@ -2,6 +2,15 @@
 
 This page lists all providers and models configured in `config/tools/llms.yaml`.
 
+`llms.yaml` is a **generated file**: the source of truth is the shared model
+registry `models.yaml` in the sibling `my-dev-team-config` repository, which
+also generates the model catalogue of `my-dev-team-vs-code`. To add or change
+a model, edit the registry there and run `python scripts/sync_models.py` - see
+that repo's README for the schema. Never edit `llms.yaml` by hand. A committed
+pre-commit hook (`.githooks/pre-commit`, activate once with
+`git config core.hooksPath .githooks`) blocks commits while the generated file
+is stale; it skips silently on machines without the config checkout.
+
 The **Verified** column is updated manually when integration tests pass for that model. A blank cell means the model has not yet been tested end-to-end.
 
 ---
@@ -54,12 +63,12 @@ Pass `--no-complexity-routing` on the CLI (or set `no_complexity_routing: true` 
 Each model in `llms.yaml` may declare a `complexity_fit` block:
 
 ```yaml
-- id: 'claude-opus-4-6'
+- id: 'claude-opus-4-8'
   capabilities:
-      reasoning: 1.0
-      planning: 0.9
-      code-generation: 0.9
-      code-analysis: 0.9
+      reasoning: 0.98
+      code-generation: 0.97
+      code-analysis: 0.97
+      planning: 0.97
   complexity_fit: {low: 0.3, medium: 0.8, high: 1.0}
 ```
 
@@ -99,6 +108,20 @@ When complexity routing kicks in, `BaseAgent.process()` logs `Routing on complex
 
 ---
 
+## Per-model prompt steering
+
+The agent prompts assume a capable model; a weaker model needs extra nudging to hit the same bar. Rather than fork prompts per model, `utils/steering.py` (ported from my-dev-team-vs-code's `engine/config/steering.ts`) derives a small "Model-specific guidance" section from the routed model's capability scores in `llms.yaml` and appends it to the agent's system prompt. Each rule fires only when the model scores **below** its threshold:
+
+| Capability | Below | Guidance |
+|---|---|---|
+| `structured-output` | 0.9 | submit the result as a single tool call, no plain-text JSON or prose around it |
+| `reasoning` | 0.8 | work step by step, do not guess at unproven conclusions |
+| `code-generation` | 0.85 | never invent paths/APIs/identifiers - verify with a tool |
+
+A frontier model (Opus, GPT-5.5, Gemini Pro) clears every threshold and gets nothing - its prompt is byte-identical to before. A small local model (qwen3:8b, gemma3:4b) collects most of the lines. A missing score counts as 0, so an unscored model gets the full set. No per-model configuration is involved: a newly registered model is steered automatically from its registry scores, and the section follows complexity routing (the low-complexity chain of an agent may be steered while its high-complexity chain is not). Fired rules are logged at DEBUG per node and model.
+
+---
+
 ## anthropic
 
 **Package:** `pip install "my-dev-team[anthropic]"`
@@ -106,7 +129,7 @@ When complexity routing kicks in, `BaseAgent.process()` logs `Routing on complex
 
 | Model | Best for | Verified |
 |---|---|---|
-| `claude-opus-4-6` | reasoning, planning, code | |
+| `claude-opus-4-8` | reasoning, planning, code | |
 | `claude-sonnet-4-6` | planning, code generation, code analysis | |
 | `claude-haiku-4-5-20251001` | fast utility tasks | |
 
@@ -126,7 +149,7 @@ Claude models deployed via Azure AI Foundry expose an OpenAI-compatible REST API
 
 | Model | Best for | Verified |
 |---|---|---|
-| `claude-opus-4-6` | reasoning, planning, code | |
+| `claude-opus-4-8` | reasoning, planning, code | |
 | `claude-sonnet-4-6` | planning, code generation, code analysis | |
 | `claude-haiku-4-5-20251001` | fast utility tasks | |
 
@@ -146,7 +169,7 @@ By default the deployment name is assumed to match the model `id` in `llms.yaml`
 
 | Model | Best for | Verified |
 |---|---|---|
-| `gpt-5.3-codex` | code generation, code analysis | |
+| `gpt-5.5` | reasoning, planning, code | |
 | `gpt-5.4-mini` | fast utility tasks | |
 
 ---
@@ -158,8 +181,8 @@ By default the deployment name is assumed to match the model `id` in `llms.yaml`
 
 | Model | Best for | Verified |
 |---|---|---|
-| `o3` | reasoning, planning | |
-| `codex-mini-latest` | code generation, code analysis | |
+| `gpt-5.5` | reasoning, planning | |
+| `gpt-5.1-codex-mini` | code generation, code analysis | |
 | `gpt-4.1` | planning, code generation | |
 | `gpt-4.1-mini` | fast utility tasks | |
 
@@ -188,9 +211,13 @@ Models with `thinking: true` in `llms.yaml` have the reasoning stream enabled (r
 
 | Model | Thinking | Best for | Verified |
 |---|---|---|---|
-| `qwen3:8b` | yes | reasoning | 2026-03-28 |
-| `qwen2.5-coder:7b` | no | planning, code generation, code analysis | 2026-03-28 |
+| `qwen3:8b` | yes | classification, structured output, fast utility tasks | 2026-03-28 |
+| `qwen3:14b` | yes | reasoning, planning | |
+| `qwen3-coder:30b` | no | code generation, code analysis, long context | |
 | `gemma3:4b` | no | fast utility tasks | 2026-03-28 |
+
+Note: `qwen2.5-coder:7b` was retired from the registry in favour of
+`qwen3-coder:30b` when the model lists of the two apps were reconciled.
 
 ---
 
@@ -203,10 +230,9 @@ LangChain reports this provider as `google_genai`. The alias `'google_genai/*': 
 
 | Model | Best for | Verified |
 |---|---|---|
-| `gemini-3.1-flash-lite-preview` | fast utility tasks | 2026-04-12 |
-| `gemini-3.1-pro-preview` | reasoning, planning, code | |
-
-Note: `gemini-3.1-pro-preview` is commented out in `llms.yaml` by default. Uncomment to enable it.
+| `gemini-3.1-pro-preview` | reasoning, planning, code, long context | |
+| `gemini-3.5-flash` | balanced all-round work, long context | |
+| `gemini-3.1-flash-lite` | fast utility tasks | |
 
 ---
 
@@ -217,7 +243,7 @@ Note: `gemini-3.1-pro-preview` is commented out in `llms.yaml` by default. Uncom
 
 | Model | Best for | Verified |
 |---|---|---|
-| `mistral-large-latest` | planning, code generation, code analysis | |
+| `mistral-medium-latest` | planning, code generation, code analysis | |
 | `codestral-latest` | code generation, code analysis | |
 | `mistral-small-latest` | fast utility tasks | |
 
@@ -230,8 +256,20 @@ Note: `gemini-3.1-pro-preview` is commented out in `llms.yaml` by default. Uncom
 
 | Model | Best for | Verified |
 |---|---|---|
-| `deepseek-reasoner` | reasoning, planning | |
-| `deepseek-chat` | planning, code generation, code analysis | |
+| `deepseek-v4-pro` | reasoning, planning | |
+| `deepseek-v4-flash` | planning, code generation, code analysis | |
+
+---
+
+## zai
+
+**Package:** `pip install "my-dev-team[openai]"` (uses OpenAI-compatible client)
+**Env var:** `ZAI_API_KEY`
+
+| Model | Best for | Verified |
+|---|---|---|
+| `glm-5.2` | reasoning, planning, code | |
+| `glm-4.7-flash` | fast utility tasks | |
 
 ---
 
@@ -242,9 +280,9 @@ Note: `gemini-3.1-pro-preview` is commented out in `llms.yaml` by default. Uncom
 
 | Model | Best for | Verified |
 |---|---|---|
-| `grok-3` | reasoning, planning, code | |
-| `grok-3-fast` | planning, code generation, code analysis | |
-| `grok-3-mini-fast` | fast utility tasks | |
+| `grok-4.3` | reasoning, planning, code | |
+| `grok-4.1-fast` | planning, code generation, code analysis | |
+| `grok-code-fast-1` | fast utility tasks | |
 
 ---
 
@@ -252,19 +290,25 @@ Note: `gemini-3.1-pro-preview` is commented out in `llms.yaml` by default. Uncom
 
 No API key required for cloud models when Groq free-tier limits apply. Ollama models run locally.
 
-The `free` provider is a compound provider - each model entry carries a `provider` field pointing to its real backend (`groq` or `ollama`). No separate install is needed beyond those two.
+The `free` provider is a compound provider - each model entry carries a `provider` field pointing to its real backend (`groq` or `ollama`). No separate install is needed beyond those two. Rate limiting is charged to the real backend: the Groq models draw from Groq's per-provider budget (30 RPM registry default) while the local Ollama calls stay unthrottled.
 
 | Model | Backend | Best for |
 |---|---|---|
-| `qwen/qwen3-32b` | groq | reasoning |
-| `openai/gpt-oss-120b` | groq | planning, code generation, code analysis |
+| `qwen/qwen3-32b` | groq | balanced all-round work |
+| `openai/gpt-oss-120b` | groq | reasoning, planning, code |
 | `llama-3.1-8b-instant` | groq | fast utility tasks |
-| `qwen2.5-coder:7b` | ollama | code generation, code analysis |
+| `qwen3-coder:30b` | ollama | code generation, code analysis |
 
 ---
 
+## Rate limiting and 429 retries
+
+Requests are throttled per provider with rolling one-minute windows (`utils/rate_limiter.py`, behavior ported from my-dev-team-vs-code's `rateLimiter.ts`). A provider's budget resolves as: the `--rpm` flag when set (> 0, then it applies to every provider), else the provider's default from the shared registry (the `rpm` key of its `llms.yaml` section - currently only Groq seeds one, 30 RPM for the free tier), else no throttle. Budgets are keyed by the routed model's real backend, so a compound provider like `free` never spends the Groq budget on its local Ollama calls.
+
+Independently of throttling, a rate-limited call (HTTP 429) is retried automatically: the delay comes from the response's `retry-after-ms`/`retry-after` headers or the provider's "try again in Ns" message hint (Groq phrases its limit this way), falling back to exponential backoff - up to 5 attempts, each wait capped at 60 seconds. A 429 that persists past the cap fails the step like before, where checkpoint resume still applies.
+
 ## Adding models
 
-To add a model, append an entry under the relevant provider in `config/tools/llms.yaml` with its `capabilities` scores and, optionally, a `complexity_fit` block (see [Complexity-aware routing](#complexity-aware-routing)). Then add a row to the table above with an empty Verified cell. Mark Verified once integration tests confirm the model works end-to-end with the full agent workflow.
+`llms.yaml` is generated - do not edit it by hand. To add a model, add an entry to `models.yaml` in the `my-dev-team-config` repository (unified capability scores plus a `complexity_fit` block, see that repo's README) and run `python scripts/sync_models.py` there. Then add a row to the table above with an empty Verified cell. Mark Verified once integration tests confirm the model works end-to-end with the full agent workflow.
 
-To add an entirely new provider, add a `case` block in `LLMFactory._instantiate()` in `src/devteam/utils/llm_factory.py` and a new section on this page.
+To add an entirely new provider, add a `case` block in `LLMFactory._instantiate()` in `src/devteam/utils/llm_factory.py`, add the provider to `DEVTEAM_PROVIDERS` in the sync script, and add a new section on this page.

@@ -16,10 +16,10 @@ class EventEmitter:
             if callable(method):
                 try:
                     result = await method(thread_id, **kwargs)
-                except Exception as e:
+                except Exception:
                     if ext.critical:
                         raise
-                    self.logger.warning("Extension %s.%s raised an error: %s", type(ext).__name__, method_name, e)
+                    self.logger.exception("Extension %s.%s raised an error", type(ext).__name__, method_name)
                     continue
                 if isinstance(result, dict):
                     merged.update(result)

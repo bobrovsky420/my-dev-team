@@ -9,10 +9,9 @@ from dotenv import load_dotenv
 from rich import print # pylint: disable=redefined-builtin
 from devteam import settings
 from devteam.tools.rag import init_retrieve_context_tool
-from devteam.utils import setup_logging, get_valid_providers
+from devteam.utils import setup_logging, get_valid_providers, load_project_spec
+from .request import ResumeRequest, StartRequest
 from .runtime import async_main, show_history
-
-_PROVIDERS = ['anthropic', 'free', 'groq', 'ollama', 'openai', 'google']
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='Run the AI Dev Team autonomous framework.')
@@ -31,15 +30,20 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--timeout', type=int, default=settings.llm_timeout, help='maximum time (in seconds) to wait for an LLM response (default: 120)')
     parser.add_argument('--thinking', action='store_true', help='stream raw LLM thinking output to stderr')
     parser.add_argument('--no-docker', action='store_true', help='run QA engineer without Docker sandbox')
-    parser.add_argument('--ask-approval', action='store_true', help='pause after planning to review and approve the plan before development starts')
-    parser.add_argument('--rag-collection', type=str, help='collection name to use for RAG queries')
-    parser.add_argument('--no-rag', action='store_true', help='disable RAG context retrieval for all agents')
+    ask_group = parser.add_mutually_exclusive_group()
+    ask_group.add_argument('--ask-approval', action='store_true', help='pause after planning to review and approve the plan before development starts')
+    ask_group.add_argument('--ask-all', action='store_true', help='pause before every agent for step-by-step approval (implies --ask-approval)')
+    ask_group.add_argument('--no-ask', action='store_true', help='disable all user interaction - no clarification questions, no approval pauses')
+    rag_group = parser.add_mutually_exclusive_group()
+    rag_group.add_argument('--rag-collection', type=str, help='collection name to use for RAG queries')
+    rag_group.add_argument('--no-rag', action='store_true', help='disable RAG context retrieval for all agents')
     parser.add_argument('--seed', type=str, help='path to an existing directory or ZIP archive to pre-populate the workspace')
     parser.add_argument('--skills', type=str, help='path to the user\'s SKILLs folder')
     parser.add_argument('--workflow', type=str, default='development', help='workflow type to run (default: development)')
     parser.add_argument('--fanout', action='store_true', help='run two developers independently on each task and let a code judge pick the winner before code review')
-    parser.add_argument('--no-ask', action='store_true', help='disable clarification questions - agents proceed directly to their output tool without asking the user')
+    parser.add_argument('--max-revisions', type=int, help=f'maximum developer revision cycles per task (default: {settings.max_revision_count})')
     parser.add_argument('--no-complexity-routing', action='store_true', help='disable complexity-based LLM routing for all agents')
+    parser.add_argument('--console', action='store_true', help='enable console logger extension')
     return parser
 
 def _apply_config(custom_config_path: str):
@@ -55,18 +59,15 @@ def _validate_inputs(parser: argparse.ArgumentParser, args):
     if args.history:
         path = settings.workspace_dir / args.history
         if not path.exists():
-            logging.error("❌ Error: Could not find workspace for thread '%s'", args.history)
-            sys.exit(1)
+            parser.error(f"could not find workspace for thread '{args.history}'")
         return
     if args.resume:
         path = settings.workspace_dir / args.resume
         if not path.exists():
-            logging.error("❌ Error: Could not find workspace for thread '%s'", args.resume)
-            sys.exit(1)
+            parser.error(f"could not find workspace for thread '{args.resume}'")
     elif args.project_file:
         if not Path(args.project_file).exists():
-            logging.error("❌ Error: Could not find project file '%s'", args.project_file)
-            sys.exit(1)
+            parser.error(f"could not find project file '{args.project_file}'")
     else:
         parser.error('You must provide either a project_file OR the --resume flag.')
     if args.seed:
@@ -78,12 +79,42 @@ def _validate_inputs(parser: argparse.ArgumentParser, args):
         if not (seed_path.is_dir() or (seed_path.is_file() and seed_path.suffix == '.zip')):
             parser.error(f"--seed must be a directory or a .zip file, got: '{seed_path}'.")
 
+def _build_request(args: argparse.Namespace):
+    if args.resume:
+        return ResumeRequest(
+            provider=args.provider,
+            rpm=args.rpm,
+            workflow=args.workflow,
+            fanout=args.fanout,
+            resume_thread=args.resume,
+            feedback=args.feedback,
+            feedback_source=args.as_node,
+            checkpoint_id=args.checkpoint,
+        )
+    project_name, requirements = load_project_spec(args.project_file)
+    return StartRequest(
+        provider=args.provider,
+        rpm=args.rpm,
+        workflow=args.workflow,
+        fanout=args.fanout,
+        project_name=project_name,
+        requirements=requirements,
+        seed_path=args.seed,
+    )
+
+def _load_settings_from_argv() -> None:
+    """Pre-parse --settings from argv and load settings, allowing override of the default lookup."""
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument('--settings', type=str)
+    pre_args, _ = pre.parse_known_args()
+    settings.load(Path(pre_args.settings) if pre_args.settings else None)
+
 def main_ui():
     """Entry point for the devteam-ui command."""
     load_dotenv()
-    settings.load()
+    _load_settings_from_argv()
     init_retrieve_context_tool()
-    from devteam.server import run as run_server  # pylint: disable=import-outside-toplevel
+    from devteam.gui import run_server  # pylint: disable=import-outside-toplevel
     try:
         run_server()
     except KeyboardInterrupt:
@@ -91,11 +122,7 @@ def main_ui():
 
 def main():
     load_dotenv()
-
-    pre = argparse.ArgumentParser(add_help=False)
-    pre.add_argument('--settings', type=str)
-    pre_args, _ = pre.parse_known_args()
-    settings.load(Path(pre_args.settings) if pre_args.settings else None)
+    _load_settings_from_argv()
 
     parser = _build_parser()
     args = parser.parse_args()
@@ -105,6 +132,9 @@ def main():
             parser.error(f"--azure has no effect: '{args.provider}' is already an Azure provider.")
         args.provider = f'azure-{args.provider}'
 
+    if args.thinking and not args.console:
+        parser.error('--thinking requires --console')
+
     setup_logging(console_level=logging.DEBUG if args.verbose else logging.INFO)
     _apply_config(args.config)
     valid = get_valid_providers()
@@ -112,39 +142,13 @@ def main():
         parser.error(f"invalid --provider '{args.provider}'. Valid providers from {settings.tools_config_dir / 'llms.yaml'}: {', '.join(sorted(valid))}")
     settings.llm_timeout = args.timeout
     settings.llm_streaming = args.thinking
-    if args.no_docker:
-        settings.no_docker = True
-    if args.ask_approval:
-        settings.ask_approval = True
-    if args.rag_collection:
-        settings.rag_collection = args.rag_collection
-    if args.no_rag:
-        settings.rag_enabled = False
-    if args.no_ask:
-        settings.no_ask = True
-    if args.no_complexity_routing:
-        settings.no_complexity_routing = True
+    settings.apply_args(args)
     if settings.rag_enabled:
         init_retrieve_context_tool()
-    if args.skills:
-        settings.skills = Path(args.skills)
     _validate_inputs(parser, args)
 
     if args.history:
         asyncio.run(show_history(thread_id=args.history))
         return
 
-    asyncio.run(
-        async_main(
-            args.project_file,
-            args.provider,
-            args.rpm,
-            resume_thread=args.resume,
-            feedback=args.feedback,
-            feedback_source=args.as_node,
-            checkpoint_id=args.checkpoint,
-            seed_path=args.seed,
-            workflow=args.workflow,
-            fanout=args.fanout,
-        )
-    )
+    asyncio.run(async_main(_build_request(args)))

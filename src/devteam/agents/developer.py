@@ -8,10 +8,8 @@ class SeniorDeveloper(BaseAgent[DeveloperResponse]):
     output_schema = DeveloperResponse
 
     @override
-    def _build_inputs(self, state: ProjectState) -> dict:
-        inputs = super()._build_inputs(state)
-        inputs['workspace'] = workspace.list_workspace_files(state.workspace_path)
-        return inputs
+    def _input_workspace(self, state: ProjectState) -> str:
+        return workspace.list_workspace_files(state.workspace_path)
 
     @override
     def _update_state(self, parsed_data: DeveloperResponse, current_state: ProjectState) -> dict:

@@ -1,7 +1,10 @@
+import logging
 from functools import lru_cache
 from pathlib import Path
 import yaml
 from devteam import settings
+
+logger = logging.getLogger(__name__)
 
 @lru_cache()
 def load_skills_catalog() -> list[dict]:
@@ -10,7 +13,7 @@ def load_skills_catalog() -> list[dict]:
     base_path = settings.skills_dir
 
     if not base_path.exists() or not base_path.is_dir():
-        print(f"Warning: Skills directory '{base_path}' not found.")
+        logger.warning("Skills directory '%s' not found.", base_path)
         return catalog
 
     for skill_folder in base_path.iterdir():

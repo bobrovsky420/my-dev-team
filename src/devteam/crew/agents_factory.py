@@ -34,7 +34,9 @@ class AgentsFactory(WithLogging):
                 llm_factory=self.llm_factory,
                 rate_limiter=self.rate_limiter,
                 capabilities=details.get('capabilities'),
-                temperature=details.get('temperature')
+                temperature=details.get('temperature'),
+                top_k=details.get('top_k'),
+                top_p=details.get('top_p'),
             )
             if sandbox_class := details.get('sandbox', None):
                 if not settings.no_docker:

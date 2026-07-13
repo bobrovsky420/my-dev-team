@@ -107,7 +107,8 @@ export default function NewProject() {
   const [rpm, setRpm] = useState(0)
   const [timeout, setTimeout_] = useState(120)
   const [thinking, setThinking] = useState(false)
-  const [askApproval, setAskApproval] = useState(false)
+  const [noDocker, setNoDocker] = useState(false)
+  const [approvalMode, setApprovalMode] = useState('')   // '' | 'ask_approval' | 'ask_all'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -121,7 +122,10 @@ export default function NewProject() {
     setLoading(true)
     try {
       const { thread_id } = await api.startProject({
-        requirements, provider, rpm, timeout, thinking, ask_approval: askApproval,
+        requirements, provider, rpm, timeout, thinking,
+        no_docker: noDocker,
+        ask_approval: approvalMode === 'ask_approval',
+        ask_all: approvalMode === 'ask_all',
       })
       dispatch({ type: 'SET_THREAD', threadId: thread_id })
     } catch (e) {
@@ -173,10 +177,22 @@ export default function NewProject() {
             onChange={setThinking}
           />
           <Checkbox
+            label="Disable Docker sandbox"
+            desc="Run QA engineer without Docker sandbox (LLM-based simulation only)"
+            checked={noDocker}
+            onChange={setNoDocker}
+          />
+          <Checkbox
             label="Ask for approval"
             desc="Pause after planning to review and approve spec / task plan"
-            checked={askApproval}
-            onChange={setAskApproval}
+            checked={approvalMode === 'ask_approval'}
+            onChange={(v) => setApprovalMode(v ? 'ask_approval' : '')}
+          />
+          <Checkbox
+            label="Ask for approval on every step"
+            desc="Pause after every agent - approve or send feedback before the workflow continues"
+            checked={approvalMode === 'ask_all'}
+            onChange={(v) => setApprovalMode(v ? 'ask_all' : '')}
           />
         </div>
       </div>
